@@ -98,9 +98,9 @@ body {{
   break-after: always;
 }}
 
-.intro .container {{
-  text-align: center;
-  padding: 2rem;
+.intro-content {{
+  padding: 3rem 4rem;
+  text-align: left;
 }}
 
 .cover-image {{
@@ -129,12 +129,42 @@ body {{
   height: 100%;
 }}
 
+.intro h1 {{
+  font-size: 2.8rem;
+  font-weight: 700;
+  color: var(--heading);
+  text-align: left;
+  line-height: 1.15;
+  margin-bottom: 1.5rem;
+  max-width: none;
+}}
+
 h1 {{
   font-size: 1.6rem;
   font-weight: 700;
   color: var(--heading);
-  text-align: center;
   margin-bottom: 0.5rem;
+}}
+
+.meta {{
+  border-top: 1px solid var(--border);
+  padding-top: 1rem;
+}}
+
+.intro .subtitle {{
+  text-align: left;
+  color: var(--text);
+  font-size: 0.9rem;
+  margin-bottom: 0.4rem;
+  opacity: 0.85;
+}}
+
+.intro .date {{
+  text-align: left;
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin-bottom: 0;
+  opacity: 0.7;
 }}
 
 .subtitle {{

@@ -83,10 +83,12 @@ class ResearchDocument(Exportable):
   <div class="page-footer">{self._signature.html()}</div>
   <div class="intro">
     {self._coverimage()}
-    <div class="container">
+    <div class="intro-content">
       <h1>{self._escape(self._session.topic())}</h1>
-      <p class="subtitle">{self._signature.html()}</p>
-      <p class="date">{self._session.created().strftime("%Y-%m-%d")}</p>
+      <div class="meta">
+        <p class="subtitle">{self._signature.html()}</p>
+        <p class="date">{self._session.created().strftime("%Y-%m-%d")}</p>
+      </div>
     </div>
   </div>
   {self._brief()}
