@@ -78,6 +78,15 @@ class ResearchResponse(Responded):
         parsed = urlparse(url)
         return parsed.netloc.replace("www.", "")
 
+    def serialize(self) -> dict:
+        """Return response data as dictionary for JSON storage."""
+        return {
+            "run_id": self._identifier,
+            "status": self._status,
+            "output": self._output,
+            "sources": [s.serialize() for s in self.sources()],
+        }
+
     @classmethod
     def parse(cls, result: TaskRunResult) -> ResearchResponse:
         """Create response from SDK result."""

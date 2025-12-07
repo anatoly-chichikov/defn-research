@@ -19,6 +19,7 @@ from src.image.generator import CoverGenerator
 from src.pdf.document import ResearchDocument
 from src.pdf.palette import HokusaiPalette
 from src.storage.file import JsonFile
+from src.storage.organizer import OutputOrganizer
 from src.storage.repository import SessionsRepository
 
 
@@ -29,8 +30,7 @@ class Application:
         """Initialize with project root path."""
         self._root: Final[Path] = root
         self._data: Final[Path] = root / "data" / "research.json"
-        self._covers: Final[Path] = root / "data" / "covers"
-        self._output: Final[Path] = root / "output" / "reports"
+        self._organizer: Final[OutputOrganizer] = OutputOrganizer(root / "output")
 
     def list(self) -> None:
         """List all research sessions."""
@@ -70,15 +70,15 @@ class Application:
         if not session:
             print(f"Session not found: {identifier}")
             return
-        cover = self._cover(session.id())
+        name = self._organizer.name(session.created(), session.topic(), session.id())
+        cover = self._organizer.existing(name)
         document = ResearchDocument(session, HokusaiPalette(), cover)
-        name = self._slug(session.topic())
         if html:
-            path = self._output / f"{name}.html"
+            path = self._organizer.html(name)
             document.html(path)
             print(f"HTML saved: {path}")
         else:
-            path = self._output / f"{name}.pdf"
+            path = self._organizer.report(name)
             document.save(path)
             print(f"PDF saved: {path}")
 
@@ -109,6 +109,12 @@ class Application:
         if response.failed():
             print("Research failed")
             return
+        name = self._organizer.name(session.created(), session.topic(), session.id())
+        self._organizer.response(name, response.serialize())
+        brief = self._root / "data" / "briefs" / f"{session.id()}.md"
+        if brief.exists():
+            self._organizer.brief(name, brief.read_text(encoding="utf-8"))
+        print(f"Response saved: {self._organizer.folder(name)}")
         result = TaskResult(
             summary=response.markdown(),
             sources=response.sources(),
@@ -123,21 +129,14 @@ class Application:
         repository.update(updated)
         print(f"Results saved: {len(response.sources())} sources")
         print("Generating cover image...")
-        generator = CoverGenerator(self._covers)
-        cover = generator.generate(session.topic(), session.id())
+        cover = self._organizer.cover(name)
+        generator = CoverGenerator()
+        generator.generate(session.topic(), cover)
         print(f"Cover generated: {cover}")
-        name = self._slug(session.topic())
-        path = self._output / f"{name}.pdf"
+        path = self._organizer.report(name)
         document = ResearchDocument(updated, HokusaiPalette(), cover)
         document.save(path)
         print(f"PDF generated: {path}")
-
-    def _cover(self, identifier: str) -> Path | None:
-        """Find cover image by session ID."""
-        path = self._covers / f"{identifier}.jpg"
-        if path.exists():
-            return path
-        return None
 
     def _match(
         self, repository: SessionsRepository, identifier: str
@@ -147,15 +146,6 @@ class Application:
             if session.id().startswith(identifier):
                 return session
         return None
-
-    def _slug(self, text: str) -> str:
-        """Convert text to filename-safe slug."""
-        return (
-            text.lower()
-            .replace(" ", "-")
-            .replace(":", "")
-            .replace("/", "-")[:50]
-        )
 
 
 def main() -> None:
