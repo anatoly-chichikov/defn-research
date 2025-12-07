@@ -326,8 +326,16 @@ section:last-child .divider {{
   margin: 0.75rem 0 0.75rem 1.5rem;
 }}
 
+.synthesis ul ul, .synthesis ol ol, .synthesis ul ol, .synthesis ol ul {{
+  margin: 0.3rem 0 0.3rem 1.25rem;
+}}
+
 .synthesis li {{
   margin-bottom: 0.4rem;
+}}
+
+.synthesis li > ul, .synthesis li > ol {{
+  margin-top: 0.3rem;
 }}
 
 .synthesis li::marker {{

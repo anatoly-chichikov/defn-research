@@ -129,6 +129,7 @@ class ResearchDocument(Exportable):
             content = path.read_text(encoding="utf-8")
         else:
             content = task.query()
+        content = self._normalize(content)
         html = markdown.markdown(
             content,
             extensions=["tables", "fenced_code"],
@@ -165,6 +166,7 @@ class ResearchDocument(Exportable):
             text = result.summary()
             text, urls = self._citations(text)
             text = self._strip(text)
+            text = self._nested(text)
             text = self._normalize(text)
             html = markdown.markdown(text, extensions=["tables", "fenced_code"])
             synthesis = f'<div class="synthesis">{html}</div>'
@@ -218,5 +220,9 @@ class ResearchDocument(Exportable):
 
     def _normalize(self, text: str) -> str:
         """Add blank lines before list markers that follow text directly."""
-        return re.sub(r'([^\n])\n(\* )', r'\1\n\n\2', text)
+        return re.sub(r'([^\n])\n((?:\* |\d+\. ))', r'\1\n\n\2', text)
+
+    def _nested(self, text: str) -> str:
+        """Convert 1-3 space indents to 4 spaces for proper markdown nesting."""
+        return re.sub(r'^( {1,3})([*+-] )', r'    \2', text, flags=re.MULTILINE)
 

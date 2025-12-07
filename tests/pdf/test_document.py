@@ -274,3 +274,97 @@ class TestResearchDocumentBriefFallsBackToQueryWhenNoFile:
             contains_string(marker),
             "Brief did not fall back to query",
         )
+
+
+class TestResearchDocumentNestedListsWithSingleSpaceIndent:
+    """ResearchDocument nested converts single space indent to proper nesting."""
+
+    def test(self) -> None:
+        session = ResearchSession(topic="T", tasks=tuple())
+        document = ResearchDocument(session, HokusaiPalette())
+        marker = uuid.uuid4()
+        text = f"* **親-{marker}:**\n * **子要素:** 内容"
+        result = document._nested(text)
+        assert_that(
+            result,
+            contains_string("    * "),
+            "Nested did not convert single space to four spaces",
+        )
+
+
+class TestResearchDocumentNestedListsPreservesFourSpaceIndent:
+    """ResearchDocument nested preserves already correct four space indent."""
+
+    def test(self) -> None:
+        session = ResearchSession(topic="T", tasks=tuple())
+        document = ResearchDocument(session, HokusaiPalette())
+        marker = uuid.uuid4()
+        text = f"* **親-{marker}:**\n    * **子:** 内容"
+        assert_that(
+            document._nested(text),
+            is_(text),
+            "Nested modified already correct indentation",
+        )
+
+
+class TestResearchDocumentNestedListsHandlesMultipleLevels:
+    """ResearchDocument nested handles two and three space indents."""
+
+    def test(self) -> None:
+        session = ResearchSession(topic="T", tasks=tuple())
+        document = ResearchDocument(session, HokusaiPalette())
+        marker = uuid.uuid4()
+        text = f"* 一-{marker}\n  * 二\n   * 三"
+        result = document._nested(text)
+        assert_that(
+            result.count("    * "),
+            is_(2),
+            "Nested did not normalize all indented items",
+        )
+
+
+class TestResearchDocumentNormalizeAddsBlankLineBeforeNumberedList:
+    """ResearchDocument normalize adds blank line before numbered list."""
+
+    def test(self) -> None:
+        session = ResearchSession(topic="T", tasks=tuple())
+        document = ResearchDocument(session, HokusaiPalette())
+        marker = uuid.uuid4()
+        text = f"調査-{marker}:\n1. 最初の項目"
+        assert_that(
+            document._normalize(text),
+            contains_string(":\n\n1. "),
+            "Normalize did not add blank line before numbered list",
+        )
+
+
+class TestResearchDocumentNormalizeHandlesMixedLists:
+    """ResearchDocument normalize handles both bullet and numbered lists."""
+
+    def test(self) -> None:
+        session = ResearchSession(topic="T", tasks=tuple())
+        document = ResearchDocument(session, HokusaiPalette())
+        marker = uuid.uuid4()
+        text = f"テキスト-{marker}\n* 箇条書き\n別のテキスト\n1. 番号付き"
+        result = document._normalize(text)
+        assert_that(
+            result.count("\n\n"),
+            is_(2),
+            "Normalize did not add blank lines before both list types",
+        )
+
+
+class TestResearchDocumentBriefNormalizesNumberedLists:
+    """ResearchDocument brief normalizes numbered lists in query."""
+
+    def test(self) -> None:
+        marker = uuid.uuid4()
+        query = f"調査-{marker}:\n1. 最初\n2. 二番目"
+        task = ResearchTask(query=query, status="completed", result=None)
+        session = ResearchSession(topic="T", tasks=(task,))
+        document = ResearchDocument(session, HokusaiPalette())
+        assert_that(
+            document._brief(),
+            contains_string("<ol>"),
+            "Brief did not render numbered list as <ol>",
+        )
