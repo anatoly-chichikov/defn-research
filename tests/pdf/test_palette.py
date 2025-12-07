@@ -8,51 +8,87 @@ from hamcrest import starts_with
 from src.pdf.palette import HokusaiPalette
 
 
-class TestHokusaiPaletteIndigoReturnsHexColor:
-    """HokusaiPalette indigo returns valid hex color."""
+class TestHokusaiPaletteBgReturnsHexColor:
+    """HokusaiPalette bg returns valid hex color."""
 
     def test(self) -> None:
         palette = HokusaiPalette()
         assert_that(
-            palette.indigo(),
+            palette.bg(),
             starts_with("#"),
-            "Indigo color did not start with hash",
+            "Bg color did not start with hash",
         )
 
 
-class TestHokusaiPaletteIndigoReturnsSevenCharacters:
-    """HokusaiPalette indigo returns seven character hex."""
+class TestHokusaiPaletteBgReturnsSevenCharacters:
+    """HokusaiPalette bg returns seven character hex."""
 
     def test(self) -> None:
         palette = HokusaiPalette()
         assert_that(
-            palette.indigo(),
+            palette.bg(),
             has_length(7),
-            "Indigo color was not seven characters",
+            "Bg color was not seven characters",
         )
 
 
-class TestHokusaiPaletteWaveReturnsHexColor:
-    """HokusaiPalette wave returns valid hex color."""
+class TestHokusaiPaletteTextReturnsHexColor:
+    """HokusaiPalette text returns valid hex color."""
 
     def test(self) -> None:
         palette = HokusaiPalette()
         assert_that(
-            palette.wave(),
+            palette.text(),
             starts_with("#"),
-            "Wave color did not start with hash",
+            "Text color did not start with hash",
         )
 
 
-class TestHokusaiPaletteFoamReturnsHexColor:
-    """HokusaiPalette foam returns valid hex color."""
+class TestHokusaiPaletteHeadingReturnsHexColor:
+    """HokusaiPalette heading returns valid hex color."""
 
     def test(self) -> None:
         palette = HokusaiPalette()
         assert_that(
-            palette.foam(),
+            palette.heading(),
             starts_with("#"),
-            "Foam color did not start with hash",
+            "Heading color did not start with hash",
+        )
+
+
+class TestHokusaiPaletteLinkReturnsHexColor:
+    """HokusaiPalette link returns valid hex color."""
+
+    def test(self) -> None:
+        palette = HokusaiPalette()
+        assert_that(
+            palette.link(),
+            starts_with("#"),
+            "Link color did not start with hash",
+        )
+
+
+class TestHokusaiPaletteMutedReturnsHexColor:
+    """HokusaiPalette muted returns valid hex color."""
+
+    def test(self) -> None:
+        palette = HokusaiPalette()
+        assert_that(
+            palette.muted(),
+            starts_with("#"),
+            "Muted color did not start with hash",
+        )
+
+
+class TestHokusaiPaletteQuotebgReturnsHexColor:
+    """HokusaiPalette quotebg returns valid hex color."""
+
+    def test(self) -> None:
+        palette = HokusaiPalette()
+        assert_that(
+            palette.quotebg(),
+            starts_with("#"),
+            "Quotebg color did not start with hash",
         )
 
 
@@ -68,13 +104,37 @@ class TestHokusaiPaletteAccentReturnsHexColor:
         )
 
 
-class TestHokusaiPaletteInkReturnsHexColor:
-    """HokusaiPalette ink returns valid hex color."""
+class TestHokusaiPaletteCodebgReturnsHexColor:
+    """HokusaiPalette codebg returns valid hex color."""
 
     def test(self) -> None:
         palette = HokusaiPalette()
         assert_that(
-            palette.ink(),
+            palette.codebg(),
             starts_with("#"),
-            "Ink color did not start with hash",
+            "Codebg color did not start with hash",
+        )
+
+
+class TestHokusaiPaletteCodeinlinebgReturnsHexColor:
+    """HokusaiPalette codeinlinebg returns valid hex color."""
+
+    def test(self) -> None:
+        palette = HokusaiPalette()
+        assert_that(
+            palette.codeinlinebg(),
+            starts_with("#"),
+            "Codeinlinebg color did not start with hash",
+        )
+
+
+class TestHokusaiPaletteBorderReturnsHexColor:
+    """HokusaiPalette border returns valid hex color."""
+
+    def test(self) -> None:
+        palette = HokusaiPalette()
+        assert_that(
+            palette.border(),
+            starts_with("#"),
+            "Border color did not start with hash",
         )

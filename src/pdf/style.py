@@ -29,13 +29,16 @@ class HokusaiStyle(Styled):
         return f"""@import url('https://fonts.googleapis.com/css2?family=Source+Serif+Pro:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
 
 :root {{
-  --indigo: {self._palette.indigo()};
-  --wave: {self._palette.wave()};
-  --foam: {self._palette.foam()};
-  --sky: {self._palette.sky()};
+  --bg: {self._palette.bg()};
+  --text: {self._palette.text()};
+  --heading: {self._palette.heading()};
+  --link: {self._palette.link()};
+  --muted: {self._palette.muted()};
+  --quote-bg: {self._palette.quotebg()};
   --accent: {self._palette.accent()};
-  --ink: {self._palette.ink()};
-  --author-red: #8B1E1E;
+  --code-bg: {self._palette.codebg()};
+  --code-inline-bg: {self._palette.codeinlinebg()};
+  --border: {self._palette.border()};
 }}
 
 * {{
@@ -47,7 +50,7 @@ class HokusaiStyle(Styled):
 @page {{
   size: A4;
   margin: 2cm 2cm 2.5cm 2cm;
-  background: {self._palette.foam()};
+  background: {self._palette.bg()};
   @bottom-center {{
     content: element(page-footer);
   }}
@@ -55,7 +58,7 @@ class HokusaiStyle(Styled):
 
 @page intro {{
   margin: 0;
-  background: var(--foam);
+  background: var(--bg);
   @bottom-center {{
     content: none;
   }}
@@ -77,8 +80,8 @@ class HokusaiStyle(Styled):
 body {{
   font-family: "Source Serif Pro", Georgia, serif;
   font-size: 13px;
-  background: var(--foam);
-  color: var(--ink);
+  background: var(--bg);
+  color: var(--text);
   line-height: 1.45;
   min-height: 100vh;
 }}
@@ -129,14 +132,14 @@ body {{
 h1 {{
   font-size: 1.6rem;
   font-weight: 700;
-  color: var(--wave);
+  color: var(--heading);
   text-align: center;
   margin-bottom: 0.5rem;
 }}
 
 .subtitle {{
   text-align: center;
-  color: var(--indigo);
+  color: var(--text);
   font-size: 0.85rem;
   margin-bottom: 0.5rem;
   opacity: 0.8;
@@ -144,7 +147,7 @@ h1 {{
 
 .date {{
   text-align: center;
-  color: var(--indigo);
+  color: var(--text);
   font-size: 0.85rem;
   margin-bottom: 2rem;
   opacity: 0.7;
@@ -153,7 +156,7 @@ h1 {{
 h2 {{
   font-size: 1.1rem;
   font-weight: 600;
-  color: var(--indigo);
+  color: var(--heading);
   margin-top: 2rem;
   margin-bottom: 0.75rem;
   padding-bottom: 0.4rem;
@@ -163,9 +166,17 @@ h2 {{
 h3 {{
   font-size: 1rem;
   font-weight: 600;
-  color: var(--wave);
+  color: var(--link);
   margin-top: 1.25rem;
   margin-bottom: 0.5rem;
+}}
+
+h4 {{
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--muted);
+  margin-top: 1rem;
+  margin-bottom: 0.4rem;
 }}
 
 p {{
@@ -174,7 +185,7 @@ p {{
 }}
 
 .synthesis {{
-  border-left: 4px solid var(--accent);
+  border-left: 4px solid var(--link);
   padding: 1.25rem;
   margin: 1.5rem 0;
 }}
@@ -184,36 +195,36 @@ p {{
 }}
 
 .source {{
-  background: var(--sky);
+  background: var(--quote-bg);
   padding: 1rem;
   margin-bottom: 0.75rem;
   border-radius: 6px;
-  border: 1px solid var(--indigo);
+  border: 1px solid var(--border);
   opacity: 0.9;
 }}
 
 .source-title {{
   font-weight: 600;
-  color: var(--wave);
+  color: var(--link);
   margin-bottom: 0.25rem;
 }}
 
 .source-url {{
   font-size: 0.8rem;
-  color: var(--indigo);
+  color: var(--text);
   word-break: break-all;
   margin-bottom: 0.5rem;
 }}
 
 .source-url a {{
-  color: var(--wave);
+  color: var(--link);
   text-decoration: none;
 }}
 
 .source-excerpt {{
   font-size: 0.9rem;
   font-style: italic;
-  color: var(--ink);
+  color: var(--text);
   opacity: 0.85;
 }}
 
@@ -231,7 +242,7 @@ section:last-child .divider {{
   margin-top: 3rem;
   text-align: center;
   font-size: 0.8rem;
-  color: var(--indigo);
+  color: var(--text);
   opacity: 0.7;
 }}
 
@@ -265,7 +276,7 @@ section:last-child .divider {{
 
 .synthesis h1 {{
   font-size: 1.4rem;
-  color: var(--wave);
+  color: var(--heading);
   border-bottom: none;
   margin-top: 0;
 }}
@@ -273,7 +284,7 @@ section:last-child .divider {{
 .synthesis h2 {{
   font-size: 1.1rem;
   margin-top: 1.25rem;
-  border-bottom: 1px solid var(--sky);
+  border-bottom: 1px solid var(--border);
 }}
 
 .synthesis h3 {{
@@ -289,6 +300,10 @@ section:last-child .divider {{
   margin-bottom: 0.4rem;
 }}
 
+.synthesis li::marker {{
+  color: var(--link);
+}}
+
 .synthesis table {{
   width: 100%;
   border-collapse: collapse;
@@ -297,8 +312,8 @@ section:last-child .divider {{
 }}
 
 .synthesis th {{
-  background: var(--indigo);
-  color: var(--foam);
+  background: var(--text);
+  color: white;
   padding: 0.6rem;
   text-align: left;
   font-weight: 600;
@@ -306,15 +321,20 @@ section:last-child .divider {{
 
 .synthesis td {{
   padding: 0.5rem 0.6rem;
-  border-bottom: 1px solid var(--sky);
+  border: 1px solid var(--border);
+}}
+
+.synthesis tr:nth-child(odd) {{
+  background: var(--bg);
 }}
 
 .synthesis tr:nth-child(even) {{
-  background: rgba(196, 183, 166, 0.2);
+  background: #FFFEF7;
 }}
 
 .synthesis code {{
-  background: var(--sky);
+  background: var(--code-inline-bg);
+  color: var(--accent);
   padding: 0.15rem 0.4rem;
   border-radius: 3px;
   font-family: "JetBrains Mono", monospace;
@@ -322,8 +342,8 @@ section:last-child .divider {{
 }}
 
 .synthesis pre {{
-  background: var(--ink);
-  color: var(--foam);
+  background: var(--code-bg);
+  color: #E2E8F0;
   padding: 1rem;
   border-radius: 6px;
   overflow-x: auto;
@@ -338,20 +358,21 @@ section:last-child .divider {{
 }}
 
 .synthesis blockquote {{
-  border-left: 3px solid var(--accent);
+  background: var(--quote-bg);
+  border-left: 4px solid var(--link);
   margin: 1rem 0;
-  padding-left: 1rem;
+  padding: 1rem;
   font-style: italic;
-  color: var(--indigo);
+  color: var(--text);
 }}
 
 .synthesis a {{
-  color: var(--wave);
+  color: var(--link);
   text-decoration: underline;
 }}
 
 .synthesis strong {{
-  color: var(--indigo);
+  color: var(--accent);
 }}
 
 table {{
@@ -402,15 +423,15 @@ pre {{
 .brief h2 {{
   font-size: 1.3rem;
   font-weight: 700;
-  color: var(--wave);
+  color: var(--heading);
   margin-bottom: 1.5rem;
   border-bottom: none;
 }}
 
 .brief .language {{
   display: inline-block;
-  background: var(--sky);
-  color: var(--indigo);
+  background: var(--quote-bg);
+  color: var(--text);
   padding: 0.3rem 0.8rem;
   border-radius: 4px;
   font-size: 0.85rem;
@@ -419,8 +440,8 @@ pre {{
 }}
 
 .brief .query {{
-  background: rgba(196, 183, 166, 0.15);
-  border-left: 4px solid var(--accent);
+  background: rgba(189, 224, 254, 0.15);
+  border-left: 4px solid var(--link);
   padding: 1.5rem;
   border-radius: 0 6px 6px 0;
 }}
@@ -443,11 +464,11 @@ pre {{
 }}
 
 .brief .query strong {{
-  color: var(--wave);
+  color: var(--link);
 }}
 
 a.cite {{
-  color: var(--wave);
+  color: var(--link);
   text-decoration: none;
   font-weight: 600;
   font-size: 0.85em;
@@ -461,7 +482,7 @@ a.cite {{
 
 .references h2 {{
   font-size: 1.2rem;
-  color: var(--wave);
+  color: var(--heading);
   margin-bottom: 1.5rem;
   border-bottom: none;
 }}
@@ -477,11 +498,17 @@ a.cite {{
 }}
 
 .ref-link {{
-  color: var(--wave);
+  color: var(--link);
   text-decoration: none;
   font-size: 0.9rem;
 }}
 
 .ref-link:hover {{
   text-decoration: underline;
+}}
+
+hr {{
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 2rem 0;
 }}"""

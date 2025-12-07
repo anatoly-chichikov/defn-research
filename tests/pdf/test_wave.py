@@ -36,15 +36,15 @@ class TestWavePatternRenderContainsPath:
 
 
 class TestWavePatternRenderContainsPaletteColor:
-    """WavePattern render uses palette wave color."""
+    """WavePattern render uses palette link color."""
 
     def test(self) -> None:
         palette = HokusaiPalette()
         wave = WavePattern(palette)
         assert_that(
             wave.render(),
-            contains_string(palette.wave()),
-            "Rendered wave did not contain palette wave color",
+            contains_string(palette.link()),
+            "Rendered wave did not contain palette link color",
         )
 
 

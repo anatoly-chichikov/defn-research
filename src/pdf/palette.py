@@ -1,4 +1,4 @@
-"""Traditional Japanese color palette inspired by Hokusai."""
+"""Semantic color palette inspired by Hokusai."""
 from __future__ import annotations
 
 from abc import ABC
@@ -16,37 +16,57 @@ class Colored(ABC):
 
 
 class HokusaiPalette:
-    """Traditional Japanese color palette inspired by The Great Wave."""
+    """Semantic color palette inspired by The Great Wave."""
 
     def __init__(self) -> None:
-        """Initialize palette with traditional Japanese colors."""
-        self._indigo: Final[str] = "#264348"
-        self._wave: Final[str] = "#1E4D7B"
-        self._foam: Final[str] = "#E8E4D9"
-        self._sky: Final[str] = "#C4B7A6"
-        self._accent: Final[str] = "#B22222"
-        self._ink: Final[str] = "#1A1A2E"
+        """Initialize palette with semantic colors."""
+        self._bg: Final[str] = "#F8F2EB"
+        self._text: Final[str] = "#0A3050"
+        self._heading: Final[str] = "#003153"
+        self._link: Final[str] = "#1E5FA9"
+        self._muted: Final[str] = "#7AA6D6"
+        self._quotebg: Final[str] = "#BDE0FE"
+        self._accent: Final[str] = "#D94537"
+        self._codebg: Final[str] = "#1E293B"
+        self._codeinlinebg: Final[str] = "#E5E7EB"
+        self._border: Final[str] = "#D1D5DB"
 
-    def indigo(self) -> str:
-        """Return Ai indigo color."""
-        return self._indigo
+    def bg(self) -> str:
+        """Return page background color."""
+        return self._bg
 
-    def wave(self) -> str:
-        """Return deep wave blue color."""
-        return self._wave
+    def text(self) -> str:
+        """Return body text color."""
+        return self._text
 
-    def foam(self) -> str:
-        """Return wave foam cream color."""
-        return self._foam
+    def heading(self) -> str:
+        """Return heading color."""
+        return self._heading
 
-    def sky(self) -> str:
-        """Return aged paper sky color."""
-        return self._sky
+    def link(self) -> str:
+        """Return link color."""
+        return self._link
+
+    def muted(self) -> str:
+        """Return muted text color."""
+        return self._muted
+
+    def quotebg(self) -> str:
+        """Return blockquote background color."""
+        return self._quotebg
 
     def accent(self) -> str:
-        """Return Bengara red accent color."""
+        """Return accent color."""
         return self._accent
 
-    def ink(self) -> str:
-        """Return Sumi ink color."""
-        return self._ink
+    def codebg(self) -> str:
+        """Return code block background color."""
+        return self._codebg
+
+    def codeinlinebg(self) -> str:
+        """Return inline code background color."""
+        return self._codeinlinebg
+
+    def border(self) -> str:
+        """Return border color."""
+        return self._border
