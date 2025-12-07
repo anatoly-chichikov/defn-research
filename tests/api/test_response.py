@@ -2,11 +2,13 @@
 from __future__ import annotations
 
 import uuid
+from unittest.mock import MagicMock
 
 from hamcrest import assert_that
 from hamcrest import equal_to
 from hamcrest import has_length
 from hamcrest import is_
+from parallel.types import TaskRunTextOutput
 
 from src.api.response import ResearchResponse
 
@@ -20,7 +22,7 @@ class TestResearchResponseReturnsIdentifier:
             identifier=identifier,
             status="completed",
             output="",
-            basis={},
+            basis=[],
         )
         assert_that(
             response.identifier(),
@@ -37,7 +39,7 @@ class TestResearchResponseDetectsCompleted:
             identifier=f"trun_{uuid.uuid4()}",
             status="completed",
             output="",
-            basis={},
+            basis=[],
         )
         assert_that(
             response.completed(),
@@ -54,7 +56,7 @@ class TestResearchResponseDetectsFailed:
             identifier=f"trun_{uuid.uuid4()}",
             status="failed",
             output="",
-            basis={},
+            basis=[],
         )
         assert_that(
             response.failed(),
@@ -72,7 +74,7 @@ class TestResearchResponseReturnsMarkdown:
             identifier=f"trun_{uuid.uuid4()}",
             status="completed",
             output=output,
-            basis={},
+            basis=[],
         )
         assert_that(
             response.markdown(),
@@ -85,18 +87,18 @@ class TestResearchResponseExtractsSources:
     """ResearchResponse extracts sources from basis citations."""
 
     def test(self) -> None:
-        basis = {
-            "field": {
-                "citations": [
-                    {"url": f"https://example.com/{uuid.uuid4()}", "excerpt": "text"}
-                ]
-            }
-        }
+        url = f"https://example.com/{uuid.uuid4()}"
+        citation = MagicMock()
+        citation.url = url
+        citation.title = "Test"
+        citation.excerpts = ["text"]
+        field = MagicMock()
+        field.citations = [citation]
         response = ResearchResponse(
             identifier=f"trun_{uuid.uuid4()}",
             status="completed",
             output="",
-            basis=basis,
+            basis=[field],
         )
         assert_that(
             response.sources(),
@@ -110,15 +112,23 @@ class TestResearchResponseDeduplicatesSources:
 
     def test(self) -> None:
         url = f"https://example.com/{uuid.uuid4()}"
-        basis = {
-            "field1": {"citations": [{"url": url, "excerpt": "a"}]},
-            "field2": {"citations": [{"url": url, "excerpt": "b"}]},
-        }
+        citation1 = MagicMock()
+        citation1.url = url
+        citation1.title = "A"
+        citation1.excerpts = ["a"]
+        citation2 = MagicMock()
+        citation2.url = url
+        citation2.title = "B"
+        citation2.excerpts = ["b"]
+        field1 = MagicMock()
+        field1.citations = [citation1]
+        field2 = MagicMock()
+        field2.citations = [citation2]
         response = ResearchResponse(
             identifier=f"trun_{uuid.uuid4()}",
             status="completed",
             output="",
-            basis=basis,
+            basis=[field1, field2],
         )
         assert_that(
             response.sources(),
@@ -128,17 +138,18 @@ class TestResearchResponseDeduplicatesSources:
 
 
 class TestResearchResponseParsesApiData:
-    """ResearchResponse parses from API data dictionary."""
+    """ResearchResponse parses from TaskRunResult."""
 
     def test(self) -> None:
         identifier = f"trun_{uuid.uuid4()}"
-        data = {
-            "run_id": identifier,
-            "status": "completed",
-            "output": "markdown",
-            "basis": {},
-        }
-        response = ResearchResponse.parse(data)
+        result = MagicMock()
+        result.run.run_id = identifier
+        result.run.status = "completed"
+        output = MagicMock(spec=TaskRunTextOutput)
+        output.content = "markdown"
+        output.basis = []
+        result.output = output
+        response = ResearchResponse.parse(result)
         assert_that(
             response.identifier(),
             equal_to(identifier),
@@ -154,7 +165,7 @@ class TestResearchResponseHandlesEmptyBasis:
             identifier=f"trun_{uuid.uuid4()}",
             status="completed",
             output="",
-            basis={},
+            basis=[],
         )
         assert_that(
             response.sources(),

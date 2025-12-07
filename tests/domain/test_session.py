@@ -7,6 +7,7 @@ from hamcrest import assert_that
 from hamcrest import equal_to
 from hamcrest import has_length
 
+from src.domain.pending import PendingRun
 from src.domain.session import ResearchSession
 from src.domain.task import ResearchTask
 
@@ -95,4 +96,82 @@ class TestResearchSessionDeserializesCorrectly:
             session.topic(),
             equal_to(topic),
             "Deserialized topic did not match",
+        )
+
+
+class TestResearchSessionPendingReturnsNoneByDefault:
+    """ResearchSession.pending returns None when no pending run."""
+
+    def test(self) -> None:
+        session = ResearchSession(topic="t", tasks=tuple())
+        assert_that(
+            session.pending(),
+            equal_to(None),
+            "pending() was not None for new session",
+        )
+
+
+class TestResearchSessionStartSetsPendingRun:
+    """ResearchSession.start sets pending run."""
+
+    def test(self) -> None:
+        session = ResearchSession(topic="t", tasks=tuple())
+        pending = PendingRun("trun_x", "query", "pro", "english")
+        updated = session.start(pending)
+        assert_that(
+            updated.pending().identifier(),
+            equal_to("trun_x"),
+            "start() did not set pending run",
+        )
+
+
+class TestResearchSessionClearRemovesPending:
+    """ResearchSession.clear removes pending run."""
+
+    def test(self) -> None:
+        pending = PendingRun("trun_x", "query", "pro", "english")
+        session = ResearchSession(topic="t", tasks=tuple(), pending=pending)
+        cleared = session.clear()
+        assert_that(
+            cleared.pending(),
+            equal_to(None),
+            "clear() did not remove pending run",
+        )
+
+
+class TestResearchSessionSerializesPending:
+    """ResearchSession serializes pending run."""
+
+    def test(self) -> None:
+        pending = PendingRun("trun_123", "q", "pro", "en")
+        session = ResearchSession(topic="t", tasks=tuple(), pending=pending)
+        data = session.serialize()
+        assert_that(
+            data["pending"]["run_id"],
+            equal_to("trun_123"),
+            "serialize() did not include pending run_id",
+        )
+
+
+class TestResearchSessionDeserializesPending:
+    """ResearchSession deserializes pending run."""
+
+    def test(self) -> None:
+        data = {
+            "id": str(uuid.uuid4()),
+            "topic": "test",
+            "tasks": [],
+            "created": "2025-12-06T10:00:00",
+            "pending": {
+                "run_id": "trun_abc",
+                "query": "test query",
+                "processor": "ultra",
+                "language": "русский",
+            },
+        }
+        session = ResearchSession.deserialize(data)
+        assert_that(
+            session.pending().identifier(),
+            equal_to("trun_abc"),
+            "deserialize() did not restore pending run",
         )

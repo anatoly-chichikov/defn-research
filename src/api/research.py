@@ -16,8 +16,18 @@ class Researchable(ABC):
     """Object that can perform deep research."""
 
     @abstractmethod
-    def execute(self, query: str, processor: str) -> ResearchResponse:
-        """Execute research and return response."""
+    def start(self, query: str, processor: str) -> str:
+        """Create task and return run_id."""
+        ...
+
+    @abstractmethod
+    def stream(self, identifier: str) -> None:
+        """Stream SSE events for progress display."""
+        ...
+
+    @abstractmethod
+    def finish(self, identifier: str) -> ResearchResponse:
+        """Get final result by run_id."""
         ...
 
 
@@ -28,8 +38,8 @@ class DeepResearch(Researchable):
         """Initialize with SDK client wrapper."""
         self._client: Final[Connectable] = client
 
-    def execute(self, query: str, processor: str) -> ResearchResponse:
-        """Execute deep research with real-time progress streaming."""
+    def start(self, query: str, processor: str) -> str:
+        """Create task and return run_id for persistence."""
         sdk = self._client.sdk()
         task = sdk.beta.task_run.create(
             input=query,
@@ -38,11 +48,22 @@ class DeepResearch(Researchable):
             enable_events=True,
             betas=["events-sse-2025-07-24"],
         )
-        print(f"Research started: {task.run_id}", flush=True)
-        print("Streaming progress...", flush=True)
-        for event in sdk.beta.task_run.events(task.run_id):
-            self._emit(event)
-        result = sdk.task_run.result(task.run_id, api_timeout=7200)
+        return task.run_id
+
+    def stream(self, identifier: str) -> None:
+        """Stream SSE events, gracefully handles disconnection."""
+        sdk = self._client.sdk()
+        try:
+            for event in sdk.beta.task_run.events(identifier):
+                self._emit(event)
+        except Exception as err:
+            print(f"[WARN] SSE disconnected: {err}", flush=True)
+            print("[INFO] Will fetch result directly", flush=True)
+
+    def finish(self, identifier: str) -> ResearchResponse:
+        """Get final result, works even if SSE failed."""
+        sdk = self._client.sdk()
+        result = sdk.task_run.result(identifier, api_timeout=7200)
         return ResearchResponse.parse(result)
 
     def _emit(self, event) -> None:
@@ -52,7 +73,7 @@ class DeepResearch(Researchable):
             status = event.run.status if hasattr(event, "run") else "unknown"
             print(f"[STATUS] {status}", flush=True)
         elif kind == "task_run.progress_stats":
-            meter = min(getattr(event, "progress_meter", 0), 1.0)
+            meter = getattr(event, "progress_meter", 0) / 100.0
             stats = getattr(event, "source_stats", None)
             sources = getattr(stats, "num_sources_read", 0) if stats else 0
             print(f"[PROGRESS] {meter:.0%} | Sources: {sources}", flush=True)

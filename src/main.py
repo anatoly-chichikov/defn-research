@@ -12,6 +12,7 @@ from typing import Final
 
 from src.api.client import ParallelClient
 from src.api.research import DeepResearch
+from src.domain.pending import PendingRun
 from src.domain.result import TaskResult
 from src.domain.session import ResearchSession
 from src.domain.task import ResearchTask
@@ -100,15 +101,35 @@ class Application:
             print(f"Session not found: {identifier}")
             return
         print(f"Session: {session.topic()}")
-        print(f"Query: {query}")
-        print(f"Processor: {processor}")
-        print(f"Language: {language}")
         client = ParallelClient.create()
         executor = DeepResearch(client)
-        response = executor.execute(query, processor)
+        pending = session.pending()
+        if pending:
+            run_id = pending.identifier()
+            query = pending.query()
+            processor = pending.processor()
+            language = pending.language()
+            print(f"Resuming run: {run_id[:16]}...")
+            print(f"Query: {query}")
+            print(f"Processor: {processor}")
+        else:
+            print(f"Query: {query}")
+            print(f"Processor: {processor}")
+            print(f"Language: {language}")
+            run_id = executor.start(query, processor)
+            print(f"Research started: {run_id}")
+            pending = PendingRun(run_id, query, processor, language)
+            session = session.start(pending)
+            repository.update(session)
+        print("Streaming progress...", flush=True)
+        executor.stream(run_id)
+        print("Fetching result...", flush=True)
+        response = executor.finish(run_id)
         if response.failed():
             print("Research failed")
             return
+        session = session.clear()
+        repository.update(session)
         name = self._organizer.name(session.created(), session.topic(), session.id())
         self._organizer.response(name, response.serialize())
         brief = self._root / "data" / "briefs" / f"{session.id()}.md"
