@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+.venv/
+venv/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+
+# Environment
+.env
+.env.local
+
+# Caches
+.pytest_cache/
+.ruff_cache/
+
+# Project data (excluded from git, kept locally)
+data/
+output/
+
+# Claude local config
+.claude/settings.local.json
