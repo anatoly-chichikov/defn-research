@@ -136,7 +136,7 @@ class ResearchDocument(Exportable):
         )
         return f"""<div class="brief">
   <div class="container">
-    <h2>Вводные данные</h2>
+    <h2>Introduction</h2>
     <div class="query">{html}</div>
   </div>
 </div>"""
