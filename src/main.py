@@ -70,8 +70,7 @@ class Application:
         if not session:
             print(f"Session not found: {identifier}")
             return
-        cover = self._covers / f"{session.id()}.png"
-        cover = cover if cover.exists() else None
+        cover = self._cover(session.id())
         document = ResearchDocument(session, HokusaiPalette(), cover)
         name = self._slug(session.topic())
         if html:
@@ -132,6 +131,13 @@ class Application:
         document = ResearchDocument(updated, HokusaiPalette(), cover)
         document.save(path)
         print(f"PDF generated: {path}")
+
+    def _cover(self, identifier: str) -> Path | None:
+        """Find cover image by session ID."""
+        path = self._covers / f"{identifier}.jpg"
+        if path.exists():
+            return path
+        return None
 
     def _match(
         self, repository: SessionsRepository, identifier: str

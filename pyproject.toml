@@ -10,6 +10,7 @@ dependencies = [
     "httpx>=0.28.0",
     "parallel-web>=0.3.4",
     "google-genai>=1.0.0",
+    "pillow>=12.0.0",
 ]
 
 [dependency-groups]
