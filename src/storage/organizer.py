@@ -59,7 +59,8 @@ class OutputOrganizer(Organized):
 
     def report(self, name: str) -> Path:
         """Return path for PDF report."""
-        return self.folder(name) / "report.pdf"
+        prefix = name.rsplit("_", 1)[0]
+        return self.folder(name) / f"{prefix}.pdf"
 
     def html(self, name: str) -> Path:
         """Return path for HTML preview."""
