@@ -224,16 +224,17 @@ class TestResearchDocumentReferencesExtractsMapping:
 
 
 class TestResearchDocumentPathReturnsSessionBasedPath:
-    """ResearchDocument path returns path based on session ID."""
+    """ResearchDocument path returns path based on short session ID."""
 
     def test(self) -> None:
         identifier = str(uuid.uuid4())
+        short = identifier.split("-")[0]
         session = ResearchSession(topic="T", tasks=tuple(), identifier=identifier)
         document = ResearchDocument(session, HokusaiPalette())
         assert_that(
             str(document._path()),
-            contains_string(identifier),
-            "Path did not contain session ID",
+            contains_string(short),
+            "Path did not contain short session ID",
         )
 
 
@@ -368,3 +369,5 @@ class TestResearchDocumentBriefNormalizesNumberedLists:
             contains_string("<ol>"),
             "Brief did not render numbered list as <ol>",
         )
+
+

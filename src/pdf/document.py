@@ -143,7 +143,8 @@ class ResearchDocument(Exportable):
 
     def _path(self) -> Path:
         """Return path to brief markdown file."""
-        return Path("data/briefs") / f"{self._session.id()}.md"
+        short = self._session.id().split("-")[0]
+        return Path("data/briefs") / f"{short}.md"
 
     def _tasks(self) -> tuple[str, list[str]]:
         """Render all tasks as HTML sections and collect URLs."""
