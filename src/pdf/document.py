@@ -134,6 +134,7 @@ class ResearchDocument(Exportable):
             content,
             extensions=["tables", "fenced_code"],
         )
+        html = self._tables(html)
         return f"""<div class="brief">
   <div class="container">
     <h2>Introduction</h2>
@@ -170,6 +171,7 @@ class ResearchDocument(Exportable):
             text = self._nested(text)
             text = self._normalize(text)
             html = markdown.markdown(text, extensions=["tables", "fenced_code"])
+            html = self._tables(html)
             synthesis = f'<div class="synthesis">{html}</div>'
         section = f"""<section>
   {synthesis}
@@ -226,4 +228,13 @@ class ResearchDocument(Exportable):
     def _nested(self, text: str) -> str:
         """Convert 1-3 space indents to 4 spaces for proper markdown nesting."""
         return re.sub(r'^( {1,3})([*+-] )', r'    \2', text, flags=re.MULTILINE)
+
+    def _tables(self, html: str) -> str:
+        """Add column count classes to tables for responsive font sizing."""
+        def classify(match: re.Match) -> str:
+            table = match.group(0)
+            head = table.split('</thead>')[0] if '</thead>' in table else table.split('</tr>')[0]
+            cols = len(re.findall(r'<th[^>]*>', head)) or len(re.findall(r'<td[^>]*>', head))
+            return table.replace('<table>', f'<table class="cols-{cols}">', 1)
+        return re.sub(r'<table>.*?</table>', classify, html, flags=re.DOTALL)
 

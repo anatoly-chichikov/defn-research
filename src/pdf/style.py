@@ -344,6 +344,7 @@ section:last-child .divider {{
 
 .synthesis table {{
   width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
   margin: 1rem 0;
   font-size: 0.75rem;
@@ -355,11 +356,15 @@ section:last-child .divider {{
   padding: 0.6rem;
   text-align: left;
   font-weight: 600;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }}
 
 .synthesis td {{
   padding: 0.5rem 0.6rem;
   border: 1px solid var(--border);
+  word-break: break-word;
+  overflow-wrap: break-word;
 }}
 
 .synthesis tr:nth-child(odd) {{
@@ -368,6 +373,42 @@ section:last-child .divider {{
 
 .synthesis tr:nth-child(even) {{
   background: #FFFEF7;
+}}
+
+.synthesis table.cols-5 {{
+  font-size: 0.7rem;
+}}
+
+.synthesis table.cols-5 th,
+.synthesis table.cols-5 td {{
+  padding: 0.45rem;
+}}
+
+.synthesis table.cols-6 {{
+  font-size: 0.65rem;
+}}
+
+.synthesis table.cols-6 th,
+.synthesis table.cols-6 td {{
+  padding: 0.4rem;
+}}
+
+.synthesis table.cols-7,
+.synthesis table.cols-8,
+.synthesis table.cols-9,
+.synthesis table.cols-10 {{
+  font-size: 0.55rem;
+}}
+
+.synthesis table.cols-7 th,
+.synthesis table.cols-7 td,
+.synthesis table.cols-8 th,
+.synthesis table.cols-8 td,
+.synthesis table.cols-9 th,
+.synthesis table.cols-9 td,
+.synthesis table.cols-10 th,
+.synthesis table.cols-10 td {{
+  padding: 0.35rem;
 }}
 
 .synthesis code {{
