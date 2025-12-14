@@ -428,6 +428,14 @@ section:last-child .divider {{
   overflow-x: auto;
   margin: 1rem 0;
   font-family: "JetBrains Mono", monospace;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}}
+
+.synthesis pre .code-line {{
+  display: block;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
 }}
 
 .synthesis pre code {{

@@ -135,6 +135,7 @@ class ResearchDocument(Exportable):
             extensions=["tables", "fenced_code"],
         )
         html = self._tables(html)
+        html = self._codeindent(html)
         return f"""<div class="brief">
   <div class="container">
     <h2>Introduction</h2>
@@ -172,6 +173,7 @@ class ResearchDocument(Exportable):
             text = self._normalize(text)
             html = markdown.markdown(text, extensions=["tables", "fenced_code"])
             html = self._tables(html)
+            html = self._codeindent(html)
             synthesis = f'<div class="synthesis">{html}</div>'
         section = f"""<section>
   {synthesis}
@@ -237,4 +239,27 @@ class ResearchDocument(Exportable):
             cols = len(re.findall(r'<th[^>]*>', head)) or len(re.findall(r'<td[^>]*>', head))
             return table.replace('<table>', f'<table class="cols-{cols}">', 1)
         return re.sub(r'<table>.*?</table>', classify, html, flags=re.DOTALL)
+
+    def _codeindent(self, html: str) -> str:
+        """Wrap code lines in spans with hanging indent for wrapped lines."""
+        def process(match: re.Match) -> str:
+            content = match.group(1)
+            lines = content.split('\n')
+            wrapped = []
+            for line in lines:
+                if not line:
+                    wrapped.append(line)
+                    continue
+                indent = len(line) - len(line.lstrip(' '))
+                hang = 2
+                padding = indent + hang
+                style = (
+                    f"padding-left: {padding}ch; "
+                    f"text-indent: -{hang}ch; "
+                    "display: block;"
+                )
+                stripped = line.lstrip(' ')
+                wrapped.append(f'<span class="code-line" style="{style}">{stripped}</span>')
+            return f'<pre><code>{"".join(wrapped)}</code></pre>'
+        return re.sub(r'<pre><code>(.*?)</code></pre>', process, html, flags=re.DOTALL)
 
