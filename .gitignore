@@ -26,6 +26,7 @@ venv/
 # Caches
 .pytest_cache/
 .ruff_cache/
+.uv-cache/
 
 # Project data (excluded from git, kept locally)
 data/
@@ -33,3 +34,6 @@ output/
 
 # Claude local config
 .claude/settings.local.json
+
+# Codex
+tmp_codex_schema/
