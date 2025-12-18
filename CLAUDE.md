@@ -31,29 +31,29 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Язык query к API (должен быть на этом языке + явная инструкция)
 - Флаг `--language` при запуске
 
-### Фаза 1 — Создание сессии
+### Фаза 1 — Подготовка файла запроса
 
-```bash
-uv run python -m src.main list                           # проверить существующие
-uv run python -m src.main create "<тема>"                 # создать новую
-```
+Создай файл запроса (результат опроса пользователя) в `data/requests/<slug>.md`.
 
-Запомнить session ID для дальнейших операций.
+Формат:
+- Первая строка — тема
+- Пустая строка
+- Нумерованный список аспектов исследования
 
 ### Фаза 2 — Запуск Deep Research
 
 **ВАЖНО: Язык и формат**
 
-Brief файл и query должны быть **на языке исследования**.
+Файл запроса и query должны быть **на языке исследования**.
 Query должен начинаться с явной инструкции: `Язык ответа: <язык>.`
 
-1. Создать файл `data/briefs/<session_id>.md` на нужном языке
+1. Создать файл `data/requests/<slug>.md` на нужном языке
 2. Записать отформатированный запрос в markdown-формате:
    - Первая строка — краткое описание темы
    - Пустая строка
    - Нумерованный список аспектов исследования
 
-Пример brief файла для русского (`data/briefs/<session_id>.md`):
+Пример файла запроса для русского (`data/requests/<slug>.md`):
 ```markdown
 Топ-10 покемонов с наибольшим культурным влиянием на Токио.
 
@@ -71,17 +71,36 @@ Query должен начинаться с явной инструкции: `Я�
 Топ-10 покемонов, оказавших культурное влияние на Токио. Исследовать: ...
 ```
 
-Затем запустить скрипт в фоне с `run_in_background: true`:
+Затем запустить research в фоне одним Docker контейнером:
 
 ```bash
-uv run python -m src.main research <session_id> "<детальный запрос>" --processor pro --language русский
+export PARALLEL_API_KEY="<parallel_api_key>"
+export GEMINI_API_KEY="<gemini_api_key>"
+docker build -t research .
+name="research-$(date +%Y%m%d-%H%M%S)-<slug>"
+docker run -d --name "${name}" \
+  -v "$(pwd)/output:/app/output" \
+  -v "$(pwd)/data:/app/data" \
+  -e PARALLEL_API_KEY \
+  -e GEMINI_API_KEY \
+  -e PROCESSOR="pro" \
+  -e LANGUAGE="русский" \
+  research \
+  /app/data/requests/<slug>.md
 ```
 
-Параметры:
-- `<session_id>` — ID сессии (можно partial match)
-- `<детальный запрос>` — полный research query на нужном языке
-- `--processor` — уровень compute (см. таблицу ниже)
-- `--language` — язык исследования для вводной страницы (default: русский)
+Логи смотреть в Docker Desktop или через CLI:
+
+```bash
+docker logs -f "${name}"
+docker ps
+```
+ 
+Остановить контейнер или сервис:
+ 
+```bash
+docker rm -f "${name}"
+```
 
 ### Выбор мощности compute (--processor)
 
@@ -113,7 +132,7 @@ uv run python -m src.main research <session_id> "<детальный запро�
 
 ### Фаза 3 — Fork & Continue (КРИТИЧНО)
 
-После запуска research с `run_in_background: true`:
+После запуска research в фоне:
 
 1. **Сообщить пользователю:**
    - Session ID
@@ -140,19 +159,18 @@ uv run python -m src.main research <session_id> "<детальный запро�
 ### Проверка статуса (только по запросу)
 
 ```bash
-uv run python -m src.main show <id>
+docker run --rm -v "$(pwd)/data:/app/data" research show <id>
 ```
 
 ## Команды
 
 ```bash
-uv run python -m src.main list                                    # список сессий
-uv run python -m src.main show <id>                               # детали сессии
-uv run python -m src.main create "<тема>"                         # создать сессию
-uv run python -m src.main research <id> "<query>" --processor pro --language русский
-uv run python -m src.main generate <id>                           # регенерировать PDF
-uv run python -m src.main generate <id> --html                    # сгенерировать HTML
-DYLD_LIBRARY_PATH=/opt/homebrew/lib uv run python -m src.main generate <id>  # если проблемы с PDF
+docker build -t research .
+docker run --rm -v "$(pwd)/data:/app/data" research list                                                            # список сессий
+docker run --rm -v "$(pwd)/data:/app/data" research show <id>                                                       # детали сессии
+docker run -d --name "research-$(date +%Y%m%d-%H%M%S)-<slug>" -v "$(pwd)/output:/app/output" -v "$(pwd)/data:/app/data" -e PARALLEL_API_KEY -e GEMINI_API_KEY -e PROCESSOR=pro -e LANGUAGE=русский research /app/data/requests/<slug>.md
+docker run --rm -v "$(pwd)/output:/app/output" -v "$(pwd)/data:/app/data" research generate <id>                     # регенерировать PDF
+docker run --rm -v "$(pwd)/output:/app/output" -v "$(pwd)/data:/app/data" research generate <id> --html              # сгенерировать HTML
 ```
 
 ## Переменные окружения
