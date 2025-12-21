@@ -167,7 +167,7 @@ class ResearchDocument(Exportable):
         urls: list[str] = []
         if result:
             text = result.summary()
-            text, urls = self._citations(text)
+            text, urls = self._citations(text, result.sources())
             text = self._strip(text)
             text = self._nested(text)
             text = self._normalize(text)
@@ -181,6 +181,13 @@ class ResearchDocument(Exportable):
 </section>"""
         return section, urls
 
+    def _badge(self, confidence: str | None) -> str:
+        """Render inline confidence dot or empty string if not available."""
+        if not confidence:
+            return ""
+        level = confidence.lower()
+        return f'<span class="confidence-badge confidence-{level}"></span>'
+
     def _escape(self, text: str) -> str:
         """Escape HTML special characters."""
         return (
@@ -190,9 +197,10 @@ class ResearchDocument(Exportable):
             .replace('"', "&quot;")
         )
 
-    def _citations(self, text: str) -> tuple[str, list[str]]:
-        """Convert [N] references to clickable links using References section."""
+    def _citations(self, text: str, sources: tuple = ()) -> tuple[str, list[str]]:
+        """Convert [N] references to clickable links with confidence badges."""
         refs = self._references(text)
+        confidence_map = {s.url(): s.confidence() for s in sources}
         urls: list[str] = []
         def replace(match: re.Match) -> str:
             num = int(match.group(1))
@@ -200,7 +208,8 @@ class ResearchDocument(Exportable):
             if url:
                 if url not in urls:
                     urls.append(url)
-                return f'<a href="{url}" class="cite" target="_blank">[{num}]</a>'
+                badge = self._badge(confidence_map.get(url))
+                return f'<a href="{url}" class="cite" target="_blank">[{num}]</a>{badge}'
             return match.group(0)
         processed = re.sub(r'\[(\d+)\]', replace, text)
         return processed, urls

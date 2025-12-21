@@ -172,3 +172,51 @@ class TestResearchResponseHandlesEmptyBasis:
             has_length(0),
             "Response sources was not empty for empty basis",
         )
+
+
+class TestResearchResponseExtractsConfidence:
+    """ResearchResponse extracts confidence from FieldBasis."""
+
+    def test(self) -> None:
+        confidence = "High"
+        citation = MagicMock()
+        citation.url = f"https://example.com/{uuid.uuid4()}"
+        citation.title = "T"
+        citation.excerpts = ["e"]
+        field = MagicMock()
+        field.citations = [citation]
+        field.confidence = confidence
+        response = ResearchResponse(
+            identifier=f"trun_{uuid.uuid4()}",
+            status="completed",
+            output="",
+            basis=[field],
+        )
+        assert_that(
+            response.sources()[0].confidence(),
+            equal_to(confidence),
+            "Source confidence did not match FieldBasis confidence",
+        )
+
+
+class TestResearchResponseHandlesMissingConfidence:
+    """ResearchResponse handles FieldBasis without confidence attribute."""
+
+    def test(self) -> None:
+        citation = MagicMock()
+        citation.url = f"https://example.com/{uuid.uuid4()}"
+        citation.title = "T"
+        citation.excerpts = ["e"]
+        field = MagicMock(spec=["citations"])
+        field.citations = [citation]
+        response = ResearchResponse(
+            identifier=f"trun_{uuid.uuid4()}",
+            status="completed",
+            output="",
+            basis=[field],
+        )
+        assert_that(
+            response.sources()[0].confidence(),
+            equal_to(None),
+            "Source confidence was not None when FieldBasis lacks confidence",
+        )

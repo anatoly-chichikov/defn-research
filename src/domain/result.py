@@ -46,11 +46,18 @@ class Deserializable(ABC):
 class Source(Sourced, Serializable):
     """Immutable research source with title and excerpt."""
 
-    def __init__(self, title: str, url: str, excerpt: str) -> None:
-        """Initialize source with title, URL, and excerpt."""
+    def __init__(
+        self,
+        title: str,
+        url: str,
+        excerpt: str,
+        confidence: str | None = None,
+    ) -> None:
+        """Initialize source with title, URL, excerpt, and optional confidence."""
         self._title: Final[str] = title
         self._url: Final[str] = url
         self._excerpt: Final[str] = excerpt
+        self._confidence: Final[str | None] = confidence
 
     def title(self) -> str:
         """Return source title."""
@@ -64,13 +71,20 @@ class Source(Sourced, Serializable):
         """Return relevant excerpt."""
         return self._excerpt
 
+    def confidence(self) -> str | None:
+        """Return confidence level if available."""
+        return self._confidence
+
     def serialize(self) -> dict:
         """Return dictionary representation."""
-        return {
+        data: dict = {
             "title": self._title,
             "url": self._url,
             "excerpt": self._excerpt,
         }
+        if self._confidence:
+            data["confidence"] = self._confidence
+        return data
 
     @classmethod
     def deserialize(cls, data: dict) -> Source:
@@ -79,6 +93,7 @@ class Source(Sourced, Serializable):
             title=data["title"],
             url=data["url"],
             excerpt=data["excerpt"],
+            confidence=data.get("confidence"),
         )
 
 

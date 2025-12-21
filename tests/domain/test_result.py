@@ -6,6 +6,7 @@ import uuid
 from hamcrest import assert_that
 from hamcrest import equal_to
 from hamcrest import has_length
+from hamcrest import is_
 from hamcrest import is_not
 from hamcrest import starts_with
 
@@ -116,4 +117,96 @@ class TestTaskResultDeserializesCorrectly:
             result.summary(),
             equal_to(summary),
             "Deserialized summary did not match",
+        )
+
+
+class TestSourceReturnsProvidedConfidence:
+    """Source returns the confidence level provided during construction."""
+
+    def test(self) -> None:
+        confidence = "High"
+        source = Source(
+            title="T",
+            url="https://example.com",
+            excerpt="e",
+            confidence=confidence,
+        )
+        assert_that(
+            source.confidence(),
+            equal_to(confidence),
+            "Source confidence did not match provided value",
+        )
+
+
+class TestSourceReturnsNoneWhenConfidenceNotProvided:
+    """Source returns None when confidence is not provided."""
+
+    def test(self) -> None:
+        source = Source(title="T", url="https://example.com", excerpt="e")
+        assert_that(
+            source.confidence(),
+            equal_to(None),
+            "Source confidence was not None when not provided",
+        )
+
+
+class TestSourceSerializesConfidenceWhenProvided:
+    """Source includes confidence in serialization when provided."""
+
+    def test(self) -> None:
+        confidence = "Medium"
+        source = Source(
+            title="T",
+            url="https://x.com",
+            excerpt="e",
+            confidence=confidence,
+        )
+        assert_that(
+            source.serialize()["confidence"],
+            equal_to(confidence),
+            "Serialized confidence did not match provided value",
+        )
+
+
+class TestSourceOmitsConfidenceWhenNotProvided:
+    """Source omits confidence from serialization when not provided."""
+
+    def test(self) -> None:
+        source = Source(title="T", url="https://x.com", excerpt="e")
+        assert_that(
+            "confidence" in source.serialize(),
+            is_(False),
+            "Serialized source contained confidence when not provided",
+        )
+
+
+class TestSourceDeserializesConfidence:
+    """Source deserializes confidence from dictionary."""
+
+    def test(self) -> None:
+        confidence = "Low"
+        data = {
+            "title": "T",
+            "url": "https://x.com",
+            "excerpt": "e",
+            "confidence": confidence,
+        }
+        source = Source.deserialize(data)
+        assert_that(
+            source.confidence(),
+            equal_to(confidence),
+            "Deserialized confidence did not match",
+        )
+
+
+class TestSourceDeserializesWithoutConfidence:
+    """Source deserializes correctly when confidence is absent."""
+
+    def test(self) -> None:
+        data = {"title": "T", "url": "https://x.com", "excerpt": "e"}
+        source = Source.deserialize(data)
+        assert_that(
+            source.confidence(),
+            equal_to(None),
+            "Deserialized confidence was not None when absent",
         )

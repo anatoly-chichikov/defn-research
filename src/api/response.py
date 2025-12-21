@@ -54,11 +54,12 @@ class ResearchResponse(Responded):
         return self._output
 
     def sources(self) -> tuple[Source, ...]:
-        """Extract sources from basis citations."""
+        """Extract sources from basis citations with confidence."""
         seen: set[str] = set()
         result: list[Source] = []
         for field in self._basis:
             citations = field.citations or []
+            confidence = getattr(field, "confidence", None)
             for citation in citations:
                 url = citation.url
                 if url and url not in seen:
@@ -69,6 +70,7 @@ class ResearchResponse(Responded):
                             title=citation.title or self._domain(url),
                             url=url,
                             excerpt=excerpt[:500],
+                            confidence=confidence,
                         )
                     )
         return tuple(result)
