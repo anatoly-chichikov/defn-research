@@ -1,180 +1,108 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+## Commands
 
-## Назначение
+| Command | Action |
+|---------|--------|
+| `rs <topic>` | New research |
+| `st` | List sessions with PDF paths |
+| `pdf <topic>` | Generate PDF |
 
-Этот репозиторий — инструмент для deep research. Когда пользователь приходит сюда с темой, агент должен:
-1. Помочь продумать исследование (thinking partner)
-2. Запустить скрипт deep research
-3. Сгенерировать PDF с результатами
+If message starts with these commands — it's a research operation, not development.
 
-## Research Workflow
+---
 
-### Фаза 0 — Помощь в продумывании (КРИТИЧНО)
+## rs
 
-Пользователь может не до конца понимать что именно хочет исследовать. Твоя задача — помочь ему думать:
+New research. Dialog first, then launch.
 
-- Выявить слепые зоны: "Ты упомянул X, но не затронул Y — это намеренно?"
-- Предложить неочевидные углы: "Интересно было бы посмотреть на это через призму Z"
-- Уточнить границы: "Насколько глубоко копать в сторону A?"
-- Проверить assumptions: "Ты исходишь из того что B — это верно для твоего контекста?"
-- **ОБЯЗАТЕЛЬНО спросить язык**: "На каком языке нужен результат — русский или английский?"
-- **ОБЯЗАТЕЛЬНО спросить processor**: "Какой уровень compute использовать? (pro/ultra/ultra2x)" — предложить на основе сложности темы
+ask language Which language for the result?
+  - English
+  - 中文 (Chinese)
+  - Español (Spanish)
+  - हिन्दी (Hindi)
+  - Русский (Russian)
 
-Использовать AskUserQuestion для структурированных вопросов. Продолжать диалог пока тема не будет достаточно проработана.
+After language selected — switch all follow-up questions to that language.
 
-НЕ запускать research сразу — сначала помочь сформулировать правильные вопросы.
+ask processor What compute level? (pro/ultra/ultra2x)
 
-**Язык исследования** — КРИТИЧНО уточнять перед запуском. Влияет на:
-- Язык brief файла (должен быть на этом языке)
-- Язык query к API (должен быть на этом языке + явная инструкция)
-- Флаг `--language` при запуске
+do Help refine the topic
+do Identify blind spots
+do Suggest non-obvious angles
+dont Launch immediately — dialog first
 
-### Фаза 1 — Подготовка файла запроса
+run docker build -t research .
+run docker run -d --name "research-{timestamp}-{slug}" \
+    -v "$(pwd)/output:/app/output" \
+    -v "$(pwd)/data:/app/data" \
+    -e PARALLEL_API_KEY -e GEMINI_API_KEY \
+    -e PROCESSOR="{processor}" -e LANGUAGE="{language}" \
+    research /app/data/requests/{slug}.md
 
-Создай файл запроса (результат опроса пользователя) в `data/requests/<slug>.md`.
+notify container_name
+notify estimated_time
+notify pdf_path — exact full path (no wildcards!), build after getting session ID
 
-Формат:
-- Первая строка — тема
-- Пустая строка
-- Нумерованный список аспектов исследования
-
-### Фаза 2 — Запуск Deep Research
-
-**ВАЖНО: Язык и формат**
-
-Файл запроса и query должны быть **на языке исследования**.
-Query должен начинаться с явной инструкции: `Язык ответа: <язык>.`
-
-1. Создать файл `data/requests/<slug>.md` на нужном языке
-2. Записать отформатированный запрос в markdown-формате:
-   - Первая строка — краткое описание темы
-   - Пустая строка
-   - Нумерованный список аспектов исследования
-
-Пример файла запроса для русского (`data/requests/<slug>.md`):
-```markdown
-Топ-10 покемонов с наибольшим культурным влиянием на Токио.
-
-Исследовать:
-
-1. Покемоны как символы районов Токио
-2. Использование в городском брендинге
-3. Культовые локации
+Example output:
+```
+Container: research-20241221-1430-clojure-pdf
+Processor: ultra2x
+Time: 5-50 min
+PDF: /Users/chichikov/Work/research/output/2025-12-21_clojure-pdf_3e4fc072/clojure-pdf.pdf [NOT READY]
 ```
 
-Пример query для русского:
-```
-Язык ответа: русский.
+---
 
-Топ-10 покемонов, оказавших культурное влияние на Токио. Исследовать: ...
+## st
+
+List sessions. For each:
+- Topic
+- Status (in_progress % / completed)
+- Full PDF path
+- If file missing — mark [NOT READY]
+
+Example:
+```
+[HITL startups] in_progress (67%)
+  PDF: /Users/chichikov/Work/research/output/2025-12-21_hitl-startups_3e4fc072/hitl-startups.pdf [NOT READY]
+
+[AI coding assistants] completed
+  PDF: /Users/chichikov/Work/research/output/2025-12-20_ai-coding_8f2a1b3c/ai-coding.pdf
 ```
 
-Затем запустить research в фоне одним Docker контейнером:
+---
+
+## pdf
+
+Generate PDF by topic. Find session by meaning (not by ID).
+
+run docker run --rm \
+    -v "$(pwd)/output:/app/output" \
+    -v "$(pwd)/data:/app/data" \
+    research generate {id}
+
+notify pdf_path (full path)
+
+---
+
+## Processors
+
+| Name | Time | Use case |
+|------|------|----------|
+| `pro` | 2-10 min | Default, exploratory |
+| `ultra` | 5-25 min | Multi-source deep |
+| `ultra2x` | 5-50 min | Complex deep research |
+| `ultra4x` | 5-90 min | Very complex |
+| `ultra8x` | 5 min-2 h | Maximum depth |
+
+Tip: add `-fast` for speed (pro-fast, ultra-fast)
+
+---
+
+## Environment
 
 ```bash
-export PARALLEL_API_KEY="<parallel_api_key>"
-export GEMINI_API_KEY="<gemini_api_key>"
-docker build -t research .
-name="research-$(date +%Y%m%d-%H%M%S)-<slug>"
-docker run -d --name "${name}" \
-  -v "$(pwd)/output:/app/output" \
-  -v "$(pwd)/data:/app/data" \
-  -e PARALLEL_API_KEY \
-  -e GEMINI_API_KEY \
-  -e PROCESSOR="pro" \
-  -e LANGUAGE="русский" \
-  research \
-  /app/data/requests/<slug>.md
-```
-
-Логи смотреть в Docker Desktop или через CLI:
-
-```bash
-docker logs -f "${name}"
-docker ps
-```
- 
-Остановить контейнер или сервис:
- 
-```bash
-docker rm -f "${name}"
-```
-
-### Выбор мощности compute (--processor)
-
-| Processor | Время | Цена | Применение |
-|-----------|-------|------|------------|
-| `lite` | 10s-60s | $5/1k | Базовая метадата, низкая латентность |
-| `base` | 15s-100s | $10/1k | Стандартные обогащения |
-| `core` | 1-5 мин | $25/1k | Кросс-референсы, умеренная сложность |
-| `core2x` | 1-10 мин | $50/1k | Высокая сложность |
-| `pro` | 2-10 мин | $100/1k | Exploratory web research (по умолчанию) |
-| `ultra` | 5-25 мин | $300/1k | Multi-source deep research |
-| `ultra2x` | 5-50 мин | $600/1k | Сложный deep research |
-| `ultra4x` | 5-90 мин | $1.2k/1k | Очень сложный deep research |
-| `ultra8x` | 5 мин-2 ч | $2.4k/1k | Максимальная глубина |
-
-**Fast-варианты:** К любому процессору можно добавить `-fast` (например `pro-fast`, `ultra-fast`). Fast-варианты оптимизированы по скорости (2-5x быстрее), стандартные — по свежести данных.
-
-**Рекомендации:**
-- Быстрый обзор темы → `pro-fast`
-- Стандартное исследование → `pro` или `ultra`
-- Глубокий анализ со множеством источников → `ultra2x` или выше
-- Максимальная глубина для сложных тем → `ultra8x`
-
-Скрипт автоматически:
-1. Отправляет запрос в Parallel AI API
-2. Ждёт завершения (30-60 минут)
-3. Сохраняет результаты в research.json
-4. Генерирует PDF в output/reports/
-
-### Фаза 3 — Fork & Continue (КРИТИЧНО)
-
-После запуска research в фоне:
-
-1. **Сообщить пользователю:**
-   - Session ID
-   - Bash ID фонового процесса
-   - Ожидаемое время (~30-60 мин)
-
-2. **НЕ ДЕЛАТЬ:**
-   - Не проверять статус автоматически
-   - Не polling каждые N секунд
-   - Не ждать завершения
-
-3. **СРАЗУ быть готовым к:**
-   - Новому исследованию (форк)
-   - Другим задачам пользователя
-   - Проверке статуса ТОЛЬКО по запросу
-
-### Работа с несколькими исследованиями
-
-Можно запускать несколько исследований параллельно:
-- Каждое в своём background bash
-- Вести список активных сессий
-- Проверять статус только когда пользователь спрашивает
-
-### Проверка статуса (только по запросу)
-
-```bash
-docker run --rm -v "$(pwd)/data:/app/data" research show <id>
-```
-
-## Команды
-
-```bash
-docker build -t research .
-docker run --rm -v "$(pwd)/data:/app/data" research list                                                            # список сессий
-docker run --rm -v "$(pwd)/data:/app/data" research show <id>                                                       # детали сессии
-docker run -d --name "research-$(date +%Y%m%d-%H%M%S)-<slug>" -v "$(pwd)/output:/app/output" -v "$(pwd)/data:/app/data" -e PARALLEL_API_KEY -e GEMINI_API_KEY -e PROCESSOR=pro -e LANGUAGE=русский research /app/data/requests/<slug>.md
-docker run --rm -v "$(pwd)/output:/app/output" -v "$(pwd)/data:/app/data" research generate <id>                     # регенерировать PDF
-docker run --rm -v "$(pwd)/output:/app/output" -v "$(pwd)/data:/app/data" research generate <id> --html              # сгенерировать HTML
-```
-
-## Переменные окружения
-
-```bash
-export PARALLEL_API_KEY="your-api-key"  # Parallel AI API token
+export PARALLEL_API_KEY="..."
+export GEMINI_API_KEY="..."
 ```
