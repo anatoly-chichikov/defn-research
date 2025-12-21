@@ -32,7 +32,7 @@ if printf '%s' "${first}" | awk 'BEGIN{ok=1} /^[[:space:]]*(Язык ответ�
 fi
 
 brief="$(awk 'BEGIN{state=0} {gsub("\r",""); if (state==0) { if ($0 ~ /^[[:space:]]*$/) next; if ($0 ~ /^[[:space:]]*(Язык ответа:|Language:)/) {state=1; next} state=1 } print $0 }' "${request}")"
-topic="$(printf '%s\n' "${brief}" | awk '{if ($0 ~ /^[[:space:]]*$/) next; line=$0; sub(/^[[:space:]]+/,"",line); sub(/[[:space:]]+$/,"",line); print line; exit}')"
+topic="$(printf '%s\n' "${brief}" | awk '{if ($0 ~ /^[[:space:]]*$/) next; line=$0; sub(/^[[:space:]]+/,"",line); sub(/^#+[[:space:]]*/,"",line); sub(/[[:space:]]+$/,"",line); print line; exit}')"
 if [ -z "${topic}" ]; then
   echo "Request file topic was not found" >&2
   exit 2
