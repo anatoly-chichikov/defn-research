@@ -32,6 +32,12 @@ do Identify blind spots
 do Suggest non-obvious angles
 dont Launch immediately — dialog first
 
+brief format:
+- one sentence + "Research:" + flat numbered list
+- dense single-line items, all details via dash/colon in one line
+- no bold, no subheadings, no nested lists, no extra sections
+- language = result language
+
 run docker build -t research .
 run docker run -d --name "research-{timestamp}-{slug}" \
     -v "$(pwd)/output:/app/output" \
