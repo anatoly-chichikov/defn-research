@@ -33,7 +33,10 @@ do Suggest non-obvious angles
 dont Launch immediately — dialog first
 
 brief format:
-- one sentence + "Research:" + flat numbered list
+- short title (max 120 chars, no colons/subtitles) + "Research:" + flat numbered list
+- title = noun phrase, not a question or full sentence
+- bad: "Is AI image generation real creativity or just entertainment?"
+- good: "AI art as creativity"
 - dense single-line items, all details via dash/colon in one line
 - no bold, no subheadings, no nested lists, no extra sections
 - language = result language

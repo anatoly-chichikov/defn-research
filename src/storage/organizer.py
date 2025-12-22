@@ -41,9 +41,32 @@ class OutputOrganizer(Organized):
 
     def _slug(self, text: str) -> str:
         """Convert text to filename-safe slug."""
-        lower = text.lower()
+        transliterated = self._transliterate(text)
+        lower = transliterated.lower()
         cleaned = re.sub(r"[^a-z0-9\s-]", "", lower)
-        return re.sub(r"[\s]+", "-", cleaned)[:40]
+        normalized = re.sub(r"[\s]+", "-", cleaned)
+        return normalized[:40] if normalized else "untitled"
+
+    def _transliterate(self, text: str) -> str:
+        """Transliterate Cyrillic to Latin."""
+        mapping = {
+            'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd',
+            'е': 'e', 'ё': 'yo', 'ж': 'zh', 'з': 'z', 'и': 'i',
+            'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm', 'н': 'n',
+            'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't',
+            'у': 'u', 'ф': 'f', 'х': 'h', 'ц': 'ts', 'ч': 'ch',
+            'ш': 'sh', 'щ': 'sch', 'ъ': '', 'ы': 'y', 'ь': '',
+            'э': 'e', 'ю': 'yu', 'я': 'ya'
+        }
+        result = []
+        for char in text:
+            lower = char.lower()
+            if lower in mapping:
+                mapped = mapping[lower]
+                result.append(mapped.upper() if char.isupper() else mapped)
+            else:
+                result.append(char)
+        return "".join(result)
 
     def response(self, name: str, data: dict) -> Path:
         """Save raw API response as JSON."""

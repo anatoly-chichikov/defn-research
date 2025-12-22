@@ -207,3 +207,37 @@ class TestOrganizerNameHandlesSpecialCharacters:
                 matches_regexp(r"^2025-01-15_[a-z0-9-]+_[a-f0-9]{8}$"),
                 "Name contained invalid characters",
             )
+
+
+class TestOrganizerNameTransliteratesCyrillic:
+    """OutputOrganizer name transliterates Cyrillic to Latin."""
+
+    def test(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            organizer = OutputOrganizer(Path(tmp))
+            created = datetime(2025, 12, 22, 19, 30)
+            topic = "ИИ-арт как творчество"
+            identifier = "bb1ce2e7-1234-5678-9abc-def012345678"
+            name = organizer.name(created, topic, identifier)
+            assert_that(
+                name,
+                equal_to("2025-12-22_ii-art-kak-tvorchestvo_bb1ce2e7"),
+                "Cyrillic topic was not transliterated correctly",
+            )
+
+
+class TestOrganizerNameFallsBackToUntitled:
+    """OutputOrganizer name uses untitled for empty slug."""
+
+    def test(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            organizer = OutputOrganizer(Path(tmp))
+            created = datetime(2025, 12, 22, 19, 30)
+            topic = "中文主題"
+            identifier = "abc12345-1234-5678-9abc-def012345678"
+            name = organizer.name(created, topic, identifier)
+            assert_that(
+                name,
+                equal_to("2025-12-22_untitled_abc12345"),
+                "Empty slug did not fallback to untitled",
+            )
