@@ -17,10 +17,11 @@ class CoverGenerator:
     _QUALITY: Final[int] = 85
 
     def __init__(self) -> None:
-        """Initialize with Gemini client."""
+        """Initialize with Gemini client and load prompt spec."""
         self._client: Final[genai.Client] = genai.Client(
             api_key=os.environ["GEMINI_API_KEY"]
         )
+        self._spec: Final[str] = self._load()
 
     def generate(self, topic: str, target: Path) -> Path:
         """Generate cover image for research topic at target path."""
@@ -49,23 +50,11 @@ class CoverGenerator:
         image = Image.open(buffer)
         image.save(str(target), "JPEG", quality=self._QUALITY)
 
+    def _load(self) -> str:
+        """Load structured prompt template from JSON file."""
+        path = Path(__file__).parent / "prompts" / "cover.json"
+        return path.read_text(encoding="utf-8")
+
     def _prompt(self, topic: str) -> str:
-        """Build prompt for Hokusai-style image."""
-        return (
-            "Edge-to-edge Japanese ukiyo-e woodblock print, 16:9 landscape cover illustration "
-            f'of the concept: "{topic}", in the style of Katsushika Hokusai. '
-            "This is the artwork itself, not a photo or mockup: no frame, no borders, no white "
-            "margins, no wall, no room interior, no table, no hands, no poster or print mockup. "
-            "Traditional Edo-period scene only. Modern topics are shown metaphorically through "
-            "nature or spirits (mountains, waves, storms, clouds, scrolls, roots, spiderweb-like "
-            "networks, lightning, mechanical clockwork), never as literal modern objects such as "
-            "computers, phones, cars, trains, planes, skyscrapers, or contemporary clothing. "
-            'Do not imitate "The Great Wave off Kanagawa": no huge curling foreground wave with '
-            "boats; water, if present, is calm or secondary. "
-            "Flat colors, bold expressive outlines, limited palette (deep Prussian blue, aged "
-            "washi paper cream, faded vermilion, moss green), visible woodblock texture with "
-            "subtle woodgrain, rough paper fibers and small organic imperfections; not vector, "
-            "not glossy, not 3D, not digital UI. "
-            "No text or letters in any language, no calligraphy, no captions, no logos, no "
-            "watermarks, no signatures. Serene, minimal, timeless mood with generous negative space."
-        )
+        """Build prompt by substituting topic into template."""
+        return self._spec % topic
