@@ -92,7 +92,7 @@ class Application:
         print(f"Topic: {topic}")
 
     def research(
-        self, identifier: str, query: str, processor: str, language: str
+        self, identifier: str, query: str, processor: str, language: str, provider: str
     ) -> None:
         """Execute deep research and generate PDF."""
         repository = SessionsRepository(JsonFile(self._data))
@@ -130,6 +130,7 @@ class Application:
             return
         session = session.clear()
         repository.update(session)
+        service = f"{provider}.ai"
         name = self._organizer.name(session.created(), session.topic(), session.id())
         self._organizer.response(name, response.serialize())
         brief = self._root / "data" / "briefs" / f"{session.id()}.md"
@@ -145,6 +146,7 @@ class Application:
             status="completed",
             result=result,
             language=language,
+            service=service,
         )
         updated = session.extend(task)
         repository.update(updated)
@@ -189,6 +191,7 @@ def main() -> None:
     research.add_argument("query", help="Research query")
     research.add_argument("--processor", default="pro", help="Compute: lite, base, core, core2x, pro, ultra, ultra2x, ultra4x, ultra8x (add -fast for speed)")
     research.add_argument("--language", default="русский", help="Research language")
+    research.add_argument("--provider", default="parallel", choices=["parallel", "valyu"], help="Data provider: parallel or valyu")
     args = parser.parse_args()
     app = Application(Path(__file__).parent.parent)
     if args.command == "list":
@@ -200,7 +203,7 @@ def main() -> None:
     elif args.command == "create":
         app.create(args.topic)
     elif args.command == "research":
-        app.research(args.id, args.query, args.processor, args.language)
+        app.research(args.id, args.query, args.processor, args.language, args.provider)
 
 
 if __name__ == "__main__":

@@ -29,7 +29,16 @@ class Queryable(ABC):
         ...
 
 
-class ResearchTask(Identifiable, Queryable, Serializable):
+class Served(ABC):
+    """Object with service name."""
+
+    @abstractmethod
+    def service(self) -> str:
+        """Return service name."""
+        ...
+
+
+class ResearchTask(Identifiable, Queryable, Served, Serializable):
     """Immutable research task with query and result."""
 
     def __init__(
@@ -38,6 +47,7 @@ class ResearchTask(Identifiable, Queryable, Serializable):
         status: str,
         result: TaskResult | None,
         language: str = "русский",
+        service: str = "parallel.ai",
         identifier: str | None = None,
         created: datetime | None = None,
         completed: datetime | None = None,
@@ -48,6 +58,7 @@ class ResearchTask(Identifiable, Queryable, Serializable):
         self._status: Final[str] = status
         self._result: Final[TaskResult | None] = result
         self._language: Final[str] = language
+        self._service: Final[str] = service
         self._created: Final[datetime] = created or datetime.now()
         self._completed: Final[datetime | None] = completed
 
@@ -71,6 +82,10 @@ class ResearchTask(Identifiable, Queryable, Serializable):
         """Return research language."""
         return self._language
 
+    def service(self) -> str:
+        """Return service name."""
+        return self._service
+
     def created(self) -> datetime:
         """Return creation timestamp."""
         return self._created
@@ -86,6 +101,7 @@ class ResearchTask(Identifiable, Queryable, Serializable):
             status="completed",
             result=result,
             language=self._language,
+            service=self._service,
             identifier=self._id,
             created=self._created,
             completed=datetime.now(),
@@ -98,6 +114,7 @@ class ResearchTask(Identifiable, Queryable, Serializable):
             "query": self._query,
             "status": self._status,
             "language": self._language,
+            "service": self._service,
             "created": self._created.isoformat(),
         }
         if self._completed:
@@ -120,6 +137,7 @@ class ResearchTask(Identifiable, Queryable, Serializable):
             status=data["status"],
             result=result,
             language=data.get("language", "русский"),
+            service=data.get("service") or "parallel.ai",
             identifier=data["id"],
             created=datetime.fromisoformat(data["created"]),
             completed=completed,

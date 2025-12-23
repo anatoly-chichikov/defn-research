@@ -35,8 +35,13 @@ When you run `rs <topic>`, the agent walks you through the entire flow — asks 
 
 - Python 3.11+
 - Docker
-- API keys: `PARALLEL_API_KEY`, `GEMINI_API_KEY`
 - An AI coding agent (Claude Code, Cursor, Windsurf, etc.)
+
+## Envs
+
+- `PARALLEL_API_KEY`: Parallel AI API access for research runs
+- `GEMINI_API_KEY`: Gemini API access for cover image generation
+- `REPORT_FOR` (optional): name inserted into report attribution line, empty means no name
 
 ## License
 

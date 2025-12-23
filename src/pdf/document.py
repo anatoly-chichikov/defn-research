@@ -1,6 +1,7 @@
 """PDF document generator for research results."""
 from __future__ import annotations
 
+import os
 import re
 from abc import ABC
 from abc import abstractmethod
@@ -30,16 +31,20 @@ class Signed(ABC):
 class Signature(Signed):
     """Author signature for research documents."""
 
-    def __init__(self, name: str) -> None:
-        """Initialize with author name."""
+    def __init__(self, name: str, service: str) -> None:
+        """Initialize with author name and service."""
         self._name: Final[str] = name
+        self._service: Final[str] = service
 
     def html(self) -> str:
         """Return signature as HTML with author highlighted."""
-        return (
-            f'AI generated research for <span class="author">{self._name}</span>'
-            '<br>May contain inaccuracies, please verify'
-        )
+        return f"{self._label()}<br>May contain inaccuracies, please verify"
+
+    def _label(self) -> str:
+        """Return attribution label with optional author."""
+        if self._name:
+            return f'AI generated report for <span class="author">{self._name}</span> with {self._service}'
+        return f"AI generated report with {self._service}"
 
 
 class Exportable(ABC):
@@ -67,11 +72,12 @@ class ResearchDocument(Exportable):
         self._style: Final[HokusaiStyle] = HokusaiStyle(palette)
         self._wave: Final[WavePattern] = WavePattern(palette)
         self._wavefooter: Final[WaveFooter] = WaveFooter(palette)
-        self._signature: Final[Signature] = Signature("Anatoly Chichikov")
 
     def render(self) -> str:
         """Return complete HTML document."""
         content, urls = self._tasks()
+        signature = Signature(self._author(), self._service())
+        html = signature.html()
         return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -80,13 +86,13 @@ class ResearchDocument(Exportable):
   <style>{self._style.css()}</style>
 </head>
 <body>
-  <div class="page-footer">{self._signature.html()}</div>
+  <div class="page-footer">{html}</div>
   <div class="intro">
     {self._coverimage()}
     <div class="intro-content">
       <h1>{self._escape(self._session.topic())}</h1>
       <div class="meta">
-        <p class="subtitle">{self._signature.html()}</p>
+        <p class="subtitle">{html}</p>
         <p class="date">{self._session.created().strftime("%Y-%m-%d")}</p>
       </div>
     </div>
@@ -117,6 +123,19 @@ class ResearchDocument(Exportable):
         if not self._cover or not self._cover.exists():
             return ""
         return f'<div class="cover-image"><img src="file://{self._cover.absolute()}" alt="Cover"></div>'
+
+    def _author(self) -> str:
+        """Return report author name from environment."""
+        name = os.getenv("REPORT_FOR") or ""
+        return name
+
+    def _service(self) -> str:
+        """Return service name from latest task or fallback."""
+        tasks = self._session.tasks()
+        if tasks:
+            task = tasks[-1]
+            return task.service()
+        return "parallel.ai"
 
     def _brief(self) -> str:
         """Render brief page from file or query fallback."""
@@ -271,4 +290,3 @@ class ResearchDocument(Exportable):
                 wrapped.append(f'<span class="code-line" style="{style}">{stripped}</span>')
             return f'<pre><code>{"".join(wrapped)}</code></pre>'
         return re.sub(r'<pre><code>(.*?)</code></pre>', process, html, flags=re.DOTALL)
-

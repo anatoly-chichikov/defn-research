@@ -1,6 +1,8 @@
 """Tests for ResearchDocument."""
 from __future__ import annotations
 
+import os
+import random
 import tempfile
 import uuid
 from pathlib import Path
@@ -9,6 +11,7 @@ import pytest
 from hamcrest import assert_that
 from hamcrest import contains_string
 from hamcrest import is_
+from hamcrest import not_
 
 from src.domain.result import TaskResult
 from src.domain.session import ResearchSession
@@ -54,6 +57,98 @@ class TestResearchDocumentRenderContainsTopic:
             contains_string(topic),
             "Rendered document did not contain topic",
         )
+
+
+class Test_research_document_renders_author_name_from_environment:
+    """ResearchDocument render includes author name from environment."""
+
+    def test(self) -> None:
+        seed = sum(ord(c) for c in __name__)
+        generator = random.Random(seed)
+        name = "".join(chr(generator.randrange(0x0400, 0x04ff)) for _ in range(6))
+        service = "".join(chr(generator.randrange(0x3040, 0x309f)) for _ in range(4))
+        value = "".join(chr(generator.randrange(0x0370, 0x03ff)) for _ in range(5))
+        os.environ["REPORT_FOR"] = name
+        result = TaskResult(summary=value, sources=tuple())
+        task = ResearchTask(query=value, status="completed", result=result, language=value, service=service)
+        session = ResearchSession(topic=value, tasks=(task,))
+        path = Path(tempfile.gettempdir()) / f"{generator.randrange(1000000)}.png"
+        document = ResearchDocument(session, HokusaiPalette(), path)
+        html = document.render()
+        assert_that(html, contains_string(name), "Author name was missing")
+
+
+class Test_research_document_renders_service_name:
+    """ResearchDocument render includes service name."""
+
+    def test(self) -> None:
+        seed = sum(ord(c) for c in __name__) + 1
+        generator = random.Random(seed)
+        name = "".join(chr(generator.randrange(0x0400, 0x04ff)) for _ in range(6))
+        service = "parallel.ai"
+        value = "".join(chr(generator.randrange(0x0370, 0x03ff)) for _ in range(5))
+        os.environ["REPORT_FOR"] = name
+        result = TaskResult(summary=value, sources=tuple())
+        task = ResearchTask(query=value, status="completed", result=result, language=value, service=service)
+        session = ResearchSession(topic=value, tasks=(task,))
+        path = Path(tempfile.gettempdir()) / f"{generator.randrange(1000000)}.png"
+        document = ResearchDocument(session, HokusaiPalette(), path)
+        html = document.render()
+        assert_that(html, contains_string(service), "Service name was missing")
+
+
+class Test_research_document_renders_parallel_domain:
+    """ResearchDocument render includes parallel domain."""
+
+    def test(self) -> None:
+        seed = sum(ord(c) for c in __name__) + 3
+        generator = random.Random(seed)
+        name = "".join(chr(generator.randrange(0x0400, 0x04ff)) for _ in range(6))
+        value = "".join(chr(generator.randrange(0x0370, 0x03ff)) for _ in range(5))
+        os.environ["REPORT_FOR"] = name
+        result = TaskResult(summary=value, sources=tuple())
+        task = ResearchTask(query=value, status="completed", result=result, language=value, service="parallel.ai")
+        session = ResearchSession(topic=value, tasks=(task,))
+        path = Path(tempfile.gettempdir()) / f"{generator.randrange(1000000)}.png"
+        document = ResearchDocument(session, HokusaiPalette(), path)
+        html = document.render()
+        assert_that(html, contains_string("parallel.ai"), "Parallel domain was missing")
+
+
+class Test_research_document_renders_valyu_domain:
+    """ResearchDocument render includes valyu domain."""
+
+    def test(self) -> None:
+        seed = sum(ord(c) for c in __name__) + 4
+        generator = random.Random(seed)
+        name = "".join(chr(generator.randrange(0x0400, 0x04ff)) for _ in range(6))
+        value = "".join(chr(generator.randrange(0x0370, 0x03ff)) for _ in range(5))
+        os.environ["REPORT_FOR"] = name
+        result = TaskResult(summary=value, sources=tuple())
+        task = ResearchTask(query=value, status="completed", result=result, language=value, service="valyu.ai")
+        session = ResearchSession(topic=value, tasks=(task,))
+        path = Path(tempfile.gettempdir()) / f"{generator.randrange(1000000)}.png"
+        document = ResearchDocument(session, HokusaiPalette(), path)
+        html = document.render()
+        assert_that(html, contains_string("valyu.ai"), "Valyu domain was missing")
+
+
+class Test_research_document_omits_author_when_name_missing:
+    """ResearchDocument render omits author span when author is missing."""
+
+    def test(self) -> None:
+        seed = sum(ord(c) for c in __name__) + 2
+        generator = random.Random(seed)
+        service = "".join(chr(generator.randrange(0x3040, 0x309f)) for _ in range(4))
+        value = "".join(chr(generator.randrange(0x0370, 0x03ff)) for _ in range(5))
+        os.environ["REPORT_FOR"] = ""
+        result = TaskResult(summary=value, sources=tuple())
+        task = ResearchTask(query=value, status="completed", result=result, language=value, service=service)
+        session = ResearchSession(topic=value, tasks=(task,))
+        path = Path(tempfile.gettempdir()) / f"{generator.randrange(1000000)}.png"
+        document = ResearchDocument(session, HokusaiPalette(), path)
+        html = document.render()
+        assert_that(html, not_(contains_string('<span class="author">')), "Author span was present")
 
 
 class TestResearchDocumentRenderContainsTaskQuery:
@@ -369,5 +464,3 @@ class TestResearchDocumentBriefNormalizesNumberedLists:
             contains_string("<ol>"),
             "Brief did not render numbered list as <ol>",
         )
-
-
