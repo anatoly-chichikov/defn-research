@@ -23,7 +23,11 @@ If something breaks (environment issues, missing dependencies, config problems),
 
 ## The DSL
 
-Check `CLAUDE.md` for the agent's instruction set. It's simple — a few commands like `rs <topic>` for new research, `st` for status, `pdf <topic>` for generation. The agent picks it up quickly.
+Check `CLAUDE.md` for the agent's instruction set. It's simple — a few commands like:
+- `rs <topic>` for new research
+- `st` for status
+- `pdf <topic>` for regeneration if needed. 
+The agent will understand what to do even with incomplete or vague inputs.
 
 When you run `rs <topic>`, the agent walks you through the entire flow — asks about language, depth, refines the topic with you. At the end, you get a ready PDF in the output folder.
 
