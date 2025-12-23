@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from abc import ABC
 from abc import abstractmethod
+import re
 from typing import Final
 
 
@@ -107,7 +108,10 @@ class TaskResult(Summarized, Serializable):
 
     def summary(self) -> str:
         """Return synthesis of findings."""
-        return self._summary
+        text = self._summary
+        pattern = r'(^|\n)#{1,6}\s*Sources?\s*\n.*?(?=\n#{1,6}\s|\Z)'
+        text = re.sub(pattern, '', text, flags=re.DOTALL | re.IGNORECASE)
+        return text
 
     def sources(self) -> tuple[Source, ...]:
         """Return tuple of sources."""

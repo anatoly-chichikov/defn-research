@@ -1,13 +1,16 @@
 """Tests for ResearchResponse domain object."""
 from __future__ import annotations
 
+import random
 import uuid
 from unittest.mock import MagicMock
 
 from hamcrest import assert_that
+from hamcrest import contains_string
 from hamcrest import equal_to
 from hamcrest import has_length
 from hamcrest import is_
+from hamcrest import not_
 from parallel.types import TaskRunTextOutput
 
 from src.api.response import ResearchResponse
@@ -219,4 +222,78 @@ class TestResearchResponseHandlesMissingConfidence:
             response.sources()[0].confidence(),
             equal_to(None),
             "Source confidence was not None when FieldBasis lacks confidence",
+        )
+
+
+class Test_research_response_returns_cost:
+    """ResearchResponse returns total cost."""
+
+    def test(self) -> None:
+        """ResearchResponse returns total cost."""
+        seed = sum(ord(c) for c in __name__) + 17
+        generator = random.Random(seed)
+        value = round(generator.random() * 100, 2)
+        output = f"Отчет-{generator.randrange(1000)}"
+        response = ResearchResponse(
+            identifier=f"trun_{generator.randrange(100000)}",
+            status="completed",
+            output=output,
+            basis=[],
+            cost=value,
+        )
+        assert_that(
+            response.cost(),
+            equal_to(value),
+            "cost() did not return expected value",
+        )
+
+
+class Test_research_response_strips_utm_parameters_from_markdown:
+    """ResearchResponse strips utm parameters from markdown."""
+
+    def test(self) -> None:
+        """ResearchResponse strips utm parameters from markdown."""
+        seed = sum(ord(c) for c in __name__) + 19
+        generator = random.Random(seed)
+        slug = "".join(chr(generator.randrange(0x0400, 0x04ff)) for _ in range(6))
+        link = f"https://example.com/{generator.randrange(1000)}?utm_source=valyu.ai&utm_medium=referral&x={generator.randrange(9)}"
+        output = f"Источники {slug}\n1. {link}"
+        response = ResearchResponse(
+            identifier=f"trun_{generator.randrange(100000)}",
+            status="completed",
+            output=output,
+            basis=[],
+        )
+        assert_that(
+            response.markdown(),
+            not_(contains_string("utm_source")),
+            "utm parameters were not stripped from markdown",
+        )
+
+
+class Test_research_response_strips_utm_parameters_from_sources:
+    """ResearchResponse strips utm parameters from sources."""
+
+    def test(self) -> None:
+        """ResearchResponse strips utm parameters from sources."""
+        seed = sum(ord(c) for c in __name__) + 29
+        generator = random.Random(seed)
+        slug = "".join(chr(generator.randrange(0x3040, 0x309f)) for _ in range(5))
+        link = f"https://example.com/{generator.randrange(1000)}?utm_source=valyu.ai&utm_medium=referral&x={generator.randrange(9)}"
+        citation = MagicMock()
+        citation.url = link
+        citation.title = slug
+        citation.excerpts = [slug]
+        field = MagicMock()
+        field.citations = [citation]
+        response = ResearchResponse(
+            identifier=f"trun_{generator.randrange(100000)}",
+            status="completed",
+            output=slug,
+            basis=[field],
+        )
+        assert_that(
+            response.sources()[0].url(),
+            not_(contains_string("utm_source")),
+            "utm parameters were not stripped from sources",
         )

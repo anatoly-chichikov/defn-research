@@ -1,13 +1,16 @@
 """Tests for TaskResult and Source domain objects."""
 from __future__ import annotations
 
+import random
 import uuid
 
 from hamcrest import assert_that
+from hamcrest import contains_string
 from hamcrest import equal_to
 from hamcrest import has_length
 from hamcrest import is_
 from hamcrest import is_not
+from hamcrest import not_
 from hamcrest import starts_with
 
 from src.domain.result import Source
@@ -77,6 +80,24 @@ class TestTaskResultReturnsSummary:
             result.summary(),
             equal_to(summary),
             "TaskResult summary did not match provided value",
+        )
+
+
+class Test_task_result_strips_sources_section:
+    """TaskResult strips Sources section from summary."""
+
+    def test(self) -> None:
+        """TaskResult strips Sources section from summary."""
+        seed = sum(ord(c) for c in __name__) + 33
+        generator = random.Random(seed)
+        slug = "".join(chr(generator.randrange(0x0400, 0x04ff)) for _ in range(6))
+        link = f"https://example.com/{generator.randrange(1000)}"
+        summary = f"Введение {slug}\n\n## Sources\n1. {link}"
+        result = TaskResult(summary=summary, sources=tuple())
+        assert_that(
+            result.summary(),
+            not_(contains_string("## Sources")),
+            "Sources section was not stripped",
         )
 
 

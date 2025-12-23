@@ -7,7 +7,10 @@ from abc import ABC
 from abc import abstractmethod
 from pathlib import Path
 from typing import Final
+from urllib.parse import parse_qsl
+from urllib.parse import urlencode
 from urllib.parse import urlparse
+from urllib.parse import urlunparse
 
 import markdown
 from weasyprint import HTML
@@ -186,6 +189,7 @@ class ResearchDocument(Exportable):
         urls: list[str] = []
         if result:
             text = result.summary()
+            text = self._clean(text)
             text, urls = self._citations(text, result.sources())
             text = self._strip(text)
             text = self._nested(text)
@@ -216,21 +220,63 @@ class ResearchDocument(Exportable):
             .replace('"', "&quot;")
         )
 
+    def _clean(self, text: str) -> str:
+        """Remove tracking parameters from URLs in text."""
+        pattern = r"https?://[^\s\)\]]+"
+        result: list[str] = []
+        last = 0
+        for match in re.finditer(pattern, text):
+            result.append(text[last:match.start()])
+            result.append(self._trim(match.group(0)))
+            last = match.end()
+        result.append(text[last:])
+        return "".join(result)
+
+    def _trim(self, url: str) -> str:
+        """Remove utm parameters from URL."""
+        parts = urlparse(url)
+        if not parts.query:
+            return url
+        items = parse_qsl(parts.query, keep_blank_values=True)
+        keep = [(key, value) for key, value in items if not key.lower().startswith("utm_")]
+        query = urlencode(keep, doseq=True)
+        parts = parts._replace(query=query)
+        return urlunparse(parts)
+
     def _citations(self, text: str, sources: tuple = ()) -> tuple[str, list[str]]:
         """Convert [N] references to clickable links with confidence badges."""
         refs = self._references(text)
-        confidence_map = {s.url(): s.confidence() for s in sources}
+        confidence_map = {self._trim(s.url()): s.confidence() for s in sources}
         urls: list[str] = []
+        tokens: dict[str, tuple[str, str]] = {}
+        index = 0
+        def stash(match: re.Match) -> str:
+            nonlocal index
+            num = match.group(1)
+            url = self._trim(match.group(2))
+            token = f"@@CITE{index}@@"
+            tokens[token] = (num, url)
+            index += 1
+            return token
+        staged = re.sub(r'\[\[(\d+)\]\]\((https?://[^)\s]+)\)', stash, text)
+        staged = re.sub(r'\[(\d+)\]\((https?://[^)\s]+)\)', stash, staged)
         def replace(match: re.Match) -> str:
             num = int(match.group(1))
             url = refs.get(num)
             if url:
+                url = self._trim(url)
                 if url not in urls:
                     urls.append(url)
                 badge = self._badge(confidence_map.get(url))
                 return f'<a href="{url}" class="cite" target="_blank">[{num}]</a>{badge}'
             return match.group(0)
-        processed = re.sub(r'\[(\d+)\]', replace, text)
+        processed = re.sub(r'\[(\d+)\]', replace, staged)
+        for token, payload in tokens.items():
+            num, url = payload
+            if url not in urls:
+                urls.append(url)
+            badge = self._badge(confidence_map.get(url))
+            processed = processed.replace(token, f'<a href="{url}" class="cite" target="_blank">[{num}]</a>{badge}')
         return processed, urls
 
     def _references(self, text: str) -> dict[int, str]:

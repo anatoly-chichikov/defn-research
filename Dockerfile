@@ -29,7 +29,4 @@ RUN uv sync --frozen --no-dev
 COPY src ./src
 COPY data ./data
 
-COPY entrypoint.sh ./entrypoint.sh
-RUN chmod +x ./entrypoint.sh
-
-ENTRYPOINT ["./entrypoint.sh"]
+ENTRYPOINT ["uv", "run", "--frozen", "--no-dev", "--no-sync", "python", "-m", "src.main"]

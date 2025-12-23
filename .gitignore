@@ -37,3 +37,4 @@ output/
 
 # Codex
 tmp_codex_schema/
+tmp_*/

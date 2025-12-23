@@ -40,6 +40,7 @@ When you run `rs <topic>`, the agent walks you through the entire flow — asks 
 ## Envs
 
 - `PARALLEL_API_KEY`: Parallel AI API access for research runs
+- `VALYU_API_KEY`: Valyu API access for research runs
 - `GEMINI_API_KEY`: Gemini API access for cover image generation
 - `REPORT_FOR` (optional): name inserted into report attribution line, empty means no name
 

@@ -1,1 +1,1 @@
-"""Parallel AI API client for deep research."""
+"""API clients for deep research."""

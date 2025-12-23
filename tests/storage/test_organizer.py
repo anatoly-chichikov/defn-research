@@ -24,8 +24,9 @@ class TestOrganizerCreatesFolderForSession:
     def test(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             identifier = str(uuid.uuid4())
+            provider = "параллель"
             organizer = OutputOrganizer(Path(tmp))
-            folder = organizer.folder(identifier)
+            folder = organizer.folder(identifier, provider)
             assert_that(
                 folder.exists(),
                 is_(True),
@@ -39,8 +40,9 @@ class TestOrganizerFolderContainsIdentifier:
     def test(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             identifier = str(uuid.uuid4())
+            provider = "valyu"
             organizer = OutputOrganizer(Path(tmp))
-            folder = organizer.folder(identifier)
+            folder = organizer.folder(identifier, provider)
             assert_that(
                 str(folder),
                 contains_string(identifier),
@@ -54,9 +56,10 @@ class TestOrganizerSavesResponseAsJson:
     def test(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             identifier = str(uuid.uuid4())
+            provider = "valyu"
             organizer = OutputOrganizer(Path(tmp))
             key = f"test-{uuid.uuid4()}"
-            path = organizer.response(identifier, {key: "données"})
+            path = organizer.response(identifier, provider, {key: "données"})
             with path.open("r", encoding="utf-8") as handle:
                 data = json.load(handle)
             assert_that(
@@ -72,8 +75,9 @@ class TestOrganizerResponseCreatesFolder:
     def test(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             identifier = str(uuid.uuid4())
+            provider = "parallel"
             organizer = OutputOrganizer(Path(tmp))
-            path = organizer.response(identifier, {"created": True})
+            path = organizer.response(identifier, provider, {"created": True})
             assert_that(
                 path.parent.exists(),
                 is_(True),
@@ -87,8 +91,9 @@ class TestOrganizerCoverReturnsJpgPath:
     def test(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             identifier = str(uuid.uuid4())
+            provider = "parallel"
             organizer = OutputOrganizer(Path(tmp))
-            path = organizer.cover(identifier)
+            path = organizer.cover(identifier, provider)
             assert_that(
                 path.suffix,
                 equal_to(".jpg"),
@@ -102,8 +107,9 @@ class TestOrganizerReportReturnsPdfPath:
     def test(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             identifier = str(uuid.uuid4())
+            provider = "parallel"
             organizer = OutputOrganizer(Path(tmp))
-            path = organizer.report(identifier)
+            path = organizer.report(identifier, provider)
             assert_that(
                 path.suffix,
                 equal_to(".pdf"),
@@ -117,8 +123,9 @@ class TestOrganizerHtmlReturnsHtmlPath:
     def test(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             identifier = str(uuid.uuid4())
+            provider = "parallel"
             organizer = OutputOrganizer(Path(tmp))
-            path = organizer.html(identifier)
+            path = organizer.html(identifier, provider)
             assert_that(
                 path.suffix,
                 equal_to(".html"),
@@ -132,8 +139,9 @@ class TestOrganizerExistingReturnsNoneForMissing:
     def test(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             identifier = str(uuid.uuid4())
+            provider = "valyu"
             organizer = OutputOrganizer(Path(tmp))
-            result = organizer.existing(identifier)
+            result = organizer.existing(identifier, provider)
             assert_that(
                 result,
                 is_(none()),
@@ -147,11 +155,12 @@ class TestOrganizerExistingReturnsPathWhenExists:
     def test(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             identifier = str(uuid.uuid4())
+            provider = "valyu"
             organizer = OutputOrganizer(Path(tmp))
-            cover = organizer.cover(identifier)
+            cover = organizer.cover(identifier, provider)
             cover.parent.mkdir(parents=True, exist_ok=True)
             cover.write_text("fake image")
-            result = organizer.existing(identifier)
+            result = organizer.existing(identifier, provider)
             assert_that(
                 result,
                 is_not(none()),
@@ -165,9 +174,10 @@ class TestOrganizerSavesBriefAsMarkdown:
     def test(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             identifier = str(uuid.uuid4())
+            provider = "параллель"
             organizer = OutputOrganizer(Path(tmp))
             content = f"# Test Brief\n\nСодержимое {uuid.uuid4()}"
-            path = organizer.brief(identifier, content)
+            path = organizer.brief(identifier, provider, content)
             assert_that(
                 path.read_text(encoding="utf-8"),
                 equal_to(content),

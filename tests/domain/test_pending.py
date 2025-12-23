@@ -1,6 +1,7 @@
 """Tests for PendingRun domain object."""
 from __future__ import annotations
 
+import random
 import uuid
 
 from hamcrest import assert_that
@@ -20,6 +21,7 @@ class TestPendingRunReturnsIdentifier:
             query="test query",
             processor="pro",
             language="english",
+            provider="parallel",
         )
         assert_that(
             pending.identifier(),
@@ -38,6 +40,7 @@ class TestPendingRunReturnsQuery:
             query=query,
             processor="pro",
             language="english",
+            provider="parallel",
         )
         assert_that(
             pending.query(),
@@ -56,6 +59,7 @@ class TestPendingRunReturnsProcessor:
             query="test",
             processor=processor,
             language="english",
+            provider="parallel",
         )
         assert_that(
             pending.processor(),
@@ -74,6 +78,7 @@ class TestPendingRunReturnsLanguage:
             query="test",
             processor="pro",
             language=language,
+            provider="parallel",
         )
         assert_that(
             pending.language(),
@@ -91,6 +96,7 @@ class TestPendingRunSerializesCorrectly:
             query="test query",
             processor="ultra",
             language="русский",
+            provider="parallel",
         )
         data = pending.serialize()
         assert_that(data, has_key("run_id"), "serialize() missing run_id")
@@ -115,4 +121,55 @@ class TestPendingRunDeserializesCorrectly:
             pending.identifier(),
             equal_to(identifier),
             "deserialize() did not restore identifier",
+        )
+
+
+class Test_pending_run_returns_provider:
+    """PendingRun returns provider name."""
+
+    def test(self) -> None:
+        """PendingRun returns provider name."""
+        seed = sum(ord(c) for c in __name__) + 11
+        generator = random.Random(seed)
+        name = "".join(chr(generator.randrange(0x0400, 0x04ff)) for _ in range(6))
+        query = "".join(chr(generator.randrange(0x0370, 0x03ff)) for _ in range(5))
+        processor = f"lite-{generator.randrange(1000)}"
+        language = f"lang-{generator.randrange(1000)}"
+        pending = PendingRun(
+            identifier=f"trun_{generator.randrange(100000)}",
+            query=query,
+            processor=processor,
+            language=language,
+            provider=name,
+        )
+        assert_that(
+            pending.provider(),
+            equal_to(name),
+            "provider() did not return provided value",
+        )
+
+
+class Test_pending_run_serializes_provider:
+    """PendingRun serializes provider name."""
+
+    def test(self) -> None:
+        """PendingRun serializes provider name."""
+        seed = sum(ord(c) for c in __name__) + 13
+        generator = random.Random(seed)
+        name = "".join(chr(generator.randrange(0x3040, 0x309f)) for _ in range(4))
+        query = "".join(chr(generator.randrange(0x0370, 0x03ff)) for _ in range(6))
+        processor = f"core-{generator.randrange(1000)}"
+        language = f"lang-{generator.randrange(1000)}"
+        pending = PendingRun(
+            identifier=f"trun_{generator.randrange(100000)}",
+            query=query,
+            processor=processor,
+            language=language,
+            provider=name,
+        )
+        data = pending.serialize()
+        assert_that(
+            data["provider"],
+            equal_to(name),
+            "serialize() did not include provider",
         )

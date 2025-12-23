@@ -13,6 +13,7 @@ from hamcrest import contains_string
 from hamcrest import is_
 from hamcrest import not_
 
+from src.domain.result import Source
 from src.domain.result import TaskResult
 from src.domain.session import ResearchSession
 from src.domain.task import ResearchTask
@@ -179,6 +180,51 @@ class TestResearchDocumentRenderContainsSynthesis:
             document.render(),
             contains_string(summary),
             "Rendered document did not contain synthesis",
+        )
+
+
+class Test_research_document_renders_confidence_badge_for_trimmed_urls:
+    """ResearchDocument renders confidence badges for trimmed URLs."""
+
+    def test(self) -> None:
+        """ResearchDocument renders confidence badges for trimmed URLs."""
+        seed = sum(ord(c) for c in __name__) + 35
+        generator = random.Random(seed)
+        text = "".join(chr(generator.randrange(0x0400, 0x04ff)) for _ in range(5))
+        url = f"https://example.com/{generator.randrange(1000)}?utm_source=valyu.ai&utm_medium=referral"
+        source = Source(title=text, url=url, excerpt=text, confidence="High")
+        summary = f"{text}\n\n## References\n1. {url}"
+        result = TaskResult(summary=summary, sources=(source,))
+        task = ResearchTask(query=text, status="completed", result=result)
+        session = ResearchSession(topic=text, tasks=(task,), )
+        document = ResearchDocument(session, HokusaiPalette())
+        html = document.render()
+        assert_that(
+            html,
+            contains_string("confidence-high"),
+            "Confidence badge was missing",
+        )
+
+
+class Test_research_document_strips_utm_parameters_from_urls:
+    """ResearchDocument render strips utm parameters from URLs."""
+
+    def test(self) -> None:
+        """ResearchDocument render strips utm parameters from URLs."""
+        seed = sum(ord(c) for c in __name__) + 31
+        generator = random.Random(seed)
+        slug = "".join(chr(generator.randrange(0x0400, 0x04ff)) for _ in range(5))
+        link = f"https://example.com/{generator.randrange(1000)}?utm_source=valyu.ai&utm_medium=referral&x={generator.randrange(9)}"
+        summary = f"Sources\n1. {link}\n2. {slug}"
+        result = TaskResult(summary=summary, sources=tuple())
+        task = ResearchTask(query=slug, status="completed", result=result)
+        session = ResearchSession(topic=slug, tasks=(task,), )
+        document = ResearchDocument(session, HokusaiPalette())
+        html = document.render()
+        assert_that(
+            html,
+            not_(contains_string("utm_source")),
+            "utm parameters were not stripped from document",
         )
 
 

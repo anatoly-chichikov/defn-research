@@ -25,12 +25,21 @@ ask language Which language for the result?
 
 After language selected — switch all follow-up questions to that language.
 
-ask processor What compute level? (pro/ultra/ultra2x)
+ask provider Which data provider?
+  - parallel
+  - valyu
+
+ask processor What compute level? (parallel: pro/ultra/ultra2x, valyu: lite/heavy)
 
 do Help refine the topic
 do Identify blind spots
 do Suggest non-obvious angles
 dont Launch immediately — dialog first
+
+If user asks for two runs at once:
+- ask the same questions twice, explicitly for run A then run B (no multi-select)
+- collect params for run A and run B (topic, language, provider, processor)
+- start two docker containers (different names) and report both
 
 brief format:
 - short title (max 120 chars, no colons/subtitles) + "Research:" + flat numbered list
@@ -42,12 +51,14 @@ brief format:
 - language = result language
 
 run docker build -t research .
+query="Язык ответа: {language}.\n\n{brief}"
 run docker run -d --name "research-{timestamp}-{slug}" \
     -v "$(pwd)/output:/app/output" \
     -v "$(pwd)/data:/app/data" \
-    -e PARALLEL_API_KEY -e GEMINI_API_KEY \
-    -e PROCESSOR="{processor}" -e LANGUAGE="{language}" \
-    research /app/data/requests/{slug}.md
+    -e PARALLEL_API_KEY -e VALYU_API_KEY -e GEMINI_API_KEY \
+    research run "{topic}" "{query}" --processor "{processor}" --language "{language}" --provider "{provider}"
+
+If two runs requested, run the command twice with different {timestamp}-{slug} values.
 
 notify container_name
 notify estimated_time
@@ -57,8 +68,9 @@ Example output:
 ```
 Container: research-20241221-1430-clojure-pdf
 Processor: ultra2x
+Provider: parallel
 Time: 5-50 min
-PDF: /Users/chichikov/Work/research/output/2025-12-21_clojure-pdf_3e4fc072/clojure-pdf.pdf [NOT READY]
+PDF: /Users/chichikov/Work/research/output/2025-12-21_clojure-pdf_3e4fc072/parallel/2025-12-21_clojure-pdf.pdf [NOT READY]
 ```
 
 ---
@@ -74,10 +86,10 @@ List sessions. For each:
 Example:
 ```
 [HITL startups] in_progress (67%)
-  PDF: /Users/chichikov/Work/research/output/2025-12-21_hitl-startups_3e4fc072/hitl-startups.pdf [NOT READY]
+  PDF: /Users/chichikov/Work/research/output/2025-12-21_hitl-startups_3e4fc072/parallel/2025-12-21_hitl-startups.pdf [NOT READY]
 
 [AI coding assistants] completed
-  PDF: /Users/chichikov/Work/research/output/2025-12-20_ai-coding_8f2a1b3c/ai-coding.pdf
+  PDF: /Users/chichikov/Work/research/output/2025-12-20_ai-coding_8f2a1b3c/parallel/2025-12-20_ai-coding.pdf
 ```
 
 ---
@@ -95,7 +107,7 @@ notify pdf_path (full path)
 
 ---
 
-## Processors
+## Parallel processors
 
 | Name | Time | Use case |
 |------|------|----------|
@@ -107,11 +119,19 @@ notify pdf_path (full path)
 
 Tip: add `-fast` for speed (pro-fast, ultra-fast)
 
+## Valyu models
+
+| Name | Use case |
+|------|----------|
+| `lite` | Faster, lighter research |
+| `heavy` | Deeper, more thorough |
+
 ---
 
 ## Environment
 
 ```bash
 export PARALLEL_API_KEY="..."
+export VALYU_API_KEY="..."
 export GEMINI_API_KEY="..."
 ```

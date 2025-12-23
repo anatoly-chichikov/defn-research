@@ -279,6 +279,10 @@ p {{
   background: #D94537;  /* Shu-iro 朱色 — vermillion */
 }}
 
+.confidence-unknown {{
+  background: #8A8F98;
+}}
+
 .divider {{
   height: 2px;
   background: linear-gradient(90deg, transparent 0%, var(--accent) 50%, transparent 100%);

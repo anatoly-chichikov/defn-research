@@ -116,7 +116,7 @@ class TestResearchSessionStartSetsPendingRun:
 
     def test(self) -> None:
         session = ResearchSession(topic="t", tasks=tuple())
-        pending = PendingRun("trun_x", "query", "pro", "english")
+        pending = PendingRun("trun_x", "query", "pro", "english", "parallel")
         updated = session.start(pending)
         assert_that(
             updated.pending().identifier(),
@@ -129,7 +129,7 @@ class TestResearchSessionClearRemovesPending:
     """ResearchSession.clear removes pending run."""
 
     def test(self) -> None:
-        pending = PendingRun("trun_x", "query", "pro", "english")
+        pending = PendingRun("trun_x", "query", "pro", "english", "parallel")
         session = ResearchSession(topic="t", tasks=tuple(), pending=pending)
         cleared = session.clear()
         assert_that(
@@ -143,7 +143,7 @@ class TestResearchSessionSerializesPending:
     """ResearchSession serializes pending run."""
 
     def test(self) -> None:
-        pending = PendingRun("trun_123", "q", "pro", "en")
+        pending = PendingRun("trun_123", "q", "pro", "en", "parallel")
         session = ResearchSession(topic="t", tasks=tuple(), pending=pending)
         data = session.serialize()
         assert_that(

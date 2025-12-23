@@ -12,6 +12,7 @@ from typing import Final
 
 from src.api.client import ParallelClient
 from src.api.research import DeepResearch
+from src.api.valyu import ValyuResearch
 from src.domain.pending import PendingRun
 from src.domain.result import TaskResult
 from src.domain.session import ResearchSession
@@ -31,7 +32,7 @@ class Application:
         """Initialize with project root path."""
         self._root: Final[Path] = root
         self._data: Final[Path] = root / "data" / "research.json"
-        self._organizer: Final[OutputOrganizer] = OutputOrganizer(root / "output")
+        self._output: Final[Path] = root / "output"
 
     def list(self) -> None:
         """List all research sessions."""
@@ -71,25 +72,29 @@ class Application:
         if not session:
             print(f"Session not found: {identifier}")
             return
-        name = self._organizer.name(session.created(), session.topic(), session.id())
-        cover = self._organizer.existing(name)
+        provider = self._provider(session)
+        organizer = self._organizer()
+        name = organizer.name(session.created(), session.topic(), session.id())
+        cover = organizer.existing(name, provider)
         document = ResearchDocument(session, HokusaiPalette(), cover)
         if html:
-            path = self._organizer.html(name)
+            path = organizer.html(name, provider)
             document.html(path)
             print(f"HTML saved: {path}")
         else:
-            path = self._organizer.report(name)
+            path = organizer.report(name, provider)
             document.save(path)
             print(f"PDF saved: {path}")
 
-    def create(self, topic: str) -> None:
+    def create(self, topic: str) -> str:
         """Create new research session."""
         repository = SessionsRepository(JsonFile(self._data))
         session = ResearchSession(topic=topic, tasks=tuple())
         repository.append(session)
-        print(f"Created session: {session.id()[:8]}")
+        token = session.id()[:8]
+        print(f"Created session: {token}")
         print(f"Topic: {topic}")
+        return token
 
     def research(
         self, identifier: str, query: str, processor: str, language: str, provider: str
@@ -101,14 +106,13 @@ class Application:
             print(f"Session not found: {identifier}")
             return
         print(f"Session: {session.topic()}")
-        client = ParallelClient.create()
-        executor = DeepResearch(client)
         pending = session.pending()
         if pending:
             run_id = pending.identifier()
             query = pending.query()
             processor = pending.processor()
             language = pending.language()
+            provider = pending.provider()
             print(f"Resuming run: {run_id[:16]}...")
             print(f"Query: {query}")
             print(f"Processor: {processor}")
@@ -116,11 +120,15 @@ class Application:
             print(f"Query: {query}")
             print(f"Processor: {processor}")
             print(f"Language: {language}")
+            provider = self._resolve(provider, processor)
+            processor = self._model(provider, processor)
+            executor = self._executor(provider)
             run_id = executor.start(query, processor)
             print(f"Research started: {run_id}")
-            pending = PendingRun(run_id, query, processor, language)
+            pending = PendingRun(run_id, query, processor, language, provider)
             session = session.start(pending)
             repository.update(session)
+        executor = self._executor(provider)
         print("Streaming progress...", flush=True)
         executor.stream(run_id)
         print("Fetching result...", flush=True)
@@ -131,12 +139,13 @@ class Application:
         session = session.clear()
         repository.update(session)
         service = f"{provider}.ai"
-        name = self._organizer.name(session.created(), session.topic(), session.id())
-        self._organizer.response(name, response.serialize())
+        organizer = self._organizer()
+        name = organizer.name(session.created(), session.topic(), session.id())
+        organizer.response(name, provider, response.serialize())
         brief = self._root / "data" / "briefs" / f"{session.id()}.md"
         if brief.exists():
-            self._organizer.brief(name, brief.read_text(encoding="utf-8"))
-        print(f"Response saved: {self._organizer.folder(name)}")
+            organizer.brief(name, provider, brief.read_text(encoding="utf-8"))
+        print(f"Response saved: {organizer.folder(name, provider)}")
         result = TaskResult(
             summary=response.markdown(),
             sources=response.sources(),
@@ -152,14 +161,19 @@ class Application:
         repository.update(updated)
         print(f"Results saved: {len(response.sources())} sources")
         print("Generating cover image...")
-        cover = self._organizer.cover(name)
+        cover = organizer.cover(name, provider)
         generator = CoverGenerator()
         generator.generate(session.topic(), cover)
         print(f"Cover generated: {cover}")
-        path = self._organizer.report(name)
+        path = organizer.report(name, provider)
         document = ResearchDocument(updated, HokusaiPalette(), cover)
         document.save(path)
         print(f"PDF generated: {path}")
+
+    def _run(self, topic: str, query: str, processor: str, language: str, provider: str) -> None:
+        """Create session and execute research."""
+        token = self.create(topic)
+        self.research(token, query, processor, language, provider)
 
     def _match(
         self, repository: SessionsRepository, identifier: str
@@ -169,6 +183,51 @@ class Application:
             if session.id().startswith(identifier):
                 return session
         return None
+
+    def _organizer(self) -> OutputOrganizer:
+        """Return output organizer."""
+        return OutputOrganizer(self._output)
+
+    def _provider(self, session: ResearchSession) -> str:
+        """Return provider from latest task or default."""
+        tasks = session.tasks()
+        if tasks:
+            service = tasks[-1].service()
+            if service.endswith(".ai"):
+                return service.split(".")[0]
+        return "parallel"
+
+    def _resolve(self, provider: str, processor: str) -> str:
+        """Return provider, validating known values."""
+        if provider in {"parallel", "valyu"}:
+            if provider == "valyu" and processor == "pro":
+                return "valyu"
+            return provider
+        raise ValueError("Provider must be parallel or valyu")
+
+    def _model(self, provider: str, processor: str) -> str:
+        """Return model name for provider."""
+        if provider == "valyu":
+            if processor in {"lite", "heavy"}:
+                return processor
+            if processor == "pro":
+                return "heavy"
+            raise ValueError("Processor must be lite or heavy for valyu")
+        return processor
+
+    def _executor(self, provider: str) -> DeepResearch | ValyuResearch:
+        """Return executor for provider."""
+        if provider == "parallel":
+            client = ParallelClient.create()
+            return DeepResearch(client)
+        if provider == "valyu":
+            key = os.getenv("VALYU_API_KEY")
+            if not key:
+                raise RuntimeError("VALYU_API_KEY is required for valyu provider")
+            from valyu import Valyu
+            client = Valyu(api_key=key)
+            return ValyuResearch(client.deepresearch)
+        raise ValueError("Provider must be parallel or valyu")
 
 
 def main() -> None:
@@ -186,6 +245,12 @@ def main() -> None:
     gen.add_argument("--html", action="store_true", help="Generate HTML instead")
     create = subparsers.add_parser("create", help="Create new session")
     create.add_argument("topic", help="Research topic")
+    run = subparsers.add_parser("run", help="Create session and execute deep research")
+    run.add_argument("topic", help="Research topic")
+    run.add_argument("query", help="Research query")
+    run.add_argument("--processor", default="pro", help="Compute: lite, base, core, core2x, pro, ultra, ultra2x, ultra4x, ultra8x (add -fast for speed)")
+    run.add_argument("--language", default="русский", help="Research language")
+    run.add_argument("--provider", default="parallel", choices=["parallel", "valyu"], help="Data provider: parallel or valyu")
     research = subparsers.add_parser("research", help="Execute deep research")
     research.add_argument("id", help="Session ID (partial match)")
     research.add_argument("query", help="Research query")
@@ -202,6 +267,8 @@ def main() -> None:
         app.generate(args.id, args.html)
     elif args.command == "create":
         app.create(args.topic)
+    elif args.command == "run":
+        app._run(args.topic, args.query, args.processor, args.language, args.provider)
     elif args.command == "research":
         app.research(args.id, args.query, args.processor, args.language, args.provider)
 

@@ -14,8 +14,8 @@ class Organized(ABC):
     """Object that organizes output files."""
 
     @abstractmethod
-    def folder(self, name: str) -> Path:
-        """Return output folder path for session."""
+    def folder(self, name: str, provider: str) -> Path:
+        """Return output folder path for session provider."""
         ...
 
 
@@ -33,9 +33,9 @@ class OutputOrganizer(Organized):
         short = identifier[:8]
         return f"{date}_{slug}_{short}"
 
-    def folder(self, name: str) -> Path:
+    def folder(self, name: str, provider: str) -> Path:
         """Return output folder path, creating if needed."""
-        path = self._root / name
+        path = self._root / name / provider
         path.mkdir(parents=True, exist_ok=True)
         return path
 
@@ -68,38 +68,38 @@ class OutputOrganizer(Organized):
                 result.append(char)
         return "".join(result)
 
-    def response(self, name: str, data: dict) -> Path:
+    def response(self, name: str, provider: str, data: dict) -> Path:
         """Save raw API response as JSON."""
-        folder = self.folder(name)
+        folder = self.folder(name, provider)
         path = folder / "response.json"
         with path.open("w", encoding="utf-8") as handle:
             json.dump(data, handle, indent=2, ensure_ascii=False)
         return path
 
-    def cover(self, name: str) -> Path:
+    def cover(self, name: str, provider: str) -> Path:
         """Return path for cover image."""
-        return self.folder(name) / "cover.jpg"
+        return self.folder(name, provider) / "cover.jpg"
 
-    def report(self, name: str) -> Path:
+    def report(self, name: str, provider: str) -> Path:
         """Return path for PDF report."""
         prefix = name.rsplit("_", 1)[0]
-        return self.folder(name) / f"{prefix}.pdf"
+        return self.folder(name, provider) / f"{prefix}.pdf"
 
-    def html(self, name: str) -> Path:
+    def html(self, name: str, provider: str) -> Path:
         """Return path for HTML preview."""
-        return self.folder(name) / "report.html"
+        return self.folder(name, provider) / "report.html"
 
-    def brief(self, name: str, content: str) -> Path:
+    def brief(self, name: str, provider: str, content: str) -> Path:
         """Save brief markdown to output folder."""
-        folder = self.folder(name)
+        folder = self.folder(name, provider)
         path = folder / "brief.md"
         with path.open("w", encoding="utf-8") as handle:
             handle.write(content)
         return path
 
-    def existing(self, name: str) -> Path | None:
+    def existing(self, name: str, provider: str) -> Path | None:
         """Return cover path if exists, None otherwise."""
-        path = self.cover(name)
+        path = self.cover(name, provider)
         if path.exists():
             return path
         return None
