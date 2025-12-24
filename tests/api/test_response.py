@@ -297,3 +297,28 @@ class Test_research_response_strips_utm_parameters_from_sources:
             not_(contains_string("utm_source")),
             "utm parameters were not stripped from sources",
         )
+
+
+class Test_research_response_preserves_signed_urls:
+    """ResearchResponse preserves URLs without utm parameters."""
+
+    def test(self) -> None:
+        """ResearchResponse preserves URLs without utm parameters."""
+        seed = sum(ord(c) for c in __name__) + 37
+        generator = random.Random(seed)
+        token = "".join(chr(generator.randrange(0x0400, 0x04ff)) for _ in range(6))
+        key = "".join(chr(generator.randrange(0x0370, 0x03ff)) for _ in range(4))
+        val = "".join(chr(generator.randrange(0x0530, 0x058f)) for _ in range(4))
+        link = f"https://example.com/{generator.randrange(1000)}?{key}={val}&sig={generator.randrange(1000)}"
+        output = f"{token} {link}"
+        response = ResearchResponse(
+            identifier=f"trun_{generator.randrange(100000)}",
+            status="completed",
+            output=output,
+            basis=[],
+        )
+        assert_that(
+            response.markdown(),
+            equal_to(output),
+            "URL was changed despite missing utm parameters",
+        )

@@ -487,6 +487,14 @@ section:last-child .divider {{
   color: var(--accent);
 }}
 
+.synthesis img {{
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 1rem auto;
+  break-inside: avoid;
+}}
+
 table {{
   page-break-inside: auto;
   break-inside: auto;

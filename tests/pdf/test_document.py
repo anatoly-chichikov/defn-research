@@ -10,6 +10,7 @@ from pathlib import Path
 import pytest
 from hamcrest import assert_that
 from hamcrest import contains_string
+from hamcrest import equal_to
 from hamcrest import is_
 from hamcrest import not_
 
@@ -17,6 +18,7 @@ from src.domain.result import Source
 from src.domain.result import TaskResult
 from src.domain.session import ResearchSession
 from src.domain.task import ResearchTask
+from src.storage.organizer import OutputOrganizer
 
 try:
     from src.pdf.document import ResearchDocument
@@ -509,4 +511,160 @@ class TestResearchDocumentBriefNormalizesNumberedLists:
             document._brief(),
             contains_string("<ol>"),
             "Brief did not render numbered list as <ol>",
+        )
+
+
+class Test_research_document_strips_sources_section:
+    """ResearchDocument strips Sources section from text."""
+
+    def test(self) -> None:
+        """ResearchDocument strips Sources section from text."""
+        seed = sum(ord(c) for c in __name__) + 61
+        generator = random.Random(seed)
+        token = "".join(chr(generator.randrange(0x0400, 0x04ff)) for _ in range(6))
+        link = f"https://example.com/{generator.randrange(1000)}"
+        text = f"{token}\n\n## Sources\n1. {link}\n2. {link}"
+        session = ResearchSession(topic=token, tasks=tuple())
+        document = ResearchDocument(session, HokusaiPalette())
+        assert_that(
+            document._strip(text),
+            not_(contains_string("Sources")),
+            "Sources section was not stripped",
+        )
+
+
+class Test_research_document_keeps_sources_without_links:
+    """ResearchDocument keeps Sources section without links."""
+
+    def test(self) -> None:
+        """ResearchDocument keeps Sources section without links."""
+        seed = sum(ord(c) for c in __name__) + 67
+        generator = random.Random(seed)
+        token = "".join(chr(generator.randrange(0x0400, 0x04ff)) for _ in range(6))
+        note = "".join(chr(generator.randrange(0x0370, 0x03ff)) for _ in range(5))
+        text = f"{token}\n\n## Sources\n1. {note}\n2. {note}"
+        session = ResearchSession(topic=token, tasks=tuple())
+        document = ResearchDocument(session, HokusaiPalette())
+        assert_that(
+            document._strip(text),
+            contains_string("Sources"),
+            "Sources section was removed without links",
+        )
+
+
+class Test_research_document_keeps_sources_when_not_last_section:
+    """ResearchDocument keeps Sources section when followed by another header."""
+
+    def test(self) -> None:
+        """ResearchDocument keeps Sources section when followed by another header."""
+        seed = sum(ord(c) for c in __name__) + 71
+        generator = random.Random(seed)
+        token = "".join(chr(generator.randrange(0x0400, 0x04ff)) for _ in range(6))
+        note = "".join(chr(generator.randrange(0x0370, 0x03ff)) for _ in range(5))
+        url = f"https://example.com/{generator.randrange(1000)}"
+        text = f"{token}\n\n## Sources\n1. {url}\n\n## Далее\n{note}"
+        session = ResearchSession(topic=token, tasks=tuple())
+        document = ResearchDocument(session, HokusaiPalette())
+        assert_that(
+            document._strip(text),
+            contains_string("Sources"),
+            "Sources section was removed before end",
+        )
+
+
+class Test_research_document_inserts_images_before_sources:
+    """ResearchDocument inserts images before Sources section."""
+
+    def test(self) -> None:
+        """ResearchDocument inserts images before Sources section."""
+        seed = sum(ord(c) for c in __name__) + 73
+        generator = random.Random(seed)
+        token = "".join(chr(generator.randrange(0x0400, 0x04ff)) for _ in range(6))
+        title = "".join(chr(generator.randrange(0x0370, 0x03ff)) for _ in range(5))
+        url = f"https://example.com/{generator.randrange(1000)}"
+        image = f"https://example.com/{generator.randrange(1000)}.png"
+        sources = "".join(chr(code) for code in (83, 111, 117, 114, 99, 101, 115))
+        images = "".join(chr(code) for code in (73, 109, 97, 103, 101, 115))
+        text = f"{token}\n\n## {sources}\n1. {url}"
+        raw = {"images": [{"image_url": image, "title": title}]}
+        task = ResearchTask(query=token, status="completed", result=None, service="valyu.ai")
+        session = ResearchSession(topic=token, tasks=(task,))
+        document = ResearchDocument(session, HokusaiPalette())
+        result = document._images(text, raw, task)
+        expect = f"## {images}\n\n![{title}]({image})\n\n## {sources}"
+        assert_that(
+            result,
+            contains_string(expect),
+            "Images were not inserted before Sources",
+        )
+
+
+class Test_research_document_preserves_signed_image_urls:
+    """ResearchDocument preserves image URLs without utm parameters."""
+
+    def test(self) -> None:
+        """ResearchDocument preserves image URLs without utm parameters."""
+        seed = sum(ord(c) for c in __name__) + 79
+        generator = random.Random(seed)
+        token = "".join(chr(generator.randrange(0x0400, 0x04ff)) for _ in range(6))
+        key = "".join(chr(generator.randrange(0x0370, 0x03ff)) for _ in range(4))
+        val = "".join(chr(generator.randrange(0x0530, 0x058f)) for _ in range(4))
+        link = f"https://example.com/{generator.randrange(1000)}?{key}={val}&sig={generator.randrange(1000)}"
+        session = ResearchSession(topic=token, tasks=tuple())
+        document = ResearchDocument(session, HokusaiPalette())
+        assert_that(
+            document._trim(link),
+            equal_to(link),
+            "Image URL was changed despite missing utm parameters",
+        )
+
+
+class Test_research_document_uses_cached_image_file:
+    """ResearchDocument uses cached image file when available."""
+
+    def test(self) -> None:
+        """ResearchDocument uses cached image file when available."""
+        seed = sum(ord(c) for c in __name__) + 83
+        generator = random.Random(seed)
+        token = "".join(chr(generator.randrange(0x0400, 0x04ff)) for _ in range(6))
+        title = "".join(chr(generator.randrange(0x0370, 0x03ff)) for _ in range(5))
+        code = "".join(chr(generator.randrange(0x0530, 0x058f)) for _ in range(4))
+        temp = tempfile.mkdtemp()
+        old = os.getcwd()
+        os.chdir(temp)
+        task = ResearchTask(query=token, status="completed", result=None, service="valyu.ai")
+        session = ResearchSession(topic=token, tasks=(task,))
+        maker = OutputOrganizer(Path("output"))
+        name = maker.name(session.created(), session.topic(), session.id())
+        folder = Path("output") / name / "valyu" / "images"
+        folder.mkdir(parents=True, exist_ok=True)
+        path = folder / f"{code}.png"
+        path.write_bytes(b"image")
+        raw = {"images": [{"image_url": "https://example.com/image.png", "image_id": code, "title": title}]}
+        document = ResearchDocument(session, HokusaiPalette())
+        text = f"{token}\n\n## Sources\n1. https://example.com"
+        result = document._images(text, raw, task)
+        os.chdir(old)
+        assert_that(result, contains_string(path.resolve().as_uri()), "Cached image file was not used")
+
+
+class Test_research_document_strips_utm_fragments_from_text:
+    """ResearchDocument strips utm fragments from text."""
+
+    def test(self) -> None:
+        """ResearchDocument strips utm fragments from text."""
+        seed = sum(ord(c) for c in __name__) + 31
+        generator = random.Random(seed)
+        token = "".join(chr(generator.randrange(0x0400, 0x04ff)) for _ in range(6))
+        mark = "".join(chr(code) for code in (117, 116, 109, 95))
+        label = "".join(chr(generator.randrange(0x0370, 0x03ff)) for _ in range(5))
+        value = "".join(chr(generator.randrange(0x0530, 0x058f)) for _ in range(4))
+        number = generator.randrange(10, 99)
+        text = f"{token} [{number}]?{mark}{label}={value}) {token}"
+        session = ResearchSession(topic=token, tasks=tuple())
+        document = ResearchDocument(session, HokusaiPalette())
+        assert_that(
+            document._clean(text),
+            not_(contains_string(mark)),
+            "utm fragments were not stripped from text",
         )

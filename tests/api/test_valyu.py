@@ -1,7 +1,11 @@
 """Tests for ValyuResearch adapter."""
 from __future__ import annotations
 
+import http.server
+import json
 import random
+import threading
+import time
 from typing import Final
 
 from hamcrest import assert_that
@@ -58,6 +62,19 @@ class FakeApi:
     def record(self) -> dict:
         """Return recorded create data."""
         return self._record
+
+
+class RawApi:
+    """Fake Valyu API exposing base url and headers."""
+
+    def __init__(self, base: str) -> None:
+        """Initialize with base URL."""
+        self._base_url: Final[str] = base
+        self._headers: Final[dict] = {}
+
+    def wait(self, identifier: str, **data) -> object:
+        """Reject SDK wait usage."""
+        raise ValueError("Valyu wait should not be called")
 
 
 class Test_valyu_research_returns_run_identifier:
@@ -233,3 +250,69 @@ class Test_valyu_research_formats_list_messages:
         research._seen["trun_x"] = 0
         result = research._message({"messages": [{"message": [left, right]}]})
         assert_that(result, equal_to(f"{left} {right}"), "list message was not joined")
+
+
+class Test_valyu_research_uses_raw_status_payload:
+    """ValyuResearch uses raw status payload without validation errors."""
+
+    def test_valyu_research_uses_raw_status_payload(self) -> None:
+        """ValyuResearch uses raw status payload without validation errors."""
+        seed = sum(ord(c) for c in __name__) + 59
+        generator = random.Random(seed)
+        identifier = f"dr_{generator.randrange(100000)}"
+        output = "".join(chr(generator.randrange(0x0400, 0x04ff)) for _ in range(6))
+        title = "".join(chr(generator.randrange(0x0370, 0x03ff)) for _ in range(5))
+        url = f"http://example.com/{generator.randrange(1000)}"
+        payload = {
+            "success": True,
+            "status": "completed",
+            "output": {"markdown": output},
+            "sources": [{"title": title, "url": url, "content": output}],
+            "images": [{
+                "image_id": f"img_{generator.randrange(1000)}",
+                "image_type": "chart",
+                "deepresearch_id": identifier,
+                "title": title,
+                "description": output,
+                "image_url": url,
+                "s3_key": f"key_{generator.randrange(1000)}",
+                "created_at": generator.randrange(1000),
+                "chart_type": "doughnut",
+            }],
+        }
+        class Handler(http.server.BaseHTTPRequestHandler):
+            """Serve static Valyu status payload."""
+            data = payload
+            def do_GET(self) -> None:
+                """Handle GET request."""
+                body = json.dumps(self.data).encode("utf-8")
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+            def log_message(self, format, *args) -> None:
+                """Suppress logging."""
+                return None
+        server = http.server.HTTPServer(("127.0.0.1", 0), Handler)
+        thread = threading.Thread(target=server.serve_forever)
+        thread.daemon = True
+        thread.start()
+        base = f"http://127.0.0.1:{server.server_port}"
+        api = RawApi(base)
+        research = ValyuResearch(api)
+        result = None
+        error = None
+        for _ in range(3):
+            try:
+                result = research.finish(identifier)
+                break
+            except Exception as exc:
+                error = exc
+                time.sleep(0.05)
+        server.shutdown()
+        server.server_close()
+        thread.join(1)
+        if result is None:
+            raise error
+        assert_that(result.markdown(), equal_to(output), "Markdown did not match raw payload")

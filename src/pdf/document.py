@@ -1,6 +1,7 @@
 """PDF document generator for research results."""
 from __future__ import annotations
 
+import json
 import os
 import re
 from abc import ABC
@@ -15,11 +16,14 @@ from urllib.parse import urlunparse
 import markdown
 from weasyprint import HTML
 
+from src.api.response import ResearchResponse
+from src.api.valyu import ValyuResearch
 from src.domain.session import ResearchSession
 from src.pdf.palette import HokusaiPalette
 from src.pdf.style import HokusaiStyle
 from src.pdf.wave import WaveFooter
 from src.pdf.wave import WavePattern
+from src.storage.organizer import OutputOrganizer
 
 
 class Signed(ABC):
@@ -184,13 +188,12 @@ class ResearchDocument(Exportable):
 
     def _task(self, task) -> tuple[str, list[str]]:
         """Render single task as HTML section."""
-        result = task.result()
         synthesis = ""
         urls: list[str] = []
-        if result:
-            text = result.summary()
+        text, sources = self._result(task)
+        if text:
             text = self._clean(text)
-            text, urls = self._citations(text, result.sources())
+            text, urls = self._citations(text, sources)
             text = self._strip(text)
             text = self._nested(text)
             text = self._normalize(text)
@@ -203,6 +206,110 @@ class ResearchDocument(Exportable):
   <div class="divider"></div>
 </section>"""
         return section, urls
+
+    def _result(self, task) -> tuple[str, tuple]:
+        """Return summary and sources for task."""
+        raw = self._raw(task)
+        if raw:
+            response = self._response(raw, task)
+            return response.markdown(), response.sources()
+        result = task.result()
+        if result:
+            return result.summary(), result.sources()
+        return "", tuple()
+
+    def _response(self, raw: dict, task) -> ResearchResponse:
+        """Return response mapped from raw payload."""
+        provider = self._provider(task)
+        if provider == "valyu":
+            output = raw.get("output", "")
+            if isinstance(output, dict):
+                output = output.get("markdown") or output.get("content") or ""
+            output = self._images(output, raw, task)
+            sources = raw.get("sources", []) or []
+            api = object()
+            research = ValyuResearch(api)
+            basis = research._basis(sources)
+            state = raw.get("status", "completed")
+            status = state.get("value", state) if isinstance(state, dict) else state
+            identifier = raw.get("deepresearch_id", "") or raw.get("id", "")
+            return ResearchResponse(
+                identifier=identifier,
+                status=status,
+                output=output,
+                basis=basis,
+                cost=0.0,
+                raw=raw,
+            )
+        output = raw.get("output", {})
+        text = output.get("content", "") if isinstance(output, dict) else ""
+        basis = output.get("basis", []) if isinstance(output, dict) else []
+        run = raw.get("run", {})
+        identifier = run.get("run_id", "") if isinstance(run, dict) else ""
+        status = run.get("status", "completed") if isinstance(run, dict) else "completed"
+        return ResearchResponse(
+            identifier=identifier,
+            status=status,
+            output=text,
+            basis=basis,
+            cost=0.0,
+            raw=raw,
+        )
+
+    def _raw(self, task) -> dict:
+        """Return raw response payload from output folder."""
+        root = Path("output")
+        organizer = OutputOrganizer(root)
+        provider = self._provider(task)
+        name = organizer.name(self._session.created(), self._session.topic(), self._session.id())
+        path = root / name / provider / "response.json"
+        if not path.exists():
+            return {}
+        with path.open("r", encoding="utf-8") as handle:
+            return json.load(handle)
+
+    def _images(self, text: str, raw: dict, task) -> str:
+        """Append images to markdown output when available."""
+        items = raw.get("images", []) or []
+        if not items:
+            return text
+        root = Path("output")
+        organizer = OutputOrganizer(root)
+        name = organizer.name(self._session.created(), self._session.topic(), self._session.id())
+        provider = self._provider(task)
+        folder = root / name / provider / "images"
+        lines: list[str] = []
+        for item in items:
+            url = item.get("image_url", "") if isinstance(item, dict) else ""
+            if not url or url in text:
+                continue
+            title = item.get("title", "") if isinstance(item, dict) else ""
+            name = title or "Chart"
+            code = item.get("image_id", "") if isinstance(item, dict) else ""
+            link = url
+            if code:
+                part = Path(urlparse(url).path)
+                suffix = part.suffix or ".png"
+                path = folder / f"{code}{suffix}"
+                if path.exists():
+                    link = path.resolve().as_uri()
+            if link in text:
+                continue
+            lines.append(f"![{name}]({link})")
+        if not lines:
+            return text
+        block = "## Images\n\n" + "\n".join(lines)
+        match = re.search(r'\n#{1,6}\s*(Sources?|References?)\s*\n', text, flags=re.IGNORECASE)
+        if match:
+            return f"{text[:match.start()]}\n\n{block}\n\n{text[match.start():]}"
+        return f"{text}\n\n{block}"
+
+    def _provider(self, task) -> str:
+        """Return provider slug from task service."""
+        service = task.service()
+        if service.endswith(".ai"):
+            return service.split(".")[0]
+        return service
 
     def _badge(self, confidence: str | None) -> str:
         """Render inline confidence dot or empty string if not available."""
@@ -230,7 +337,7 @@ class ResearchDocument(Exportable):
             result.append(self._trim(match.group(0)))
             last = match.end()
         result.append(text[last:])
-        return "".join(result)
+        return self._prune("".join(result))
 
     def _trim(self, url: str) -> str:
         """Remove utm parameters from URL."""
@@ -239,9 +346,15 @@ class ResearchDocument(Exportable):
             return url
         items = parse_qsl(parts.query, keep_blank_values=True)
         keep = [(key, value) for key, value in items if not key.lower().startswith("utm_")]
+        if len(keep) == len(items):
+            return url
         query = urlencode(keep, doseq=True)
         parts = parts._replace(query=query)
         return urlunparse(parts)
+
+    def _prune(self, text: str) -> str:
+        """Remove leftover utm fragments from text."""
+        return re.sub(r"(\?utm_[^\s\)\]]+|&utm_[^\s\)\]]+)", "", text)
 
     def _citations(self, text: str, sources: tuple = ()) -> tuple[str, list[str]]:
         """Convert [N] references to clickable links with confidence badges."""
@@ -292,8 +405,12 @@ class ResearchDocument(Exportable):
         return refs
 
     def _strip(self, text: str) -> str:
-        """Remove References section and trailing boilerplate from markdown."""
-        text = re.sub(r'\n##\s*References\s*\n.*', '', text, flags=re.DOTALL | re.IGNORECASE)
+        """Remove trailing Sources or References sections and boilerplate."""
+        match = re.search(r'\n#{1,6}\s*(Sources?|References?)\s*\n(.*)\Z', text, flags=re.DOTALL | re.IGNORECASE)
+        if match:
+            body = match.group(2)
+            if re.search(r'https?://', body, flags=re.IGNORECASE):
+                text = text[:match.start()]
         text = re.sub(r'\n---\n\*Prepared using.*?\*', '', text, flags=re.DOTALL)
         return text
 

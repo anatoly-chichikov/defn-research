@@ -29,6 +29,11 @@ class Responded(ABC):
         """Return total request cost."""
         ...
 
+    @abstractmethod
+    def raw(self) -> dict:
+        """Return raw response payload."""
+        ...
+
 
 class ResearchResponse(Responded):
     """Immutable response from deep research SDK."""
@@ -40,6 +45,7 @@ class ResearchResponse(Responded):
         output: str,
         basis: list,
         cost: float = 0.0,
+        raw: dict = {},
     ) -> None:
         """Initialize with response data."""
         self._identifier: Final[str] = identifier
@@ -47,6 +53,7 @@ class ResearchResponse(Responded):
         self._output: Final[str] = self._strip(output)
         self._basis: Final[list] = basis
         self._cost: Final[float] = cost
+        self._raw: Final[dict] = raw
 
     def identifier(self) -> str:
         """Return run identifier."""
@@ -55,6 +62,10 @@ class ResearchResponse(Responded):
     def cost(self) -> float:
         """Return total request cost."""
         return self._cost
+
+    def raw(self) -> dict:
+        """Return raw response payload."""
+        return self._raw
 
     def completed(self) -> bool:
         """Return True if research completed successfully."""
@@ -73,20 +84,21 @@ class ResearchResponse(Responded):
         seen: set[str] = set()
         result: list[Source] = []
         for field in self._basis:
-            citations = field.citations or []
-            confidence = getattr(field, "confidence", None)
+            citations = self._value(field, "citations", []) or []
+            confidence = self._value(field, "confidence", None)
             for citation in citations:
-                link = citation.url
+                link = self._value(citation, "url", "")
                 if link:
                     link = self._clean(link)
                 if link and link not in seen:
                     seen.add(link)
-                    excerpt = citation.excerpts[0] if citation.excerpts else ""
+                    excerpts = self._value(citation, "excerpts", []) or []
+                    excerpt = excerpts[0] if excerpts else ""
                     result.append(
                         Source(
-                            title=citation.title or self._domain(link),
+                            title=self._value(citation, "title", "") or self._domain(link),
                             url=link,
-                            excerpt=excerpt[:500],
+                            excerpt=excerpt,
                             confidence=confidence,
                         )
                     )
@@ -107,7 +119,7 @@ class ResearchResponse(Responded):
             result.append(self._clean(match.group(0)))
             last = match.end()
         result.append(text[last:])
-        return "".join(result)
+        return self._purge("".join(result))
 
     def _clean(self, url: str) -> str:
         """Remove utm parameters from URL."""
@@ -116,19 +128,25 @@ class ResearchResponse(Responded):
             return url
         items = parse_qsl(parts.query, keep_blank_values=True)
         keep = [(key, value) for key, value in items if not key.lower().startswith("utm_")]
+        if len(keep) == len(items):
+            return url
         query = urlencode(keep, doseq=True)
         parts = parts._replace(query=query)
         return urlunparse(parts)
 
-    def serialize(self) -> dict:
-        """Return response data as dictionary for JSON storage."""
-        return {
-            "run_id": self._identifier,
-            "status": self._status,
-            "output": self._output,
-            "cost": self._cost,
-            "sources": [s.serialize() for s in self.sources()],
-        }
+    def _purge(self, text: str) -> str:
+        """Remove leftover utm fragments from text."""
+        return re.sub(r"(\?utm_[^\s\)\]]+|&utm_[^\s\)\]]+)", "", text)
+
+    def _value(self, item, name: str, default):
+        """Return attribute or mapping value with fallback."""
+        value = getattr(item, name, None)
+        if value is not None:
+            return value
+        try:
+            return item[name]
+        except Exception:
+            return default
 
     @classmethod
     def parse(cls, result: TaskRunResult) -> ResearchResponse:
@@ -136,10 +154,19 @@ class ResearchResponse(Responded):
         output = result.output
         content = output.content if isinstance(output, TaskRunTextOutput) else ""
         basis = output.basis if isinstance(output, TaskRunTextOutput) else []
+        raw = {}
+        try:
+            raw = result.model_dump()
+        except Exception:
+            try:
+                raw = result.dict()
+            except Exception:
+                raw = {}
         return cls(
             identifier=result.run.run_id,
             status=result.run.status,
             output=content,
             basis=basis,
             cost=0.0,
+            raw=raw,
         )

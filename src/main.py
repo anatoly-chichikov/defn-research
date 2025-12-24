@@ -9,7 +9,9 @@ import argparse
 import sys
 from pathlib import Path
 from typing import Final
+from urllib.parse import urlparse
 
+import requests
 from src.api.client import ParallelClient
 from src.api.research import DeepResearch
 from src.api.valyu import ValyuResearch
@@ -141,7 +143,8 @@ class Application:
         service = f"{provider}.ai"
         organizer = self._organizer()
         name = organizer.name(session.created(), session.topic(), session.id())
-        organizer.response(name, provider, response.serialize())
+        organizer.response(name, provider, response.raw())
+        self._store(name, provider, response.raw(), organizer)
         brief = self._root / "data" / "briefs" / f"{session.id()}.md"
         if brief.exists():
             organizer.brief(name, provider, brief.read_text(encoding="utf-8"))
@@ -203,6 +206,32 @@ class Application:
         document.save(path)
         print(f"PDF generated: {path}")
         return path
+
+    def _store(self, name: str, provider: str, data: dict, organizer: OutputOrganizer) -> None:
+        """Store valyu images in output folder."""
+        if provider != "valyu":
+            return
+        items = data.get("images", []) or []
+        if not items:
+            return
+        folder = organizer.folder(name, provider) / "images"
+        folder.mkdir(parents=True, exist_ok=True)
+        for item in items:
+            url = item.get("image_url", "") if isinstance(item, dict) else ""
+            code = item.get("image_id", "") if isinstance(item, dict) else ""
+            if not url or not code:
+                continue
+            part = urlparse(url).path
+            suffix = Path(part).suffix or ".png"
+            path = folder / f"{code}{suffix}"
+            if path.exists():
+                continue
+            try:
+                reply = requests.get(url, timeout=30)
+                reply.raise_for_status()
+                path.write_bytes(reply.content)
+            except Exception:
+                continue
 
     def _provider(self, session: ResearchSession) -> str:
         """Return provider from latest task or default."""

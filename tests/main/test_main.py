@@ -1,6 +1,7 @@
 """Tests for CLI application logic."""
 from __future__ import annotations
 
+import json
 import os
 import random
 import tempfile
@@ -157,3 +158,56 @@ class TestApplicationSkipsCoverWhenKeyMissing:
         name = organizer.name(stamp, topic, identifier)
         cover = organizer.cover(name, provider)
         assert_that(cover.exists(), is_(False), "Cover image was generated despite missing key")
+
+
+class Test_application_writes_raw_response:
+    """Application writes raw response to response.json."""
+
+    def test_application_writes_raw_response(self) -> None:
+        """Application writes raw response to response.json."""
+        seed = sum(ord(c) for c in __name__) + 89
+        generator = random.Random(seed)
+        if "GEMINI_API_KEY" in os.environ:
+            del os.environ["GEMINI_API_KEY"]
+        topic = "".join(chr(generator.randrange(0x0400, 0x04ff)) for _ in range(6))
+        query = "".join(chr(generator.randrange(0x0370, 0x03ff)) for _ in range(7))
+        processor = "".join(chr(generator.randrange(0x0530, 0x058f)) for _ in range(5))
+        language = "".join(chr(generator.randrange(0x3040, 0x309f)) for _ in range(4))
+        provider = "".join(chr(generator.randrange(0x0400, 0x04ff)) for _ in range(5))
+        run = "".join(chr(generator.randrange(0x0600, 0x06ff)) for _ in range(8))
+        text = "".join(chr(generator.randrange(0x0400, 0x04ff)) for _ in range(12))
+        year = 2000 + generator.randrange(0, 20)
+        month = 1 + generator.randrange(0, 11)
+        day = 1 + generator.randrange(0, 27)
+        hour = generator.randrange(0, 23)
+        minute = generator.randrange(0, 59)
+        second = generator.randrange(0, 59)
+        stamp = datetime(year, month, day, hour, minute, second)
+        identifier = "".join(chr(generator.randrange(0x0400, 0x04ff)) for _ in range(16))
+        entry = PendingRun(run, query, processor, language, provider)
+        session = ResearchSession(topic=topic, tasks=tuple(), identifier=identifier, created=stamp, pending=entry)
+        root = Path(tempfile.mkdtemp())
+        store = root / "data"
+        store.mkdir(parents=True, exist_ok=True)
+        folder = root / "output"
+        folder.mkdir(parents=True, exist_ok=True)
+        repo = SessionsRepository(JsonFile(store / "research.json"))
+        repo.save((session,))
+        key = "".join(chr(generator.randrange(0x0400, 0x04ff)) for _ in range(6))
+        value = "".join(chr(generator.randrange(0x0370, 0x03ff)) for _ in range(6))
+        nest = "".join(chr(generator.randrange(0x0530, 0x058f)) for _ in range(5))
+        inner = "".join(chr(generator.randrange(0x3040, 0x309f)) for _ in range(4))
+        raw = {key: value, nest: {inner: generator.randrange(1000)}}
+        response = ResearchResponse(identifier=run, status="completed", output=text, basis=[], cost=0.0, raw=raw)
+        executor = FakeExecutor(run, response)
+        app = ProbeApp(root, executor)
+        token = identifier[:8]
+        stream = StringIO()
+        with redirect_stdout(stream):
+            app.research(token, query, processor, language, provider)
+        organizer = OutputOrganizer(folder)
+        name = organizer.name(stamp, topic, identifier)
+        path = folder / name / provider / "response.json"
+        with path.open("r", encoding="utf-8") as handle:
+            data = json.load(handle)
+        assert_that(data, equal_to(raw), "Raw response did not match stored response")

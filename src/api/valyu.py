@@ -1,8 +1,11 @@
 """Valyu deep research adapter."""
 from __future__ import annotations
 
+import time
 from typing import Final
 from urllib.parse import urlparse
+
+import requests
 
 from src.api.research import Researchable
 from src.api.response import ResearchResponse
@@ -93,7 +96,7 @@ class ValyuResearch(Researchable):
         """Stream progress updates via wait callback."""
         self._token = identifier
         self._seen[identifier] = 0
-        result = self._api.wait(identifier, poll_interval=60, on_progress=self._emit)
+        result = self._wait(identifier, 60, True)
         self._cache[identifier] = result
 
     def finish(self, identifier: str) -> ResearchResponse:
@@ -101,21 +104,69 @@ class ValyuResearch(Researchable):
         if identifier in self._cache:
             result = self._cache[identifier]
         else:
-            result = self._api.wait(identifier, poll_interval=60, on_progress=self._emit)
-        output = getattr(result, "output", "")
+            result = self._wait(identifier, 60, False)
+        output = self._value(result, "output", "")
         if isinstance(output, dict):
             output = output.get("markdown") or output.get("content") or ""
-        sources = getattr(result, "sources", None) or []
-        state = getattr(result, "status", "completed")
-        status = getattr(state, "value", state)
+        sources = self._value(result, "sources", None) or []
+        state = self._value(result, "status", "completed")
+        status = self._value(state, "value", state)
         basis = self._basis(sources)
+        raw = self._raw(result)
         return ResearchResponse(
             identifier=identifier,
             status=status,
             output=output,
             basis=basis,
             cost=self._cost(result),
+            raw=raw,
         )
+
+    def _wait(self, identifier: str, interval: int, emit: bool) -> object:
+        """Return final status via raw polling or SDK wait."""
+        if hasattr(self._api, "_base_url") and hasattr(self._api, "_headers"):
+            return self._poll(identifier, interval, emit)
+        callback = self._emit if emit else None
+        return self._api.wait(identifier, poll_interval=interval, on_progress=callback)
+
+    def _poll(self, identifier: str, interval: int, emit: bool) -> dict:
+        """Poll raw status endpoint until completion."""
+        start = time.time()
+        limit = 7200
+        while True:
+            data = self._status(identifier)
+            if data.get("success") is False:
+                message = str(data.get("error") or data.get("message") or "status error").replace(".", "")
+                raise ValueError(f"Valyu status failed for {identifier} with {message}")
+            if emit:
+                self._emit(data)
+            state = data.get("status", "")
+            value = state.get("value", state) if isinstance(state, dict) else state
+            label = str(value).lower()
+            if label == "completed":
+                return data
+            if label in {"failed", "cancelled", "canceled"}:
+                message = str(data.get("error") or data.get("message") or "task failed").replace(".", "")
+                raise ValueError(f"Valyu task failed for {identifier} with {message}")
+            if time.time() - start > limit:
+                raise TimeoutError(f"Valyu task timed out for {identifier} after {limit} seconds")
+            time.sleep(interval)
+
+    def _status(self, identifier: str) -> dict:
+        """Return raw status payload from API."""
+        base = getattr(self._api, "_base_url", "")
+        headers = getattr(self._api, "_headers", {})
+        if not base:
+            parent = getattr(self._api, "_parent", None)
+            base = getattr(parent, "base_url", "")
+            headers = getattr(parent, "headers", {})
+        url = f"{base}/deepresearch/tasks/{identifier}/status"
+        response = requests.get(url, headers=headers, timeout=30)
+        data = response.json()
+        if not response.ok:
+            message = str(data.get("error") or response.status_code).replace(".", "")
+            raise RuntimeError(f"Valyu status request failed for {identifier} with {message}")
+        return data
 
     def _basis(self, sources: list[dict]) -> list[ValyuField]:
         """Build basis list from Valyu sources."""
@@ -129,7 +180,7 @@ class ValyuResearch(Researchable):
             description = self._value(source, "description", "") or ""
             text = content or snippet or description or ""
             title = self._value(source, "title", "") or self._domain(url)
-            excerpt = text[:500]
+            excerpt = text
             level = self._level(source)
             citation = ValyuCitation(title=title, url=url, excerpts=[excerpt])
             result.append(ValyuField(citations=[citation], confidence=level))
@@ -172,6 +223,20 @@ class ValyuResearch(Researchable):
         usage = getattr(result, "usage", None)
         total = getattr(usage, "total_cost", 0.0) if usage else 0.0
         return float(total)
+
+    def _raw(self, result) -> dict:
+        """Return raw response payload."""
+        if isinstance(result, dict):
+            return result
+        try:
+            data = result.model_dump()
+            return data
+        except Exception:
+            try:
+                data = result.dict()
+                return data
+            except Exception:
+                return getattr(result, "__dict__", {})
 
     def _domain(self, url: str) -> str:
         """Extract domain from URL."""
