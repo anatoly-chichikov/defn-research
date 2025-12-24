@@ -64,7 +64,7 @@ query="Язык ответа: {language}.\n\n{brief}"
 run docker run -d --name "research-{timestamp}-{slug}" \
     -v "$(pwd)/output:/app/output" \
     -v "$(pwd)/data:/app/data" \
-    -e PARALLEL_API_KEY -e VALYU_API_KEY -e GEMINI_API_KEY \
+    -e PARALLEL_API_KEY -e VALYU_API_KEY -e GEMINI_API_KEY -e REPORT_FOR \
     research run "{topic}" "{query}" --processor "{processor}" --language "{language}" --provider "{provider}"
 
 If two runs requested, run the command twice with different {timestamp}-{slug} values.
@@ -110,6 +110,7 @@ Generate PDF by topic. Find session by meaning (not by ID).
 run docker run --rm \
     -v "$(pwd)/output:/app/output" \
     -v "$(pwd)/data:/app/data" \
+    -e REPORT_FOR \
     research generate {id}
 
 notify pdf_path (full path)
@@ -154,4 +155,5 @@ Tip: add `-fast` for speed (pro-fast, ultra-fast)
 export PARALLEL_API_KEY="..."
 export VALYU_API_KEY="..."
 export GEMINI_API_KEY="..."
+export REPORT_FOR="..."
 ```
