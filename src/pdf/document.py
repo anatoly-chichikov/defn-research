@@ -301,8 +301,10 @@ class ResearchDocument(Exportable):
         block = "## Images\n\n" + "\n".join(lines)
         match = re.search(r'\n#{1,6}\s*(Sources?|References?)\s*\n', text, flags=re.IGNORECASE)
         if match:
-            return f"{text[:match.start()]}\n\n{block}\n\n{text[match.start():]}"
-        return f"{text}\n\n{block}"
+            head = text[:match.start()].rstrip("\n")
+            tail = text[match.start():].lstrip("\n")
+            return f"{head}\n\n{block}\n\n{tail}"
+        return f"{text.rstrip()}\n\n{block}"
 
     def _provider(self, task) -> str:
         """Return provider slug from task service."""
@@ -406,11 +408,15 @@ class ResearchDocument(Exportable):
 
     def _strip(self, text: str) -> str:
         """Remove trailing Sources or References sections and boilerplate."""
-        match = re.search(r'\n#{1,6}\s*(Sources?|References?)\s*\n(.*)\Z', text, flags=re.DOTALL | re.IGNORECASE)
-        if match:
-            body = match.group(2)
-            if re.search(r'https?://', body, flags=re.IGNORECASE):
-                text = text[:match.start()]
+        last = None
+        for match in re.finditer(r'^#{1,6}\s*([^\n]+)\s*$', text, flags=re.MULTILINE):
+            last = match
+        if last:
+            title = last.group(1).strip().lower()
+            if title in ("source", "sources", "reference", "references"):
+                body = text[last.end():]
+                if re.search(r'https?://', body, flags=re.IGNORECASE):
+                    text = text[:last.start()]
         text = re.sub(r'\n---\n\*Prepared using.*?\*', '', text, flags=re.DOTALL)
         return text
 

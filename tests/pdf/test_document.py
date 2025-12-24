@@ -643,9 +643,10 @@ class Test_research_document_uses_cached_image_file:
         raw = {"images": [{"image_url": "https://example.com/image.png", "image_id": code, "title": title}]}
         document = ResearchDocument(session, HokusaiPalette())
         text = f"{token}\n\n## Sources\n1. https://example.com"
+        expect = path.resolve().as_uri()
         result = document._images(text, raw, task)
         os.chdir(old)
-        assert_that(result, contains_string(path.resolve().as_uri()), "Cached image file was not used")
+        assert_that(result, contains_string(expect), "Cached image file was not used")
 
 
 class Test_research_document_strips_utm_fragments_from_text:
