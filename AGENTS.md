@@ -34,10 +34,16 @@ ask provider Which data provider?
 
 ask processor What compute level? (parallel: pro/ultra/ultra2x, valyu: lite/heavy)
 
-do Help refine the topic
-do Identify blind spots
-do Suggest non-obvious angles
-dont Launch immediately — dialog first
+ask topic — minimum 3 questions, up to 5 (in selected language):
+  - Scope: narrow vs broad? specific case or general overview?
+  - Audience: who reads this? expert level or beginner-friendly?
+  - Focus: which aspects matter most? what angle interests you?
+  - Constraints: exclude anything? time period? geography? industry?
+  - Output: actionable insights? comparison? trends? recommendations?
+
+rule Always ask at least 3 topic questions before launching
+rule User can say "enough" to skip remaining questions
+do Surface blind spots and non-obvious angles through questions
 
 If user asks for two runs at once:
 - ask the same questions twice, explicitly for run A then run B (no multi-select)
