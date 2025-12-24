@@ -31,6 +31,17 @@ The agent will understand what to do even with incomplete or vague inputs.
 
 When you run `rs <topic>`, the agent walks you through the entire flow — asks about language, depth, refines the topic with you. At the end, you get a ready PDF in the output folder.
 
+## Testing
+
+Run tests in Docker:
+
+```bash
+docker build -t research-test -f Dockerfile.test .
+docker run --rm research-test
+```
+
+For agents: use `tst` command.
+
 ## Requirements
 
 - Python 3.11+

@@ -9,6 +9,7 @@ Agent instructions for research automation.
 | `rs <topic>` | New research |
 | `st` | List sessions with PDF paths |
 | `pdf <topic>` | Generate PDF |
+| `tst` | Run tests in Docker |
 
 If message starts with these commands — it's a research operation, not development.
 
@@ -106,6 +107,17 @@ run docker run --rm \
     research generate {id}
 
 notify pdf_path (full path)
+
+---
+
+## tst
+
+Run tests in Docker container.
+
+run docker build -t research-test -f Dockerfile.test .
+run docker run --rm research-test
+
+notify test results (pass/fail count)
 
 ---
 
