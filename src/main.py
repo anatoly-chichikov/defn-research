@@ -160,15 +160,16 @@ class Application:
         updated = session.extend(task)
         repository.update(updated)
         print(f"Results saved: {len(response.sources())} sources")
-        print("Generating cover image...")
         cover = organizer.cover(name, provider)
-        generator = CoverGenerator()
-        generator.generate(session.topic(), cover)
-        print(f"Cover generated: {cover}")
-        path = organizer.report(name, provider)
-        document = ResearchDocument(updated, HokusaiPalette(), cover)
-        document.save(path)
-        print(f"PDF generated: {path}")
+        key = os.getenv("GEMINI_API_KEY")
+        if not key:
+            print("Gemini API key not set, skipping image generation")
+        else:
+            print("Generating cover image...")
+            generator = CoverGenerator()
+            generator.generate(updated.topic(), cover)
+            print(f"Cover generated: {cover}")
+        self._pdf(updated, cover, name, provider, organizer)
 
     def _run(self, topic: str, query: str, processor: str, language: str, provider: str) -> None:
         """Create session and execute research."""
@@ -187,6 +188,21 @@ class Application:
     def _organizer(self) -> OutputOrganizer:
         """Return output organizer."""
         return OutputOrganizer(self._output)
+
+    def _pdf(
+        self,
+        session: ResearchSession,
+        cover: Path,
+        name: str,
+        provider: str,
+        organizer: OutputOrganizer,
+    ) -> Path:
+        """Generate PDF report and return path."""
+        path = organizer.report(name, provider)
+        document = ResearchDocument(session, HokusaiPalette(), cover)
+        document.save(path)
+        print(f"PDF generated: {path}")
+        return path
 
     def _provider(self, session: ResearchSession) -> str:
         """Return provider from latest task or default."""
