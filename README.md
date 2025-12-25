@@ -15,6 +15,8 @@ This is a deep research tool where an AI coding agent (Claude Code, Cursor, etc.
 
 The follow-up dialogue is intentional. The agent learns what you actually need before executing — language, depth level, specific angles to explore.
 
+![Human-in-the-loop dialogue](./examples/human-in-the-loop.png)
+
 **Tip:** Use plan mode for the best experience. Follow-up questions appear as selectors, making choices easier.
 
 ## Agent adaptability
@@ -54,6 +56,30 @@ For agents: use `tst` command.
 - `VALYU_API_KEY`: Valyu API access for research runs
 - `GEMINI_API_KEY`: Gemini API access for cover image generation
 - `REPORT_FOR` (optional): name inserted into report attribution line, empty means no name
+
+## Providers
+
+Two deep research engines are available:
+
+| Aspect | Parallel | Valyu |
+|--------|----------|-------|
+| **Sources** | Open internet | Academic & proprietary sources |
+| **Strength** | Strategic synthesis, executive summaries | Data-rich analysis, better citations |
+| **Best for** | Business decisions, implementation planning | Academic research, evidence gathering |
+| **Processors** | pro, ultra, ultra2x, ultra4x, ultra8x | lite, heavy |
+| **Speed** | 2-30 min | 15-30 min |
+| **Price** | Affordable | Higher (~3-4x) |
+
+### Examples
+
+Both engines researching "AI transformation of academic research":
+- [Parallel example](./examples/parallel-ai-academic-research.pdf) — 21 pages, strategic focus
+- [Valyu example](./examples/valyu-ai-academic-research.pdf) — 25 pages, data-rich
+
+### When to choose
+
+- **Parallel**: You need actionable recommendations, broad internet coverage, or faster turnaround
+- **Valyu**: You need academic sources, proper citations, or comprehensive data analysis
 
 ## License
 
