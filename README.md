@@ -54,7 +54,7 @@ For agents: use `tst` command.
 
 - `PARALLEL_API_KEY`: Parallel AI API access for research runs
 - `VALYU_API_KEY`: Valyu API access for research runs
-- `GEMINI_API_KEY`: Gemini API access for cover image generation
+- `GEMINI_API_KEY` (optional): Gemini API access for cover image generation, empty means no image
 - `REPORT_FOR` (optional): name inserted into report attribution line, empty means no name
 
 ## Providers
