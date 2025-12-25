@@ -9,6 +9,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     curl \
     fonts-dejavu-core \
+    fonts-noto-cjk \
     libcairo2 \
     libffi8 \
     libgdk-pixbuf2.0-0 \

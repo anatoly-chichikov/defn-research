@@ -30,12 +30,16 @@ class HokusaiStyle(Styled):
 
 :root {{
   --bg: {self._palette.bg()};
+  --surface: #F2E8D9;
   --text: {self._palette.text()};
   --heading: {self._palette.heading()};
   --link: {self._palette.link()};
   --muted: {self._palette.muted()};
   --quote-bg: {self._palette.quotebg()};
   --accent: {self._palette.accent()};
+  --accent-ink: #B23B2A;
+  --accent-wash: #F3D3CB;
+  --font-serif: "Source Serif Pro", "Noto Serif JP", "Noto Serif CJK JP", "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif", Georgia, serif;
   --code-bg: {self._palette.codebg()};
   --code-inline-bg: {self._palette.codeinlinebg()};
   --border: {self._palette.border()};
@@ -66,7 +70,7 @@ class HokusaiStyle(Styled):
 
 .page-footer {{
   position: running(page-footer);
-  font-family: "Source Serif Pro", Georgia, serif;
+  font-family: var(--font-serif);
   font-size: 9pt;
   color: #666;
   text-align: center;
@@ -78,7 +82,7 @@ class HokusaiStyle(Styled):
 }}
 
 body {{
-  font-family: "Source Serif Pro", Georgia, serif;
+  font-family: var(--font-serif);
   font-size: 13px;
   background: var(--bg);
   color: var(--text);
@@ -137,13 +141,16 @@ body {{
   line-height: 1.15;
   margin-bottom: 1.5rem;
   max-width: none;
+  border-bottom: none;
+  padding-bottom: 0;
 }}
 
 h1 {{
-  font-size: 1.6rem;
+  font-size: 2.05rem;
   font-weight: 700;
   color: var(--heading);
-  margin-bottom: 0.5rem;
+  line-height: 1.15;
+  margin: 0 0 0.7em;
 }}
 
 .meta {{
@@ -184,29 +191,39 @@ h1 {{
 }}
 
 h2 {{
-  font-size: 1.1rem;
+  font-size: 1.55rem;
   font-weight: 600;
   color: var(--heading);
-  margin-top: 2rem;
-  margin-bottom: 0.75rem;
-  padding-bottom: 0.4rem;
-  border-bottom: 2px solid var(--accent);
+  line-height: 1.2;
+  margin: 2.2em 0 0.6em;
+  position: relative;
+}}
+
+h2::before {{
+  content: "";
+  position: absolute;
+  left: -1.4rem;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(to bottom, var(--accent) 0%, var(--accent) 82%, transparent 100%);
+  border-radius: 0 0 4px 0;
 }}
 
 h3 {{
-  font-size: 1rem;
+  font-size: 1.18rem;
   font-weight: 600;
   color: var(--link);
-  margin-top: 1.25rem;
-  margin-bottom: 0.5rem;
+  line-height: 1.25;
+  margin: 1.6em 0 0.4em;
 }}
 
 h4 {{
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--muted);
-  margin-top: 1rem;
-  margin-bottom: 0.4rem;
+  font-size: 1rem;
+  font-weight: 650;
+  color: var(--text);
+  line-height: 1.3;
+  margin: 1.2em 0 0.25em;
 }}
 
 p {{
@@ -215,8 +232,8 @@ p {{
 }}
 
 .synthesis {{
-  border-left: 4px solid var(--link);
-  padding: 1.25rem;
+  border-left: none;
+  padding: 1.25rem 0;
   margin: 1.5rem 0;
 }}
 
@@ -248,7 +265,10 @@ p {{
 
 .source-url a {{
   color: var(--link);
-  text-decoration: none;
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+  text-decoration-thickness: 1px;
+  text-decoration-color: var(--border);
 }}
 
 .source-excerpt {{
@@ -330,21 +350,22 @@ section:last-child .divider {{
 }}
 
 .synthesis h1 {{
-  font-size: 1.4rem;
+  font-size: 2.05rem;
   color: var(--heading);
-  border-bottom: none;
-  margin-top: 0;
+  line-height: 1.15;
+  margin: 0 0 0.7em;
 }}
 
 .synthesis h2 {{
-  font-size: 1.1rem;
-  margin-top: 1.25rem;
-  border-bottom: 1px solid var(--border);
+  font-size: 1.55rem;
+  line-height: 1.2;
+  margin: 2.2em 0 0.6em;
 }}
 
 .synthesis h3 {{
-  font-size: 0.95rem;
-  margin-top: 0.75rem;
+  font-size: 1.18rem;
+  line-height: 1.25;
+  margin: 1.6em 0 0.4em;
 }}
 
 .synthesis ul, .synthesis ol {{
@@ -397,7 +418,7 @@ section:last-child .divider {{
 }}
 
 .synthesis tr:nth-child(even) {{
-  background: #FFFEF7;
+  background: var(--surface);
 }}
 
 .synthesis table.cols-5 {{
@@ -438,7 +459,7 @@ section:last-child .divider {{
 
 .synthesis code {{
   background: var(--code-inline-bg);
-  color: var(--accent);
+  color: var(--text);
   padding: 0.15rem 0.4rem;
   border-radius: 3px;
   font-family: "JetBrains Mono", monospace;
@@ -471,20 +492,22 @@ section:last-child .divider {{
 
 .synthesis blockquote {{
   background: var(--quote-bg);
-  border-left: 4px solid var(--link);
-  margin: 1rem 0;
-  padding: 1rem;
-  font-style: italic;
+  border-left: 3px solid var(--link);
+  margin: 1.2em 0;
+  padding: 0.6em 0.9em;
   color: var(--text);
 }}
 
 .synthesis a {{
   color: var(--link);
   text-decoration: underline;
+  text-underline-offset: 0.18em;
+  text-decoration-thickness: 1px;
+  text-decoration-color: var(--border);
 }}
 
 .synthesis strong {{
-  color: var(--accent);
+  font-weight: 600;
 }}
 
 .synthesis img {{
@@ -540,7 +563,7 @@ pre {{
   padding-top: 2rem;
 }}
 
-.brief h2 {{
+.brief h1 {{
   font-size: 1.3rem;
   font-weight: 700;
   color: var(--heading);
@@ -560,8 +583,8 @@ pre {{
 }}
 
 .brief .query {{
-  background: rgba(189, 224, 254, 0.15);
-  border-left: 4px solid var(--link);
+  background: var(--quote-bg);
+  border-left: 3px solid var(--link);
   padding: 1.5rem;
   border-radius: 0 6px 6px 0;
 }}
@@ -584,11 +607,12 @@ pre {{
 }}
 
 .brief .query strong {{
-  color: var(--link);
+  color: inherit;
+  font-weight: 600;
 }}
 
 a.cite {{
-  color: var(--link);
+  color: var(--accent-ink);
   text-decoration: none;
   font-weight: 600;
   font-size: 0.85em;
@@ -619,16 +643,36 @@ a.cite {{
 
 .ref-link {{
   color: var(--link);
-  text-decoration: none;
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+  text-decoration-thickness: 1px;
+  text-decoration-color: var(--border);
   font-size: 0.9rem;
 }}
 
 .ref-link:hover {{
+  text-decoration-color: var(--accent);
+}}
+
+a {{
+  color: var(--link);
   text-decoration: underline;
+  text-underline-offset: 0.18em;
+  text-decoration-thickness: 1px;
+  text-decoration-color: var(--border);
+}}
+
+a:hover {{
+  text-decoration-color: var(--accent);
+}}
+
+a:focus-visible {{
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }}
 
 hr {{
   border: none;
-  border-top: 1px solid var(--border);
+  border-top: 0;
   margin: 2rem 0;
 }}"""

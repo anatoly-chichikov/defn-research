@@ -164,7 +164,7 @@ class ResearchDocument(Exportable):
         html = self._codeindent(html)
         return f"""<div class="brief">
   <div class="container">
-    <h2>Introduction</h2>
+    <h1>Exploration Brief</h1>
     <div class="query">{html}</div>
   </div>
 </div>"""

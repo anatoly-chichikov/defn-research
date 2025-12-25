@@ -8,6 +8,7 @@ import uuid
 from pathlib import Path
 
 import pytest
+from hamcrest import all_of
 from hamcrest import assert_that
 from hamcrest import contains_string
 from hamcrest import equal_to
@@ -59,6 +60,50 @@ class TestResearchDocumentRenderContainsTopic:
             document.render(),
             contains_string(topic),
             "Rendered document did not contain topic",
+        )
+
+
+class Test_research_document_renders_exploration_brief_title:
+    """ResearchDocument render includes exploration brief title."""
+
+    def test(self) -> None:
+        """ResearchDocument render includes exploration brief title."""
+        seed = sum(ord(c) for c in __name__) + 7
+        maker = random.Random(seed)
+        token = "".join(chr(maker.randrange(0x0400, 0x04ff)) for _ in range(6))
+        task = ResearchTask(query=token, status="completed", result=None, service="valyu.ai")
+        session = ResearchSession(topic=token, tasks=(task,))
+        document = ResearchDocument(session, HokusaiPalette())
+        html = document.render()
+        assert_that(html, contains_string("<h1>Exploration Brief</h1>"), "Exploration Brief title was missing")
+
+
+class Test_research_document_includes_authentic_hokusai_palette:
+    """ResearchDocument render includes authentic Hokusai palette colors."""
+
+    def test(self) -> None:
+        """ResearchDocument render includes authentic Hokusai palette colors."""
+        seed = sum(ord(c) for c in __name__) + 91
+        generator = random.Random(seed)
+        topic = "".join(chr(generator.randrange(0x3040, 0x309f)) for _ in range(6))
+        session = ResearchSession(topic=topic, tasks=tuple())
+        document = ResearchDocument(session, HokusaiPalette())
+        html = document.render()
+        assert_that(
+            html,
+            all_of(
+                contains_string("#F6EFE3"),
+                contains_string("#1C2430"),
+                contains_string("#193D5E"),
+                contains_string("#3A5F88"),
+                contains_string("#6B645A"),
+                contains_string("#E3D9C6"),
+                contains_string("#D04A35"),
+                contains_string("#1C2833"),
+                contains_string("#DDD5C5"),
+                contains_string("#BFB5A3"),
+            ),
+            "Rendered document did not include authentic Hokusai palette colors",
         )
 
 

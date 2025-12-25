@@ -20,16 +20,16 @@ class HokusaiPalette:
 
     def __init__(self) -> None:
         """Initialize palette with semantic colors."""
-        self._bg: Final[str] = "#F8F2EB"
-        self._text: Final[str] = "#0A3050"
-        self._heading: Final[str] = "#003153"
-        self._link: Final[str] = "#1E5FA9"
-        self._muted: Final[str] = "#7AA6D6"
-        self._quotebg: Final[str] = "#BDE0FE"
-        self._accent: Final[str] = "#D94537"
-        self._codebg: Final[str] = "#1E293B"
-        self._codeinlinebg: Final[str] = "#E5E7EB"
-        self._border: Final[str] = "#D1D5DB"
+        self._bg: Final[str] = "#F6EFE3"
+        self._text: Final[str] = "#1C2430"
+        self._heading: Final[str] = "#193D5E"
+        self._link: Final[str] = "#3A5F88"
+        self._muted: Final[str] = "#6B645A"
+        self._quotebg: Final[str] = "#E3D9C6"
+        self._accent: Final[str] = "#D04A35"
+        self._codebg: Final[str] = "#1C2833"
+        self._codeinlinebg: Final[str] = "#DDD5C5"
+        self._border: Final[str] = "#BFB5A3"
 
     def bg(self) -> str:
         """Return page background color."""
