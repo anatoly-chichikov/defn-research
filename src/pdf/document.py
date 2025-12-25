@@ -422,7 +422,7 @@ class ResearchDocument(Exportable):
 
     def _normalize(self, text: str) -> str:
         """Add blank lines before list markers that follow text directly."""
-        return re.sub(r'([^\n])\n((?:\* |\d+\. ))', r'\1\n\n\2', text)
+        return re.sub(r'([^\n])\n((?:[*+-] |\d+\. ))', r'\1\n\n\2', text)
 
     def _nested(self, text: str) -> str:
         """Convert 1-3 space indents to 4 spaces for proper markdown nesting."""

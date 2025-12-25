@@ -5,6 +5,7 @@ import os
 import random
 import tempfile
 import uuid
+from datetime import datetime
 from pathlib import Path
 
 import pytest
@@ -17,6 +18,7 @@ from hamcrest import not_
 
 from src.domain.result import Source
 from src.domain.result import TaskResult
+from src.domain.pending import PendingRun
 from src.domain.session import ResearchSession
 from src.domain.task import ResearchTask
 from src.storage.organizer import OutputOrganizer
@@ -197,6 +199,27 @@ class Test_research_document_omits_author_when_name_missing:
         document = ResearchDocument(session, HokusaiPalette(), path)
         html = document.render()
         assert_that(html, not_(contains_string('<span class="author">')), "Author span was present")
+
+
+class Test_research_document_inserts_blank_line_before_hyphen_list:
+    """ResearchDocument inserts blank line before hyphen lists."""
+
+    def test(self) -> None:
+        """ResearchDocument inserts blank line before hyphen list markers."""
+        seed = sum(ord(c) for c in __name__) + 11
+        maker = random.Random(seed)
+        topic = "".join(chr(maker.randrange(0x0400, 0x04ff)) for _ in range(6))
+        head = "".join(chr(maker.randrange(0x3040, 0x309f)) for _ in range(6))
+        item = "".join(chr(maker.randrange(0x0370, 0x03ff)) for _ in range(6))
+        tail = "".join(chr(maker.randrange(0x0100, 0x017f)) for _ in range(6))
+        text = f"{head}:\n- {item}\n- {tail}"
+        stamp = datetime.fromtimestamp(maker.randrange(1600000000, 1700000000))
+        pending = PendingRun(identifier=topic, query=head, processor=item, language=tail, provider=topic)
+        session = ResearchSession(topic=topic, tasks=tuple(), identifier=item, created=stamp, pending=pending)
+        path = Path(tempfile.gettempdir()) / f"{maker.randrange(1000000)}.png"
+        document = ResearchDocument(session, HokusaiPalette(), path)
+        result = document._normalize(text)
+        assert_that(result, contains_string(":\n\n-"), "Normalized text did not insert a blank line before hyphen list")
 
 
 class TestResearchDocumentRenderContainsTaskQuery:
