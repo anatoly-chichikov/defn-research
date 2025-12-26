@@ -4,7 +4,9 @@ An experiment in agent-first software.
 
 ## What is this?
 
-This is a deep research tool where an AI coding agent (Claude Code, Cursor, etc.) acts as the interface between you and the program. You don't run commands directly — you describe what you want to research, and the agent handles everything else.
+AI agents let you build serious tools just for yourself — iterate daily, adapt as you go. This is that kind of project. A deep research tool for personal use.
+
+The agent (Claude Code, Cursor) is the interface. You describe what you want to research, it asks clarifying questions, then handles everything else. Follow-up dialogue isn't a bug — it's how the agent learns what you actually need before executing.
 
 ## How it works
 
