@@ -65,7 +65,7 @@ Two deep research engines are available:
 
 | Aspect | Parallel | Valyu |
 |--------|----------|-------|
-| **Sources** | Open internet | Academic & proprietary sources |
+| **Sources** | Open internet | Open internet + Academic & proprietary sources |
 | **Strength** | Strategic synthesis, executive summaries | Data-rich analysis, better citations |
 | **Best for** | Business decisions, implementation planning | Academic research, evidence gathering |
 | **Processors** | pro, ultra, ultra2x, ultra4x, ultra8x | lite, heavy |
