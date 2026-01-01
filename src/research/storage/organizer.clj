@@ -84,7 +84,8 @@
   (name [_ time text id]
     (str (parse time) "_" (slug text) "_" (subs id 0 8)))
   (folder [_ name provider]
-    (let [path (.resolve (.resolve root name) provider)
+    (let [label (slug provider)
+          path (.resolve (.resolve root name) label)
           _ (Files/createDirectories path (make-array FileAttribute 0))]
       path))
   (response [item name provider data]

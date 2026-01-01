@@ -395,14 +395,15 @@
   (let [root (:root item)
         list (sess/tasks (:session item))
         task (last list)
+        org (organizer/organizer root)
         name (organizer/name
-              (organizer/organizer root)
+              org
               (sess/created (:session item))
               (sess/topic (:session item))
               (sess/id (:session item)))
         path (if task
                (.resolve
-                (.resolve (.resolve root name) (provider task))
+                (organizer/folder org name (provider task))
                 "response.json")
                (.resolve root "missing.json"))]
     (if (and task (Files/exists path (make-array LinkOption 0)))
@@ -416,13 +417,14 @@
   [item text raw task]
   (let [items (or (:images raw) [])
         root (:root item)
+        org (organizer/organizer root)
         name (organizer/name
-              (organizer/organizer root)
+              org
               (sess/created (:session item))
               (sess/topic (:session item))
               (sess/id (:session item)))
         folder (.resolve
-                (.resolve (.resolve root name) (provider task))
+                (organizer/folder org name (provider task))
                 "images")
         lines (reduce
                (fn [list item]
