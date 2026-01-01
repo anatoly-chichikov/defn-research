@@ -71,7 +71,7 @@ lein test
 - Java 17+
 - Leiningen
 - Docker
-- An AI coding agent (Claude Code, Cursor, Windsurf, etc.)
+- An AI coding agent (Claude Code, Codex, Cursor, Junie, etc.)
 
 ## Envs
 
@@ -90,7 +90,7 @@ Two deep research engines are available:
 | **Strength** | Strategic synthesis, executive summaries | Data-rich analysis, better citations |
 | **Best for** | Business decisions, implementation planning | Academic research, evidence gathering |
 | **Processors** | pro, ultra, ultra2x, ultra4x, ultra8x | lite, heavy |
-| **Speed** | 2-30 min | 15-30 min |
+| **Speed** | 10-40 min | 30-90 min |
 | **Price** | Affordable | Higher (~3-4x) |
 
 You can also pass `--provider all` to run both providers sequentially in
