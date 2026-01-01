@@ -83,7 +83,7 @@
   Organized
   (name [_ time text id]
     (str (parse time) "_" (slug text) "_" (subs id 0 8)))
-  (folder [_ name provider]
+  (folder [_ name _]
     (let [path (.resolve root name)
           _ (Files/createDirectories path (make-array FileAttribute 0))]
       path))
@@ -116,7 +116,7 @@
           path (.resolve (folder item name provider) (str "brief-" tag ".md"))
           _ (spit (.toFile path) text :encoding "UTF-8")]
       path))
-  (existing [item name provider]
+  (existing [_ name provider]
     (let [tag (slug provider)
           tag (if (str/blank? tag) "provider" tag)
           base (.resolve root name)

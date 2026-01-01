@@ -88,7 +88,6 @@
         "Run did not pass data")))
 
 (deftest the-application-run-executes-all-providers
-  "Run executes two providers when provider is all"
   (let [rng (java.util.Random. 25004)
         topic (token rng 6 1040 32)
         query (token rng 7 880 32)
