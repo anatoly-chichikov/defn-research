@@ -216,7 +216,6 @@
         "Escaped newlines were not converted")))
 
 (deftest the-document-wraps-emoji-characters
-  "Ensure emoji characters are wrapped with emoji span."
   (let [rng (java.util.Random. 18021)
         head (token rng 6 1040 32)
         tail (token rng 6 12354 32)
@@ -672,7 +671,7 @@
   (let [rng (java.util.Random. 18073)
         head (token rng 6 1040 32)
         title (token rng 5 880 32)
-        code (token rng 4 1328 32)
+        code (token rng 8 97 26)
         root (Files/createTempDirectory "images"
                                         (make-array FileAttribute 0))
         task (task/task {:query head
@@ -690,7 +689,9 @@
               (session/created item)
               (session/topic item)
               (session/id item))
-        folder (.resolve (.resolve (.resolve root name) "valyu") "images")
+        folder (.resolve
+                (organizer/folder maker name "valyu")
+                "images")
         _ (Files/createDirectories folder (make-array FileAttribute 0))
         path (.resolve folder (str code ".png"))
         _ (Files/write path

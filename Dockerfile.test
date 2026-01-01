@@ -8,5 +8,6 @@ RUN lein deps
 COPY resources ./resources
 COPY src ./src
 COPY test ./test
+COPY Dockerfile ./Dockerfile
 
 ENTRYPOINT ["lein", "test"]

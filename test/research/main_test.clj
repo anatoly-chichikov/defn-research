@@ -198,9 +198,9 @@
                 (session/created sess)
                 (session/topic sess)
                 (session/id sess))
-        folder (.resolve (.resolve out name) provider)
-        path (.resolve folder "response.json")
-        data (json/read-value
-              (.toFile path)
-              (json/object-mapper {:decode-key-fn keyword}))]
+          folder (organizer/folder org name provider)
+          path (.resolve folder "response.json")
+          data (json/read-value
+                (.toFile path)
+                (json/object-mapper {:decode-key-fn keyword}))]
       (is (= raw data) "Raw response did not match stored response"))))

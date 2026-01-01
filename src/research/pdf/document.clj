@@ -142,7 +142,11 @@
 (defn emojify
   "Wrap emoji characters in spans."
   [text]
-  (let [pattern #"([\x{1F000}-\x{1FAFF}\x{2600}-\x{27BF}\x{2300}-\x{23FF}]\x{FE0F}?)"]
+  (let [pattern (re-pattern
+                 (str "([\\x{1F000}-\\x{1FAFF}"
+                      "\\x{2600}-\\x{27BF}"
+                      "\\x{2300}-\\x{23FF}]"
+                      "\\x{FE0F}?)"))]
     (str/replace text pattern "<span class=\"emoji\">$1</span>")))
 
 (defn badge
@@ -395,14 +399,15 @@
   (let [root (:root item)
         list (sess/tasks (:session item))
         task (last list)
+        org (organizer/organizer root)
         name (organizer/name
-              (organizer/organizer root)
+              org
               (sess/created (:session item))
               (sess/topic (:session item))
               (sess/id (:session item)))
         path (if task
                (.resolve
-                (.resolve (.resolve root name) (provider task))
+                (organizer/folder org name (provider task))
                 "response.json")
                (.resolve root "missing.json"))]
     (if (and task (Files/exists path (make-array LinkOption 0)))
@@ -416,13 +421,14 @@
   [item text raw task]
   (let [items (or (:images raw) [])
         root (:root item)
+        org (organizer/organizer root)
         name (organizer/name
-              (organizer/organizer root)
+              org
               (sess/created (:session item))
               (sess/topic (:session item))
               (sess/id (:session item)))
         folder (.resolve
-                (.resolve (.resolve root name) (provider task))
+                (organizer/folder org name (provider task))
                 "images")
         lines (reduce
                (fn [list item]

@@ -220,12 +220,12 @@
                            :chart_type "doughnut"}]}
         server (HttpServer/create (InetSocketAddress. "127.0.0.1" 0) 0)
         handler (reify
-                 HttpHandler
-                 (handle [_ exchange]
-                   (let [body (json/write-value-as-bytes payload)]
-                     (.sendResponseHeaders exchange 200 (alength body))
-                     (with-open [stream (.getResponseBody exchange)]
-                       (.write stream body)))))
+                  HttpHandler
+                  (handle [_ exchange]
+                    (let [body (json/write-value-as-bytes payload)]
+                      (.sendResponseHeaders exchange 200 (alength body))
+                      (with-open [stream (.getResponseBody exchange)]
+                        (.write stream body)))))
         exec (Executors/newSingleThreadExecutor)
         _ (.createContext server "/deepresearch/tasks" handler)
         _ (.setExecutor server exec)
