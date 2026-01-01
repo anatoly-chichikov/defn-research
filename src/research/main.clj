@@ -185,7 +185,14 @@
                   provider (pending/provider pend)
                   exec (if (= provider "valyu")
                          (valyu/valyu {:key (env "VALYU_API_KEY")})
-                         (parallel/parallel))]
+                         (parallel/parallel))
+                  org (organizer/organizer out)
+                  name (organizer/name
+                        org
+                        (session/created pick)
+                        (session/topic pick)
+                        (session/id pick))
+                  _ (organizer/input org name provider query)]
               (println (str "Resuming run: " (subs run 0 (min 16 (count run)))))
               (println (str "Query: " query))
               (println (str "Processor: " processor))
@@ -270,6 +277,13 @@
                   exec (if (= provider "valyu")
                          (valyu/valyu {:key (env "VALYU_API_KEY")})
                          (parallel/parallel))
+                  org (organizer/organizer out)
+                  name (organizer/name
+                        org
+                        (session/created pick)
+                        (session/topic pick)
+                        (session/id pick))
+                  _ (organizer/input org name provider query)
                   run (research/start exec query processor)
                   pend (pending/pending {:run_id run
                                          :query query
