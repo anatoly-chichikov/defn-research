@@ -1,0 +1,23 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Lint (clj-kondo)
+        run: docker run --rm -v "$GITHUB_WORKSPACE":/app -w /app clojure:temurin-21-lein lein lint
+      - name: Format check (cljfmt)
+        run: docker run --rm -v "$GITHUB_WORKSPACE":/app -w /app clojure:temurin-21-lein lein fmt:check
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tests (Docker)
+        run: |
+          docker build -t research-test -f Dockerfile.test .
+          docker run --rm research-test
