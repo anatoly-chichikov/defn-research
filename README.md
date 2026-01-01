@@ -27,7 +27,7 @@ The follow-up dialogue is intentional. The agent learns what you actually need b
 
 **This is not a CLI tool.** You don't run commands directly in your terminal. Instead:
 
-1. Open this project folder in an AI coding agent (Claude Code, Cursor, Windsurf, etc.)
+1. Open this project folder in an AI coding agent (Claude Code, Codex, Cursor, Junie, etc.)
 2. Talk to the agent using the DSL commands below
 3. The agent handles Docker, APIs, and file generation for you
 
