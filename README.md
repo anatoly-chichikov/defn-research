@@ -23,6 +23,26 @@ The follow-up dialogue is intentional. The agent learns what you actually need b
 
 **Tip:** Use plan mode for the best experience. Follow-up questions appear as selectors, making choices easier.
 
+## Quick Start
+
+**This is not a CLI tool.** You don't run commands directly in your terminal. Instead:
+
+1. Open this project folder in an AI coding agent (Claude Code, Cursor, Windsurf, etc.)
+2. Talk to the agent using the DSL commands below
+3. The agent handles Docker, APIs, and file generation for you
+
+```
+# In your AI agent, just type:
+rs quantum computing applications
+
+# The agent will:
+# - Ask clarifying questions (language, depth, focus)
+# - Build and run Docker containers
+# - Generate a PDF report in ./output/
+```
+
+The agent reads `CLAUDE.md` for instructions. You focus on what you want to research — the agent handles how.
+
 ### Examples
 
 Both engines researching "AI transformation of academic research":
