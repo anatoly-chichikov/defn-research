@@ -413,12 +413,11 @@
               (sess/created (:session item))
               (sess/topic (:session item))
               (sess/id (:session item)))
+        base (.resolve root name)
         path (if task
                (let [tag (organizer/slug (provider task))
                      tag (if (str/blank? tag) "provider" tag)]
-                 (.resolve
-                  (organizer/folder org name (provider task))
-                  (str "response-" tag ".json")))
+                 (.resolve base (str "response-" tag ".json")))
                (.resolve root "missing.json"))]
     (if (and task (Files/exists path (make-array LinkOption 0)))
       (json/read-value
@@ -437,10 +436,11 @@
               (sess/created (:session item))
               (sess/topic (:session item))
               (sess/id (:session item)))
+        base (.resolve root name)
         tag (organizer/slug (provider task))
         tag (if (str/blank? tag) "provider" tag)
         folder (.resolve
-                (organizer/folder org name (provider task))
+                base
                 (str "images-" tag))
         lines (reduce
                (fn [list item]

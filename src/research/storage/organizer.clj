@@ -117,7 +117,10 @@
           _ (spit (.toFile path) text :encoding "UTF-8")]
       path))
   (existing [item name provider]
-    (let [path (cover item name provider)]
+    (let [tag (slug provider)
+          tag (if (str/blank? tag) "provider" tag)
+          base (.resolve root name)
+          path (.resolve base (str "cover-" tag ".jpg"))]
       (if (Files/exists path (make-array LinkOption 0))
         (Optional/of path)
         (Optional/empty)))))
