@@ -111,7 +111,8 @@
                    (merge result entry)))
                {}
                items)
-        spec {:topic value :marketing_image image}
+        spec {:topic value
+              :marketing_image image}
         body (json/write-value-as-string spec)
         data {:model "gemini-3-pro-image-preview"
               :quality 0.85}]

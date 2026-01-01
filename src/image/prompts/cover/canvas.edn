@@ -14,5 +14,7 @@
   :dimensions {:width 1920, :height 1080},
   :composition
   {:description
-   "Viewer looks through an invisible window into the scene. The scene exists beyond all edges. Content is cropped by canvas edges, not contained within them.",
+   "Viewer looks through an invisible window into the scene.
+The scene exists beyond all edges. Content is cropped by canvas edges,
+not contained within them.",
    :type "full_bleed_continuous_scene"}}}

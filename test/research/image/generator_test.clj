@@ -18,8 +18,8 @@
           out (gen/prompt spec text)]
       (is (str/includes? out text) "Prompt replacement is incorrect"))))
 
-(deftest the-generator-includes-wabi-sabi-principles
-  "Ensure cover prompt includes wabi-sabi principles."
+(deftest ^{:doc "Ensure cover prompt includes wabi-sabi principles."}
+  the-generator-includes-wabi-sabi-principles
   (let [rng (java.util.Random. 9011)
         base (edn/read-string (slurp (io/resource "cover/parts.edn")))
         parts (or (:image base) [])
@@ -46,8 +46,8 @@
                     (str/includes? (or tones "") "muted"))]
     (is result "Wabi-sabi principles were missing")))
 
-(deftest the-generator-disallows-frames
-  "Ensure cover prompt forbids frames."
+(deftest ^{:doc "Ensure cover prompt forbids frames."}
+  the-generator-disallows-frames
   (let [rng (java.util.Random. 9017)
         path (io/resource "cover/quality_requirements.edn")
         base (edn/read-string (slurp path))
@@ -62,8 +62,8 @@
         result (= value target)]
     (is result "Frames were permitted")))
 
-(deftest the-generator-requires-edge-to-edge
-  "Ensure cover prompt enforces edge to edge rules."
+(deftest ^{:doc "Ensure cover prompt enforces edge to edge rules."}
+  the-generator-requires-edge-to-edge
   (let [rng (java.util.Random. 9021)
         path (io/resource "cover/composition_guidelines.edn")
         node (io/resource "cover/quality_requirements.edn")
@@ -75,17 +75,17 @@
         index (.nextInt rng (count list))
         pick (nth list index)
         table {"端" ["full_bleed_composition_with_cropping"
-                     "edges_filled_with_scene_texture"]
+                    "edges_filled_with_scene_texture"]
                "縁" ["full_bleed_composition_with_cropping"
-                     "edges_filled_with_scene_texture"]
+                    "edges_filled_with_scene_texture"]
                "際" ["full_bleed_composition_with_cropping"
-                     "edges_filled_with_scene_texture"]}
+                    "edges_filled_with_scene_texture"]}
         target (get table pick)
         result (and (= edge (first target)) (= fill (second target)))]
     (is result "Edge to edge rules were missing")))
 
-(deftest the-generator-disallows-text
-  "Ensure cover prompt forbids text and glyphs."
+(deftest ^{:doc "Ensure cover prompt forbids text and glyphs."}
+  the-generator-disallows-text
   (let [rng (java.util.Random. 9023)
         node (io/resource "cover/quality_requirements.edn")
         path (io/resource "cover/surface_treatment.edn")
@@ -97,11 +97,11 @@
         index (.nextInt rng (count list))
         pick (nth list index)
         table {"文" ["no_text_no_letters_no_symbols_no_numbers_no_logos"
-                     "no_text_or_glyphs_only_texture"]
+                    "no_text_or_glyphs_only_texture"]
                "字" ["no_text_no_letters_no_symbols_no_numbers_no_logos"
-                     "no_text_or_glyphs_only_texture"]
+                    "no_text_or_glyphs_only_texture"]
                "記" ["no_text_no_letters_no_symbols_no_numbers_no_logos"
-                     "no_text_or_glyphs_only_texture"]}
+                    "no_text_or_glyphs_only_texture"]}
         target (get table pick)
         result (and (= text (first target)) (= rule (second target)))]
     (is result "Text restrictions were missing")))
