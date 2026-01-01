@@ -2,8 +2,9 @@
 set -euo pipefail
 
 repo="$(git rev-parse --show-toplevel)"
+cache="${HOME}/.m2"
 
-docker run --rm -v "${repo}":/app -w /app clojure:temurin-21-lein lein lint
-docker run --rm -v "${repo}":/app -w /app clojure:temurin-21-lein lein fmt:check
+docker run --rm -v "${repo}":/app -v "${cache}":/root/.m2 -w /app clojure:temurin-21-lein lein lint
+docker run --rm -v "${repo}":/app -v "${cache}":/root/.m2 -w /app clojure:temurin-21-lein lein fmt:check
 docker build -t research-test -f "${repo}/Dockerfile.test" "${repo}"
 docker run --rm research-test
