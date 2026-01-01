@@ -1,5 +1,6 @@
 (ns research.image.generator
-  (:require [clojure.java.io :as io]
+  (:require [clojure.edn :as edn]
+            [clojure.java.io :as io]
             [clojure.string :as str]
             [jsonista.core :as json]
             [org.httpkit.client :as http])
@@ -82,10 +83,39 @@
   "Create generator from env."
   []
   (let [key (or (System/getenv "GEMINI_API_KEY") "")
-        path (io/resource "cover.json")
-        spec (if path (slurp path) (throw (ex-info "Cover prompt missing" {})))
+        root (io/resource "cover/parts.edn")
+        text (if root
+               (slurp root)
+               (throw (ex-info "Cover parts missing"
+                               {:resource "cover/parts.edn"})))
+        data (edn/read-string text)
+        topic (or (:topic data) "")
+        node (io/resource topic)
+        value (let [entry (if node
+                            (edn/read-string (slurp node))
+                            (throw (ex-info "Cover topic missing"
+                                            {:resource topic})))
+                    text (get entry :topic)]
+                (if (str/blank? (or text ""))
+                  (throw (ex-info "Cover topic missing" {:resource topic}))
+                  text))
+        items (or (:image data) [])
+        image (reduce
+               (fn [result item]
+                 (let [path (io/resource item)
+                       value (if path
+                               (slurp path)
+                               (throw (ex-info "Cover part missing"
+                                               {:resource item})))
+                       entry (edn/read-string value)]
+                   (merge result entry)))
+               {}
+               items)
+        spec {:topic value
+              :marketing_image image}
+        body (json/write-value-as-string spec)
         data {:model "gemini-3-pro-image-preview"
               :quality 0.85}]
     (if (str/blank? key)
       (throw (ex-info "GEMINI_API_KEY is required" {}))
-      (->Generator key spec data))))
+      (->Generator key body data))))
