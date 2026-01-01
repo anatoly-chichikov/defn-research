@@ -109,16 +109,16 @@
                                       :basis []
                                       :raw {}})))
         beta (reify research/Researchable
-                 (start [_ query processor]
-                   (swap! runs conj ["beta" query processor])
-                   "beta-run")
-                 (stream [_ _] true)
-                 (finish [_ id]
-                   (response/response {:id id
-                                       :status "completed"
-                                       :output (token rng 6 1040 32)
-                                       :basis []
-                                       :raw {}})))]
+               (start [_ query processor]
+                 (swap! runs conj ["beta" query processor])
+                 "beta-run")
+               (stream [_ _] true)
+               (finish [_ id]
+                 (response/response {:id id
+                                     :status "completed"
+                                     :output (token rng 6 1040 32)
+                                     :basis []
+                                     :raw {}})))]
     (with-redefs [parallel/parallel (fn [] alpha)
                   valyu/valyu (fn [_] beta)
                   main/env (fn [_] "")

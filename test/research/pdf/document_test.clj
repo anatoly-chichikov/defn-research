@@ -341,8 +341,10 @@
            maker
            name
            "parallel"
-           {:run {:run_id "run_a" :status "completed"}
-            :output {:content first :basis []}})
+           {:run {:run_id "run_a"
+                  :status "completed"}
+            :output {:content first
+                     :basis []}})
         _ (organizer/response
            maker
            name

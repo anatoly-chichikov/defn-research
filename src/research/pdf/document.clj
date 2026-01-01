@@ -573,7 +573,7 @@
                        css (style/css (style/style palette))
                        form java.time.format.DateTimeFormatter/ISO_LOCAL_DATE
                        stamp (.format (sess/created session) form)]
-                       (str "<!DOCTYPE html><html lang=\"en\"><head>"
+                   (str "<!DOCTYPE html><html lang=\"en\"><head>"
                         "<meta charset=\"UTF-8\" />"
                         "<title>"
                         (escape (heading (sess/topic session)))
