@@ -83,29 +83,44 @@
   Organized
   (name [_ time text id]
     (str (parse time) "_" (slug text) "_" (subs id 0 8)))
-  (folder [_ name provider]
-    (let [label (slug provider)
-          path (.resolve (.resolve root name) label)
+  (folder [_ name _]
+    (let [path (.resolve root name)
           _ (Files/createDirectories path (make-array FileAttribute 0))]
       path))
   (response [item name provider data]
-    (let [path (.resolve (folder item name provider) "response.json")]
+    (let [tag (slug provider)
+          tag (if (str/blank? tag) "provider" tag)
+          path (.resolve (folder item name provider)
+                         (str "response-" tag ".json"))]
       (json/write-value (.toFile path) data)
       path))
   (cover [item name provider]
-    (.resolve (folder item name provider) "cover.jpg"))
+    (let [tag (slug provider)
+          tag (if (str/blank? tag) "provider" tag)]
+      (.resolve (folder item name provider) (str "cover-" tag ".jpg"))))
   (report [item name provider]
     (let [cut (str/last-index-of name "_")
-          stem (if cut (subs name 0 cut) name)]
-      (.resolve (folder item name provider) (str stem ".pdf"))))
+          stem (if cut (subs name 0 cut) name)
+          tag (slug provider)
+          tag (if (str/blank? tag) "provider" tag)]
+      (.resolve (folder item name provider) (str stem "-" tag ".pdf"))))
   (html [item name provider]
-    (.resolve (folder item name provider) "report.html"))
+    (let [cut (str/last-index-of name "_")
+          stem (if cut (subs name 0 cut) name)
+          tag (slug provider)
+          tag (if (str/blank? tag) "provider" tag)]
+      (.resolve (folder item name provider) (str stem "-" tag ".html"))))
   (brief [item name provider text]
-    (let [path (.resolve (folder item name provider) "brief.md")
+    (let [tag (slug provider)
+          tag (if (str/blank? tag) "provider" tag)
+          path (.resolve (folder item name provider) (str "brief-" tag ".md"))
           _ (spit (.toFile path) text :encoding "UTF-8")]
       path))
-  (existing [item name provider]
-    (let [path (cover item name provider)]
+  (existing [_ name provider]
+    (let [tag (slug provider)
+          tag (if (str/blank? tag) "provider" tag)
+          base (.resolve root name)
+          path (.resolve base (str "cover-" tag ".jpg"))]
       (if (Files/exists path (make-array LinkOption 0))
         (Optional/of path)
         (Optional/empty)))))

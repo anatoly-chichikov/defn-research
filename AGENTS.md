@@ -30,6 +30,7 @@ After language selected — switch all follow-up questions to that language.
 ask provider Which data provider?
   - parallel (cheaper and faster)
   - valyu (more thorough, premium result)
+  - all (run parallel then valyu)
 
 ask processor What compute level? (
   - parallel:
@@ -85,7 +86,7 @@ Container: research-20241221-1430-clojure-pdf
 Processor: ultra8x
 Provider: parallel
 Time: 5-50 min
-PDF: /Users/chichikov/Work/research/output/2025-12-21_clojure-pdf_3e4fc072/parallel/2025-12-21_clojure-pdf.pdf [NOT READY]
+PDF: /Users/chichikov/Work/research/output/2025-12-21_clojure-pdf_3e4fc072/2025-12-21_clojure-pdf-parallel.pdf [NOT READY]
 ```
 
 ---
@@ -101,10 +102,10 @@ List sessions. For each:
 Example:
 ```
 [HITL startups] in_progress (67%)
-  PDF: /Users/chichikov/Work/research/output/2025-12-21_hitl-startups_3e4fc072/parallel/2025-12-21_hitl-startups.pdf [NOT READY]
+  PDF: /Users/chichikov/Work/research/output/2025-12-21_hitl-startups_3e4fc072/2025-12-21_hitl-startups-parallel.pdf [NOT READY]
 
 [AI coding assistants] completed
-  PDF: /Users/chichikov/Work/research/output/2025-12-20_ai-coding_8f2a1b3c/parallel/2025-12-20_ai-coding.pdf
+  PDF: /Users/chichikov/Work/research/output/2025-12-20_ai-coding_8f2a1b3c/2025-12-20_ai-coding-parallel.pdf
 ```
 
 ---

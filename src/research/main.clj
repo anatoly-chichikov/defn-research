@@ -44,7 +44,10 @@
   (let [items (or (:images data) [])]
     (when (= provider "valyu")
       (let [org (organizer/organizer root)
-            folder (organizer/folder org name provider)]
+            tag (organizer/slug provider)
+            tag (if (str/blank? tag) "provider" tag)
+            folder (organizer/folder org name provider)
+            folder (.resolve folder (str "images-" tag))]
         (doseq [item items]
           (let [link (or (:image_url item) "")
                 code (or (:image_id item) "")
@@ -152,8 +155,19 @@
       (println (str "Topic: " topic))
       (subs id 0 8)))
   (run [app topic query processor language provider]
-    (let [id (create app topic)]
-      (research app id query processor language provider)))
+    (let [id (create app topic)
+          pairs (if (= provider "all")
+                  [["parallel" processor]
+                   ["valyu"
+                    (if (or (= processor "lite")
+                            (= processor "heavy"))
+                      processor
+                      "pro")]]
+                  [[provider processor]])]
+      (doseq [pair pairs]
+        (let [name (first pair)
+              proc (second pair)]
+          (research app id query proc language name)))))
   (research [_ id query processor language provider]
     (let [repo (repo/repo (file/file data))
           list (repo/load repo)

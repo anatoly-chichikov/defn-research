@@ -3,7 +3,8 @@ FROM clojure:temurin-21-lein
 WORKDIR /app
 
 COPY project.clj ./project.clj
-RUN lein deps
+COPY tests.edn ./tests.edn
+RUN lein with-profile +test deps
 
 COPY resources ./resources
 COPY src ./src

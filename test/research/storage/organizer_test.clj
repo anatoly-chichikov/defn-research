@@ -73,30 +73,39 @@
         root (Files/createTempDirectory "org"
                                         (make-array FileAttribute 0))
         ident (uuid rng)
+        provider (token rng 6 1040 32)
         item (organizer/organizer root)
-        path (organizer/cover item ident "parallel")]
-    (is (str/ends-with? (str path) ".jpg")
-        "Cover path did not have jpg extension")))
+        path (organizer/cover item ident provider)
+        tag (organizer/slug provider)
+        goal (str "cover-" tag ".jpg")]
+    (is (str/ends-with? (str path) goal)
+        "Cover path did not include provider suffix")))
 
 (deftest the-organizer-report-returns-pdf-path
   (let [rng (java.util.Random. 23011)
         root (Files/createTempDirectory "org"
                                         (make-array FileAttribute 0))
         ident (uuid rng)
+        provider (token rng 6 1040 32)
         item (organizer/organizer root)
-        path (organizer/report item ident "parallel")]
-    (is (str/ends-with? (str path) ".pdf")
-        "Report path did not have pdf extension")))
+        path (organizer/report item ident provider)
+        tag (organizer/slug provider)
+        goal (str "-" tag ".pdf")]
+    (is (str/ends-with? (str path) goal)
+        "Report path did not include provider suffix")))
 
 (deftest the-organizer-html-returns-html-path
   (let [rng (java.util.Random. 23013)
         root (Files/createTempDirectory "org"
                                         (make-array FileAttribute 0))
         ident (uuid rng)
+        provider (token rng 6 1040 32)
         item (organizer/organizer root)
-        path (organizer/html item ident "parallel")]
-    (is (str/ends-with? (str path) ".html")
-        "HTML path did not have html extension")))
+        path (organizer/html item ident provider)
+        tag (organizer/slug provider)
+        goal (str "-" tag ".html")]
+    (is (str/ends-with? (str path) goal)
+        "HTML path did not include provider suffix")))
 
 (deftest the-organizer-existing-returns-empty-for-missing
   (let [rng (java.util.Random. 23015)
