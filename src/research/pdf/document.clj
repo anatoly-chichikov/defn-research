@@ -142,7 +142,11 @@
 (defn emojify
   "Wrap emoji characters in spans."
   [text]
-  (let [pattern #"([\x{1F000}-\x{1FAFF}\x{2600}-\x{27BF}\x{2300}-\x{23FF}]\x{FE0F}?)"]
+  (let [pattern (re-pattern
+                 (str "([\\x{1F000}-\\x{1FAFF}"
+                      "\\x{2600}-\\x{27BF}"
+                      "\\x{2300}-\\x{23FF}]"
+                      "\\x{FE0F}?)"))]
     (str/replace text pattern "<span class=\"emoji\">$1</span>")))
 
 (defn badge

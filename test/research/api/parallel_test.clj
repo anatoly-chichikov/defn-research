@@ -52,9 +52,9 @@
         run (str "trun_" (uuid rng))]
     (with-redefs [parallel/env (fn [_] "key")
                   http/post (fn [_ _]
-                             (delay {:status 200
-                                     :body (json/write-value-as-string
-                                            {:run_id run})}))]
+                              (delay {:status 200
+                                      :body (json/write-value-as-string
+                                             {:run_id run})}))]
       (let [client (parallel/parallel)
             result (research/start client "query" "pro")]
         (is (= run result) "start did not return expected run_id")))))
@@ -64,9 +64,9 @@
         run (str "trun_" (uuid rng))]
     (with-redefs [parallel/env (fn [_] "key")
                   http/post (fn [_ _]
-                             (delay {:status 202
-                                     :body (json/write-value-as-string
-                                            {:run_id run})}))]
+                              (delay {:status 202
+                                      :body (json/write-value-as-string
+                                             {:run_id run})}))]
       (let [client (parallel/parallel)
             result (research/start client "query" "pro")]
         (is (= run result) "Accepted status was not handled")))))
@@ -77,10 +77,10 @@
         holder (atom "")]
     (with-redefs [parallel/env (fn [_] "key")
                   http/post (fn [_ opts]
-                             (reset! holder (:body opts))
-                             (delay {:status 200
-                                     :body (json/write-value-as-string
-                                            {:run_id "trun_x"})}))]
+                              (reset! holder (:body opts))
+                              (delay {:status 200
+                                      :body (json/write-value-as-string
+                                             {:run_id "trun_x"})}))]
       (let [client (parallel/parallel)]
         (research/start client query "pro")))
     (let [data (json/read-value
@@ -94,10 +94,10 @@
         holder (atom "")]
     (with-redefs [parallel/env (fn [_] "key")
                   http/post (fn [_ opts]
-                             (reset! holder (:body opts))
-                             (delay {:status 200
-                                     :body (json/write-value-as-string
-                                            {:run_id "trun_x"})}))]
+                              (reset! holder (:body opts))
+                              (delay {:status 200
+                                      :body (json/write-value-as-string
+                                             {:run_id "trun_x"})}))]
       (let [client (parallel/parallel)]
         (research/start client "query" processor)))
     (let [data (json/read-value

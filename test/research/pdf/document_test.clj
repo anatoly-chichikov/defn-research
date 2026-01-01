@@ -216,7 +216,6 @@
         "Escaped newlines were not converted")))
 
 (deftest the-document-wraps-emoji-characters
-  "Ensure emoji characters are wrapped with emoji span."
   (let [rng (java.util.Random. 18021)
         head (token rng 6 1040 32)
         tail (token rng 6 12354 32)

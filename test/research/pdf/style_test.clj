@@ -129,7 +129,6 @@
         "Japanese fallback font was missing")))
 
 (deftest the-style-includes-emoji-fallbacks
-  "Confirm emoji-capable fonts are listed in the serif stack."
   (let [rng (java.util.Random. 20021)
         value (token rng 6 1040 32)
         css (style/css (style/style (pal value)))]
