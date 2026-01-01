@@ -15,6 +15,7 @@
   (cover [item name provider] "Return cover path.")
   (report [item name provider] "Return report path.")
   (html [item name provider] "Return html path.")
+  (input [item name provider text] "Save input markdown.")
   (brief [item name provider text] "Save brief text.")
   (existing [item name provider] "Return existing cover path."))
 
@@ -110,6 +111,12 @@
           tag (slug provider)
           tag (if (str/blank? tag) "provider" tag)]
       (.resolve (folder item name provider) (str stem "-" tag ".html"))))
+  (input [item name provider text]
+    (let [tag (slug provider)
+          tag (if (str/blank? tag) "provider" tag)
+          path (.resolve (folder item name provider) (str "input-" tag ".md"))
+          _ (spit (.toFile path) text :encoding "UTF-8")]
+      path))
   (brief [item name provider text]
     (let [tag (slug provider)
           tag (if (str/blank? tag) "provider" tag)

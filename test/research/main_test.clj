@@ -250,3 +250,55 @@
                 (.toFile path)
                 (json/object-mapper {:decode-key-fn keyword}))]
       (is (= raw data) "Raw response did not match stored response"))))
+
+(deftest the-application-saves-input-markdown
+  (let [rng (java.util.Random. 25009)
+        topic (token rng 6 1040 32)
+        query (str (token rng 5 1040 32) "\n\n" (token rng 7 880 32))
+        processor "pro"
+        language (token rng 4 1040 32)
+        provider "parallel"
+        run (token rng 8 1536 32)
+        text (token rng 12 1040 32)
+        stamp (session/format (session/now))
+        ident (uuid rng)
+        sess (session/session {:id ident
+                               :topic topic
+                               :tasks []
+                               :created stamp})
+        root (Files/createTempDirectory "app"
+                                        (make-array FileAttribute 0))
+        data (.resolve root "data")
+        out (.resolve root "output")
+        _ (Files/createDirectories data (make-array FileAttribute 0))
+        _ (Files/createDirectories out (make-array FileAttribute 0))
+        store (repo/repo (file/file (.resolve data "research.json")))
+        _ (repo/save store [sess])
+        reply (response/response {:id run
+                                  :status "completed"
+                                  :output text
+                                  :basis []
+                                  :raw {}})
+        fake (reify research/Researchable
+               (start [_ _ _] run)
+               (stream [_ _] true)
+               (finish [_ _] reply))
+        app (main/app root)
+        token (subs ident 0 8)]
+    (with-redefs [parallel/parallel (fn [] fake)
+                  main/env (fn [_] "")
+                  document/emit (fn [_ _] nil)
+                  image/generate (fn [_ _ _] nil)]
+      (main/research app token query processor language provider))
+    (let [org (organizer/organizer out)
+          name (organizer/name
+                org
+                (session/created sess)
+                (session/topic sess)
+                (session/id sess))
+          tag (organizer/slug provider)
+          tag (if (empty? tag) "provider" tag)
+          folder (organizer/folder org name provider)
+          path (.resolve folder (str "input-" tag ".md"))
+          data (slurp (.toFile path) :encoding "UTF-8")]
+      (is (= query data) "Input markdown was not saved"))))
