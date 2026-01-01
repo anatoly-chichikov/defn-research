@@ -41,14 +41,25 @@
 (deftest the-document-render-contains-topic
   (let [rng (java.util.Random. 18003)
         topic (token rng 6 12354 32)
+        head (document/heading topic)
         item (session/session {:topic topic
                                :tasks []
                                :created (session/format (session/now))})
         root (Paths/get "output" (make-array String 0))
         doc (document/document item (palette/palette) (Optional/empty) root)
         html (document/render doc)]
-    (is (str/includes? html topic)
-        "Rendered document did not contain topic")))
+    (is (str/includes? html head)
+        "Rendered document did not contain heading")))
+
+(deftest the-document-heading-uppercases-initial-letter
+  (let [rng (java.util.Random. 18004)
+        text (token rng 6 1072 32)
+        head (subs text 0 1)
+        tail (subs text 1)
+        goal (str (str/upper-case head) tail)
+        value (document/heading text)]
+    (is (= goal value)
+        "Heading did not uppercase initial letter")))
 
 (deftest the-document-renders-exploration-brief-title
   (let [rng (java.util.Random. 18005)
@@ -299,6 +310,51 @@
         html (document/render doc)]
     (is (str/includes? html summary)
         "Rendered document did not contain synthesis")))
+
+(deftest the-document-renders-outputs-for-multiple-providers
+  (let [rng (java.util.Random. 18024)
+        topic (token rng 6 1040 32)
+        first (token rng 8 1040 32)
+        second (token rng 8 1040 32)
+        a (task/task {:query topic
+                      :status "completed"
+                      :result nil
+                      :service "parallel.ai"
+                      :created (task/format (task/now))})
+        b (task/task {:query topic
+                      :status "completed"
+                      :result nil
+                      :service "valyu.ai"
+                      :created (task/format (task/now))})
+        item (session/session {:topic topic
+                               :tasks [(task/data a) (task/data b)]
+                               :created (session/format (session/now))})
+        root (Files/createTempDirectory "doc"
+                                        (make-array FileAttribute 0))
+        maker (organizer/organizer root)
+        name (organizer/name
+              maker
+              (session/created item)
+              (session/topic item)
+              (session/id item))
+        _ (organizer/response
+           maker
+           name
+           "parallel"
+           {:run {:run_id "run_a" :status "completed"}
+            :output {:content first :basis []}})
+        _ (organizer/response
+           maker
+           name
+           "valyu"
+           {:output {:markdown second}
+            :sources []
+            :status "completed"
+            :deepresearch_id "run_b"})
+        doc (document/document item (palette/palette) (Optional/empty) root)
+        html (document/render doc)
+        seen (and (str/includes? html first) (str/includes? html second))]
+    (is seen "Rendered document did not include provider outputs")))
 
 (deftest the-document-renders-confidence-badge
   (let [rng (java.util.Random. 18025)
@@ -689,9 +745,10 @@
               (session/created item)
               (session/topic item)
               (session/id item))
+        tag (organizer/slug "valyu")
         folder (.resolve
                 (organizer/folder maker name "valyu")
-                "images")
+                (str "images-" tag))
         _ (Files/createDirectories folder (make-array FileAttribute 0))
         path (.resolve folder (str code ".png"))
         _ (Files/write path

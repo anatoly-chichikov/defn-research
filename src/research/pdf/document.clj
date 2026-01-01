@@ -50,6 +50,16 @@
       (str/replace ">" "&gt;")
       (str/replace "\"" "&quot;")))
 
+(defn heading
+  "Return heading text with uppercase initial letter."
+  [text]
+  (let [text (str/trim (or text ""))
+        size (count text)
+        head (if (pos? size) (subs text 0 1) "")
+        tail (if (> size 1) (subs text 1) "")
+        head (str/upper-case head)]
+    (str head tail)))
+
 (defn normalize
   "Add blank lines before list markers."
   [text]
@@ -395,10 +405,8 @@
 
 (defn raw
   "Load raw response from output folder."
-  [item]
+  [item task]
   (let [root (:root item)
-        list (sess/tasks (:session item))
-        task (last list)
         org (organizer/organizer root)
         name (organizer/name
               org
@@ -406,9 +414,11 @@
               (sess/topic (:session item))
               (sess/id (:session item)))
         path (if task
-               (.resolve
-                (organizer/folder org name (provider task))
-                "response.json")
+               (let [tag (organizer/slug (provider task))
+                     tag (if (str/blank? tag) "provider" tag)]
+                 (.resolve
+                  (organizer/folder org name (provider task))
+                  (str "response-" tag ".json")))
                (.resolve root "missing.json"))]
     (if (and task (Files/exists path (make-array LinkOption 0)))
       (json/read-value
@@ -427,9 +437,11 @@
               (sess/created (:session item))
               (sess/topic (:session item))
               (sess/id (:session item)))
+        tag (organizer/slug (provider task))
+        tag (if (str/blank? tag) "provider" tag)
         folder (.resolve
                 (organizer/folder org name (provider task))
-                "images")
+                (str "images-" tag))
         lines (reduce
                (fn [list item]
                  (let [link (or (:image_url item) "")
@@ -513,7 +525,7 @@
 (defn resultmap
   "Return text and sources for task."
   [item task]
-  (let [raw (raw item)]
+  (let [raw (raw item task)]
     (if (seq raw)
       (let [resp (responsemap item raw task)]
         [(response/text resp) (response/sources resp)])
@@ -561,10 +573,10 @@
                        css (style/css (style/style palette))
                        form java.time.format.DateTimeFormatter/ISO_LOCAL_DATE
                        stamp (.format (sess/created session) form)]
-                   (str "<!DOCTYPE html><html lang=\"en\"><head>"
+                       (str "<!DOCTYPE html><html lang=\"en\"><head>"
                         "<meta charset=\"UTF-8\" />"
                         "<title>"
-                        (escape (sess/topic session))
+                        (escape (heading (sess/topic session)))
                         "</title><style>"
                         css
                         "</style></head><body>"
@@ -574,7 +586,7 @@
                         "<div class=\"intro\">"
                         (coverimage item)
                         "<div class=\"intro-content\"><h1>"
-                        (escape (sess/topic session))
+                        (escape (heading (sess/topic session)))
                         "</h1><div class=\"meta\"><p class=\"subtitle\">"
                         note
                         "</p><p class=\"date\">"

@@ -33,7 +33,7 @@ Both engines researching "AI transformation of academic research":
 
 If something breaks (environment issues, missing dependencies, config problems), the agent can fix it. You don't need to understand the infrastructure details — that's the agent's job.
 
-## The DSL
+## DSL
 
 Check `CLAUDE.md` for the agent's instruction set. It's simple — a few commands like:
 - `rs <topic>` for new research
@@ -92,6 +92,9 @@ Two deep research engines are available:
 | **Processors** | pro, ultra, ultra2x, ultra4x, ultra8x | lite, heavy |
 | **Speed** | 2-30 min | 15-30 min |
 | **Price** | Affordable | Higher (~3-4x) |
+
+You can also pass `--provider all` to run both providers sequentially in
+the same session folder.
 
 ### When to choose
 

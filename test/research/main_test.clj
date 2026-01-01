@@ -4,6 +4,7 @@
             [research.api.parallel :as parallel]
             [research.api.research :as research]
             [research.api.response :as response]
+            [research.api.valyu :as valyu]
             [research.domain.session :as session]
             [research.image.generator :as image]
             [research.main :as main]
@@ -85,6 +86,50 @@
     (main/run item topic query processor language provider)
     (is (= [topic code query processor language provider] @store)
         "Run did not pass data")))
+
+(deftest the-application-run-executes-all-providers
+  "Run executes two providers when provider is all"
+  (let [rng (java.util.Random. 25004)
+        topic (token rng 6 1040 32)
+        query (token rng 7 880 32)
+        processor (token rng 4 1040 32)
+        language (token rng 4 880 32)
+        root (Files/createTempDirectory "app"
+                                        (make-array FileAttribute 0))
+        app (main/app root)
+        runs (atom [])
+        alpha (reify research/Researchable
+                (start [_ query processor]
+                  (swap! runs conj ["alpha" query processor])
+                  "alpha-run")
+                (stream [_ _] true)
+                (finish [_ id]
+                  (response/response {:id id
+                                      :status "completed"
+                                      :output (token rng 6 1040 32)
+                                      :basis []
+                                      :raw {}})))
+        beta (reify research/Researchable
+                 (start [_ query processor]
+                   (swap! runs conj ["beta" query processor])
+                   "beta-run")
+                 (stream [_ _] true)
+                 (finish [_ id]
+                   (response/response {:id id
+                                       :status "completed"
+                                       :output (token rng 6 1040 32)
+                                       :basis []
+                                       :raw {}})))]
+    (with-redefs [parallel/parallel (fn [] alpha)
+                  valyu/valyu (fn [_] beta)
+                  main/env (fn [_] "")
+                  document/emit (fn [_ _] nil)
+                  image/generate (fn [_ _ _] nil)]
+      (main/run app topic query processor language "all"))
+    (let [total (count @runs)
+          uniques (count (distinct (map first @runs)))]
+      (is (and (= 2 total) (= 2 uniques))
+          "Run did not execute two providers for all"))))
 
 (deftest the-application-skips-cover-when-key-missing
   (let [rng (java.util.Random. 25005)
@@ -198,8 +243,10 @@
                 (session/created sess)
                 (session/topic sess)
                 (session/id sess))
+          tag (organizer/slug provider)
+          tag (if (empty? tag) "provider" tag)
           folder (organizer/folder org name provider)
-          path (.resolve folder "response.json")
+          path (.resolve folder (str "response-" tag ".json"))
           data (json/read-value
                 (.toFile path)
                 (json/object-mapper {:decode-key-fn keyword}))]
