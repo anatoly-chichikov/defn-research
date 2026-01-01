@@ -1,4 +1,4 @@
-# (defn research [])
+# (defn research [ ])
 
 An experiment in agent-first software.
 
@@ -17,9 +17,17 @@ Beyond that, the same agent can be part of the interface itself. You describe wh
 
 The follow-up dialogue is intentional. The agent learns what you actually need before executing — language, depth level, specific angles to explore.
 
-![Human-in-the-loop dialogue](./examples/human-in-the-loop.png)
+<p align="center">
+  <img src="./examples/human-in-the-loop.png" width="50%" alt="Human-in-the-loop dialogue">
+</p>
 
 **Tip:** Use plan mode for the best experience. Follow-up questions appear as selectors, making choices easier.
+
+### Examples
+
+Both engines researching "AI transformation of academic research":
+- [Parallel example](./examples/parallel-ai-academic-research.pdf) — 21 pages, strategic focus
+- [Valyu example](./examples/valyu-ai-academic-research.pdf) — 25 pages, data-rich
 
 ## Agent adaptability
 
@@ -84,12 +92,6 @@ Two deep research engines are available:
 | **Processors** | pro, ultra, ultra2x, ultra4x, ultra8x | lite, heavy |
 | **Speed** | 2-30 min | 15-30 min |
 | **Price** | Affordable | Higher (~3-4x) |
-
-### Examples
-
-Both engines researching "AI transformation of academic research":
-- [Parallel example](./examples/parallel-ai-academic-research.pdf) — 21 pages, strategic focus
-- [Valyu example](./examples/valyu-ai-academic-research.pdf) — 25 pages, data-rich
 
 ### When to choose
 
