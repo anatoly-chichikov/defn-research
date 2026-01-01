@@ -27,6 +27,9 @@ venv/
 .pytest_cache/
 .ruff_cache/
 .uv-cache/
+target/
+.lein-*/
+.nrepl-port
 
 # Project data (excluded from git, kept locally)
 data/
@@ -38,3 +41,6 @@ output/
 # Codex
 tmp_codex_schema/
 tmp_*/
+.clj-kondo/.cache/
+.clj-kondo/imports/
+.lsp/

@@ -21,18 +21,24 @@ New research. Dialog first, then launch.
 
 ask language Which language for the result?
   - English
-  - 中文 (Chinese)
-  - Español (Spanish)
-  - हिन्दी (Hindi)
-  - Русский (Russian)
+  - Russian
+  - Spanish
+  - Greek
 
 After language selected — switch all follow-up questions to that language.
 
 ask provider Which data provider?
-  - parallel
-  - valyu
+  - parallel (cheaper and faster)
+  - valyu (more thorough, premium result)
 
-ask processor What compute level? (parallel: pro/ultra/ultra2x, valyu: lite/heavy)
+ask processor What compute level? (
+  - parallel:
+    - pro
+    - ultra
+    - ultra8x
+  - valyu: 
+    - lite
+    - heavy
 
 ask topic — minimum 3 questions, up to 5 (in selected language):
   - Scope: narrow vs broad? specific case or general overview?
@@ -76,7 +82,7 @@ notify pdf_path — exact full path (no wildcards!), build after getting session
 Example output:
 ```
 Container: research-20241221-1430-clojure-pdf
-Processor: ultra2x
+Processor: ultra8x
 Provider: parallel
 Time: 5-50 min
 PDF: /Users/chichikov/Work/research/output/2025-12-21_clojure-pdf_3e4fc072/parallel/2025-12-21_clojure-pdf.pdf [NOT READY]

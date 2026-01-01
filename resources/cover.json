@@ -8,6 +8,7 @@
       "brand_name": "Deep Research",
       "usage_context": "article_cover_16x9"
     },
+
     "canvas": {
       "aspect_ratio": "16:9",
       "orientation": "landscape",
@@ -40,6 +41,7 @@
         "utagawa_kuniyoshi",
         "kawanabe_kyosai"
       ],
+
       "line_work": {
         "quality": "elegant_thin_consistent",
         "weight": "delicate_fine_lines_throughout",
@@ -49,12 +51,14 @@
         "detail_expression": "achieved_through_finer_detail_density_not_thicker_lines",
         "reference_style": "bijin-ga_portraits_and_landscape_series_line_quality"
       },
+
       "color_application": {
         "method": "flat_color_areas_with_subtle_gradation",
         "gradients": "only_bokashi_technique_soft_fade_within_single_hue",
         "layering": "visible_color_block_overlaps",
         "saturation": "slightly_muted_as_if_naturally_aged"
       },
+
       "texture": {
         "paper": "visible_washi_fiber_texture_throughout",
         "wood": "subtle_woodgrain_pattern_in_flat_areas",
@@ -62,6 +66,7 @@
         "age": "gentle_patina_slight_yellowing_of_light_areas",
         "imperfections": "small_organic_irregularities_fiber_inclusions"
       },
+
       "rendering_quality": {
         "aesthetic": "handcrafted_printed_artwork",
         "finish": "matte_paper_surface",
@@ -69,6 +74,7 @@
         "detail_level": "high_detail_through_fine_lines_not_photorealism"
       }
     },
+
     "color_palette": {
       "primary_colors": {
         "prussian_blue": {
@@ -130,6 +136,7 @@
         "show": "paper_fiber_wood_grain_fabric_weave_ink_wash"
       }
     },
+
     "locations_library": {
       "natural_landscapes": [
         {
@@ -304,6 +311,7 @@
           "mood": ["minimalism", "emptiness", "scarcity", "pattern", "erosion"]
         }
       ],
+
       "built_environments": [
         {
           "id": "zen_garden",
@@ -414,6 +422,7 @@
           ]
         }
       ],
+
       "atmospheric_conditions": [
         {
           "id": "dawn",
@@ -507,6 +516,7 @@
         }
       ]
     },
+
     "metaphor_elements_library": {
       "technology_and_mechanics": [
         {
@@ -685,6 +695,7 @@
           ]
         }
       ],
+
       "knowledge_and_learning": [
         {
           "id": "scroll",
@@ -767,6 +778,7 @@
           ]
         }
       ],
+
       "nature_patterns": [
         {
           "id": "root_system",
@@ -1080,6 +1092,7 @@
           ]
         }
       ],
+
       "human_figures": [
         {
           "id": "samurai",
@@ -1195,6 +1208,7 @@
           ]
         }
       ],
+
       "objects_and_artifacts": [
         {
           "id": "lantern",
@@ -1318,6 +1332,7 @@
         }
       ]
     },
+
     "topic_to_visual_mapping": {
       "ai_machine_learning": {
         "locations": ["craftsman_workshop", "scroll_archive", "star_tower"],
@@ -1390,6 +1405,7 @@
         "atmosphere": ["dawn", "dense_fog", "full_moon"]
       }
     },
+
     "composition_guidelines": {
       "negative_space": {
         "importance": "essential",
@@ -1416,6 +1432,7 @@
         "description": "natural_lines_guide_viewer_through_composition"
       }
     },
+
     "quality_requirements": {
       "image_integrity": {
         "edges": "content_continues_past_all_four_edges",
@@ -1435,6 +1452,7 @@
         ]
       }
     },
+
     "generation_process": {
       "step_1": "analyze_topic_identify_core_concept_and_metaphor",
       "step_2": "select_location_matching_topic_mood",

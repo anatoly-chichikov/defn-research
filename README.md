@@ -1,4 +1,4 @@
-# Research
+# (defn research [])
 
 An experiment in agent-first software.
 
@@ -6,7 +6,7 @@ An experiment in agent-first software.
 
 AI agents let you build serious tools just for yourself — iterate daily, adapt as you go. This is that kind of project. A deep research tool for personal use.
 
-The agent (Claude Code, Cursor) is the interface. You describe what you want to research, it asks clarifying questions, then handles everything else. Follow-up dialogue isn't a bug — it's how the agent learns what you actually need before executing.
+Beyond that, the same agent can be part of the interface itself. You describe what you want, it asks clarifying questions, then handles execution. Follow-up dialogue isn't a bug — it's how the agent learns what you actually need before acting.
 
 ## How it works
 
@@ -46,9 +46,22 @@ docker run --rm research-test
 
 For agents: use `tst` command.
 
+Local run:
+
+```bash
+lein run
+```
+
+Local tests:
+
+```bash
+lein test
+```
+
 ## Requirements
 
-- Python 3.11+
+- Java 17+
+- Leiningen
 - Docker
 - An AI coding agent (Claude Code, Cursor, Windsurf, etc.)
 

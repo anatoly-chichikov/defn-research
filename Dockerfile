@@ -1,33 +1,22 @@
-FROM python:3.11-slim-bookworm
-
-ENV PYTHONUNBUFFERED=1
-ENV PATH="/root/.local/bin:${PATH}"
+FROM clojure:temurin-21-lein
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates \
-    curl \
-    fonts-dejavu-core \
-    fonts-noto-cjk \
-    libcairo2 \
-    libffi8 \
-    libgdk-pixbuf2.0-0 \
-    libglib2.0-0 \
-    libharfbuzz0b \
-    libjpeg62-turbo \
-    libpango-1.0-0 \
-    libpangocairo-1.0-0 \
-    libpangoft2-1.0-0 \
-    shared-mime-info \
-    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends python3 python3-venv curl libpango-1.0-0 libpangocairo-1.0-0 libcairo2 libgdk-pixbuf2.0-0 libffi8 libssl3 fonts-noto-cjk fonts-noto-color-emoji && rm -rf /var/lib/apt/lists/*
+RUN curl -Ls https://astral.sh/uv/install.sh | sh
+ENV PATH="/root/.cargo/bin:/root/.local/bin:${PATH}"
+ENV UV_CACHE_DIR=/app/.uv-cache
+ENV PDF_ENGINE=weasyprint
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
+ENV JAVA_TOOL_OPTIONS="-Dfile.encoding=UTF-8 -Dsun.jnu.encoding=UTF-8"
+RUN uv run --with weasyprint weasyprint --version
 
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+COPY project.clj ./project.clj
+RUN lein deps
 
-COPY pyproject.toml uv.lock ./
-RUN uv sync --frozen --no-dev
-
+COPY resources ./resources
 COPY src ./src
 COPY data ./data
 
-ENTRYPOINT ["uv", "run", "--frozen", "--no-dev", "--no-sync", "python", "-m", "src.main"]
+ENTRYPOINT ["lein", "run"]
