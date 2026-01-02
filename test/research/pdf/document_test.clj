@@ -25,7 +25,6 @@
   "Return deterministic UUID string."
   [rng]
   (str (java.util.UUID. (.nextLong rng) (.nextLong rng))))
-
 (deftest the-document-render-contains-doctype
   (let [rng (java.util.Random. 18001)
         topic (token rng 6 1040 32)

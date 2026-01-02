@@ -12,8 +12,13 @@
             [research.storage.file :as file]
             [research.storage.organizer :as organizer]
             [research.storage.repository :as repo])
-  (:import (java.nio.file Files)
-           (java.nio.file.attribute FileAttribute)))
+  (:import (java.io StringWriter)
+           (java.nio.file Files Paths)
+           (java.nio.file.attribute FileAttribute)
+           (javax.imageio ImageIO)
+           (org.apache.pdfbox.pdmodel PDDocument)
+           (org.apache.pdfbox.rendering PDFRenderer)
+           (org.apache.pdfbox.text PDFTextStripper)))
 
 (defn token
   "Return deterministic token string."
@@ -29,6 +34,46 @@
   "Return deterministic UUID string."
   [rng]
   (str (java.util.UUID. (.nextLong rng) (.nextLong rng))))
+
+(defn screens
+  "Render PDF pages into images."
+  [path folder dpi]
+  (with-open [doc (PDDocument/load (.toFile path))]
+    (let [rend (PDFRenderer. doc)
+          size (.getNumberOfPages doc)]
+      (loop [idx 0 list []]
+        (if (< idx size)
+          (let [image (.renderImageWithDPI rend idx dpi)
+                name (format "page-%03d.png" (inc idx))
+                file (.resolve folder name)
+                _ (ImageIO/write image "png" (.toFile file))]
+            (recur (inc idx) (conj list image)))
+          list)))))
+
+(defn mismatch
+  "Return first mismatching page index."
+  [left right]
+  (let [size (count left)
+        total (count right)
+        head (min size total)]
+    (if (not= size total)
+      (inc head)
+      (loop [idx 0]
+        (if (< idx size)
+          (let [one (nth left idx)
+                two (nth right idx)
+                w1 (.getWidth one)
+                h1 (.getHeight one)
+                w2 (.getWidth two)
+                h2 (.getHeight two)]
+            (if (or (not= w1 w2) (not= h1 h2))
+              (inc idx)
+              (let [a1 (.getRGB one 0 0 w1 h1 nil 0 w1)
+                    a2 (.getRGB two 0 0 w2 h2 nil 0 w2)]
+                (if (java.util.Arrays/equals a1 a2)
+                  (recur (inc idx))
+                  (inc idx)))))
+          0)))))
 
 (deftest the-cli-parses-command
   (let [rng (java.util.Random. 25001)
@@ -302,3 +347,92 @@
           path (.resolve folder (str "input-" tag ".md"))
           data (slurp (.toFile path) :encoding "UTF-8")]
       (is (= query data) "Input markdown was not saved"))))
+
+(deftest ^:integration the-application-generates-pdf-screenshots
+  (let [rng (java.util.Random. 25011)
+        lang (token rng 6 1040 32)
+        head (token rng 6 97 26)
+        base (Paths/get "baseline-research" (make-array String 0))
+        input (slurp (.toFile (.resolve base "input-parallel.md"))
+                     :encoding "UTF-8")
+        raw (json/read-value
+             (.toFile (.resolve base "response-parallel.json"))
+             (json/object-mapper {:decode-key-fn keyword}))
+        cover (.resolve base "cover-parallel.jpg")
+        gold (.resolve base (str "2026-01-01_clojure-production-pain-points-"
+                                 "parallel.pdf"))
+        author (with-open [doc (PDDocument/load (.toFile gold))]
+                 (let [strip (PDFTextStripper.)]
+                   (.setStartPage strip 1)
+                   (.setEndPage strip 1)
+                   (let [text (.getText strip doc)
+                         mark (re-find
+                               (re-pattern
+                                (str "AI generated report for "
+                                     "(.+) with"))
+                               text)]
+                     (if mark (second mark) ""))))
+        root (Files/createTempDirectory head (make-array FileAttribute 0))
+        data (.resolve root "data")
+        out (.resolve root "output")
+        _ (Files/createDirectories data (make-array FileAttribute 0))
+        _ (Files/createDirectories out (make-array FileAttribute 0))
+        repo (repo/repo (file/file (.resolve data "research.json")))
+        stamp "2026-01-01T00:00:00"
+        ident (uuid rng)
+        sess (session/session {:id ident
+                               :topic "Clojure production pain points"
+                               :tasks []
+                               :created stamp})
+        _ (repo/save repo [sess])
+        run (token rng 8 97 26)
+        fake (reify research/Researchable
+               (start [_ _ _] run)
+               (stream [_ _] true)
+               (finish [_ _]
+                 (let [output (:output raw)
+                       text (if (map? output) (or (:content output) "") "")
+                       basis (if (map? output) (or (:basis output) []) [])
+                       info (or (:run raw) {})
+                       code (or (:run_id info) run)
+                       state (or (:status info) "completed")]
+                   (response/response {:id code
+                                       :status state
+                                       :output text
+                                       :basis basis
+                                       :raw raw}))))
+        app (main/app root)
+        cache (Paths/get "tmp_cache" (make-array String 0))
+        folder (.resolve cache (str "pdf-screens-" head))
+        left (.resolve folder "baseline")
+        right (.resolve folder "generated")
+        org (organizer/organizer out)
+        label (organizer/name
+               org
+               (session/created sess)
+               (session/topic sess)
+               (session/id sess))
+        path (organizer/report org label "parallel")]
+    (with-redefs [parallel/parallel (fn [] fake)
+                  main/env (fn [key] (if (= key "GEMINI_API_KEY") "key" ""))
+                  document/env (fn [_] author)
+                  image/generator (fn [] nil)
+                  image/generate (fn [_ _ target]
+                                   (Files/copy
+                                    cover
+                                    target
+                                    (make-array java.nio.file.CopyOption 0)))]
+      (binding [*out* (StringWriter.) *err* (StringWriter.)]
+        (main/research app (subs ident 0 8) input "pro" lang "parallel")))
+    (Files/createDirectories left (make-array FileAttribute 0))
+    (Files/createDirectories right (make-array FileAttribute 0))
+    (let [lefts (screens gold left 150)
+          rights (screens path right 150)
+          miss (mismatch lefts rights)
+          text (if (zero? miss)
+                 "Screenshot mismatch detected"
+                 (str "Page "
+                      miss
+                      " screenshot did not match baseline screenshots saved in "
+                      (.toString folder)))]
+      (is (zero? miss) text))))

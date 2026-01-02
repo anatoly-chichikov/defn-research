@@ -1,0 +1,8 @@
+repos:
+  - repo: local
+    hooks:
+      - id: lein-unit
+        name: lein test unit
+        entry: lein test :unit
+        language: system
+        pass_filenames: false
