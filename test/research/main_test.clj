@@ -431,8 +431,18 @@
           miss (mismatch lefts rights)
           text (if (zero? miss)
                  "Screenshot mismatch detected"
-                 (str "Page "
-                      miss
-                      " screenshot did not match baseline screenshots saved in "
-                      (.toString folder)))]
+                 (let [name (format "page-%03d.png" miss)
+                       base (.toString
+                             (.toUri
+                              (.resolve left name)))
+                       gen (.toString
+                            (.toUri
+                             (.resolve right name)))]
+                   (str "Page "
+                        miss
+                        " screenshot did not match baseline "
+                        "baseline-url="
+                        base
+                        " generated-url="
+                        gen)))]
       (is (zero? miss) text))))
