@@ -1,38 +1,24 @@
 name: CI
 
 on:
+  push:
   pull_request:
-    branches:
-      - main
 
 jobs:
-  lint:
+  tests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Cache Maven
-        uses: actions/cache@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Build test image
+        run: docker build -t research-test -f Dockerfile.test .
+      - name: Unit tests
+        run: docker run --rm research-test :unit
+      - name: Integration tests
+        run: docker run --rm -v "${{ github.workspace }}/tmp_cache:/app/tmp_cache" research-test :integration
+      - name: Upload screenshots on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
         with:
-          path: ~/.m2
-          key: ${{ runner.os }}-m2-${{ hashFiles('project.clj', 'tests.edn') }}
-          restore-keys: ${{ runner.os }}-m2-
-      - name: Lint (clj-kondo)
-        run: docker run --rm -v "$GITHUB_WORKSPACE":/app -v "$HOME/.m2":/root/.m2 -w /app clojure:temurin-21-lein lein lint
-      - name: Format check (cljfmt)
-        run: docker run --rm -v "$GITHUB_WORKSPACE":/app -v "$HOME/.m2":/root/.m2 -w /app clojure:temurin-21-lein lein fmt:check
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Buildx
-        uses: docker/setup-buildx-action@v3
-      - name: Cache Docker layers
-        uses: actions/cache@v4
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ hashFiles('Dockerfile.test', 'project.clj', 'tests.edn') }}
-          restore-keys: ${{ runner.os }}-buildx-
-      - name: Tests (Docker)
-        run: |
-          docker buildx build --load --cache-from type=local,src=/tmp/.buildx-cache --cache-to type=local,dest=/tmp/.buildx-cache,mode=max -t research-test -f Dockerfile.test .
-          docker run --rm research-test
+          name: pdf-screenshots
+          path: tmp_cache

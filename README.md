@@ -69,7 +69,8 @@ Run tests in Docker:
 
 ```bash
 docker build -t research-test -f Dockerfile.test .
-docker run --rm research-test
+docker run --rm research-test :unit
+docker run --rm -v "$PWD/tmp_cache:/app/tmp_cache" research-test :integration
 ```
 
 For agents: use `tst` command.
@@ -83,7 +84,14 @@ lein run
 Local tests:
 
 ```bash
-lein test
+lein test :unit
+lein test :integration
+```
+
+Pre-commit runs unit tests:
+
+```bash
+pre-commit run --all-files
 ```
 
 ## Requirements

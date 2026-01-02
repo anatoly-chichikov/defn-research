@@ -15,7 +15,8 @@
   :profiles {:dev {:dependencies [[clj-kondo/clj-kondo "2025.10.23"]
                                   [cljfmt/cljfmt "0.9.2"]]}
              :test {:dependencies [[lambdaisland/kaocha "1.91.1392"]
-                                   [nubank/matcher-combinators "3.9.2"]]}}
+                                   [nubank/matcher-combinators "3.9.2"]
+                                   [org.apache.pdfbox/pdfbox "2.0.30"]]}}
   :aliases {"test" ["with-profile" "+test" "run" "-m" "kaocha.runner"]
             "lint" ["with-profile" "+dev" "run" "-m" "clj-kondo.main" "--lint" "src" "test"]
             "fmt" ["with-profile" "+dev" "run" "-m" "cljfmt.main" "fix" "src" "test"]
