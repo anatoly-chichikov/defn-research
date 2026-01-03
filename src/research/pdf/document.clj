@@ -146,8 +146,99 @@
                (fn [note link]
                  (str/replace note link (trim link)))
                text
-               items)]
-    (prune value)))
+               items)
+        value (prune value)
+        mask (re-pattern (str "(?<!\\])[ \\t]*\\("
+                              "https?://[^\\s\\)]+"
+                              "|[A-Za-z0-9.-]+\\.[A-Za-z]{2,}[^\\s\\)]*"
+                              "\\)"))
+        value (str/replace value mask "")]
+    value))
+
+(defn label
+  "Return cleaned source title."
+  [item name]
+  (let [text (str/replace
+              (str/trim (or (result/title item) ""))
+              #"\s+"
+              " ")
+        link (trim (result/url item))
+        host (response/domain link)
+        text (if (and (= name "parallel")
+                      (= (str/lower-case text) "fetched web page"))
+               (if (str/blank? host) link host)
+               text)
+        text (if (str/blank? text) (if (str/blank? host) link host) text)]
+    text))
+
+(defn excerpt
+  "Return cleaned excerpt text."
+  [text]
+  (let [text (str/replace (str/trim (or text "")) #"\s+" " ")
+        size 220
+        text (if (> (count text) size)
+               (str (subs text 0 (dec size)) "...")
+               text)]
+    text))
+
+(declare resultmap provider)
+
+(defn catalog
+  "Collect sources from session tasks."
+  [item]
+  (let [list (sess/tasks (:session item))]
+    (reduce
+     (fn [list task]
+       (let [[_ sources] (resultmap item task)
+             name (provider task)]
+         (reduce
+          (fn [list item]
+            (let [link (trim (result/url item))]
+              (if (str/blank? link)
+                list
+                (conj list {:source item
+                            :provider name}))))
+          list
+          sources)))
+     []
+     list)))
+
+(defn section
+  "Render sources section."
+  [list]
+  (if (seq list)
+    (let [rows (reduce
+                (fn [text item]
+                  (let [source (:source item)
+                        name (:provider item)
+                        link (trim (result/url source))
+                        title (label source name)
+                        note (if (= name "valyu")
+                               (excerpt (result/excerpt source))
+                               "")
+                        link (escape link)
+                        title (escape title)
+                        note (escape note)
+                        row (str "<li class=\"ref-item\">"
+                                 "<a class=\"ref-link\" href=\""
+                                 link
+                                 "\" target=\"_blank\">"
+                                 title
+                                 "</a>"
+                                 (if (str/blank? note)
+                                   ""
+                                   (str "<div class=\"source-excerpt\">"
+                                        note
+                                        "</div>"))
+                                 "</li>")]
+                    (str text row)))
+                ""
+                list)]
+      (str "<section class=\"references\">"
+           "<h2>Sources</h2><ol class=\"ref-list\">"
+           rows
+           "</ol></section>"))
+    ""))
 
 (defn emojify
   "Wrap emoji characters in spans."
@@ -577,6 +668,8 @@
 (defrecord Document [session palette cover root]
   Rendered
   (render [item] (let [[content _] (tasks item)
+                       list (catalog item)
+                       extra (section list)
                        sign (->Signature (author) (service session))
                        note (html sign)
                        css (style/css (style/style palette))
@@ -603,8 +696,12 @@
                         "</p></div></div></div>"
                         (brief item)
                         "<div class=\"container content\">"
+                        "<div class=\"tasks\">"
                         content
-                        "</div><div class=\"container\"></div></body></html>")))
+                        "</div>"
+                        "</div><div class=\"container\">"
+                        extra
+                        "</div></body></html>")))
   Exported
   (save [item path]
     (let [html (render item)]

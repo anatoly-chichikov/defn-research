@@ -380,6 +380,52 @@
     (is (str/includes? html "confidence-high")
         "Confidence badge was missing")))
 
+(deftest the-document-renders-sources-section
+  (let [rng (java.util.Random. 18028)
+        head (token rng 6 1040 32)
+        note (token rng 6 1040 32)
+        link (str "https://example.com/" (.nextInt rng 1000))
+        source (result/->Source head link note "High")
+        value (result/->Result head [source])
+        task (task/task {:query head
+                         :status "completed"
+                         :result (result/data value)
+                         :service "valyu.ai"
+                         :created (task/format (task/now))})
+        entry (task/data task)
+        item (session/session {:topic head
+                               :tasks [entry]
+                               :created (session/format (session/now))})
+        root (Paths/get "output" (make-array String 0))
+        doc (document/document item (palette/palette) (Optional/empty) root)
+        html (document/render doc)]
+    (is (str/includes? html "<h2>Sources</h2>")
+        "Sources section was missing")))
+
+(deftest the-document-uses-domain-for-placeholder-title
+  (let [rng (java.util.Random. 18029)
+        name (token rng 6 97 26)
+        host (str name ".com")
+        link (str "https://" host "/" (token rng 5 97 26))
+        head (token rng 6 1040 32)
+        mark (token rng 6 1040 32)
+        source (result/->Source "Fetched web page" link "" "High")
+        value (result/->Result head [source])
+        task (task/task {:query mark
+                         :status "completed"
+                         :result (result/data value)
+                         :service "parallel.ai"
+                         :created (task/format (task/now))})
+        entry (task/data task)
+        item (session/session {:topic mark
+                               :tasks [entry]
+                               :created (session/format (session/now))})
+        root (Paths/get "output" (make-array String 0))
+        doc (document/document item (palette/palette) (Optional/empty) root)
+        html (document/render doc)]
+    (is (str/includes? html host)
+        "Source domain was missing")))
+
 (deftest the-document-tables-adds-column-class
   (let [rng (java.util.Random. 18026)
         head (token rng 4 1040 32)
@@ -419,6 +465,18 @@
         html (document/render doc)]
     (is (not (str/includes? html "utm_source"))
         "utm parameters were not stripped from document")))
+
+(deftest the-document-removes-parenthetical-urls
+  (let [rng (java.util.Random. 18028)
+        head (token rng 6 1040 32)
+        name (token rng 5 97 26)
+        part (token rng 5 97 26)
+        tail (token rng 4 97 26)
+        link (str name ".net/" part "_radio_" tail ".htm")
+        text (str head " (" link "): " head)
+        item (document/clean text)]
+    (is (not (str/includes? item link))
+        "Parenthetical url was not removed")))
 
 (deftest the-document-escapes-html
   (let [topic "<script>alert('xss')</script>"
