@@ -478,6 +478,18 @@
     (is (not (str/includes? item link))
         "Parenthetical url was not removed")))
 
+(deftest the-document-preserves-markdown-link-urls
+  (let [rng (java.util.Random. 18029)
+        head (token rng 6 1040 32)
+        host (token rng 6 97 26)
+        path (token rng 6 97 26)
+        link (str "https://" host ".com/" path "_radio?utm_source=valyu.ai")
+        text (str "[" head "](" link ")")
+        item (document/clean text)
+        expect (document/trim link)]
+    (is (str/includes? item expect)
+        "Markdown link url was truncated")))
+
 (deftest the-document-escapes-html
   (let [topic "<script>alert('xss')</script>"
         item (session/session {:topic topic
@@ -554,7 +566,8 @@
         mark (uuid rng)
         text (str "テキスト-"
                   mark
-                  " [1]\n\n## References\n\n1. タイトル https://example.com/"
+                  " [1]\n\n## References\n\n1. タイトル "
+                  "https://example.com/"
                   mark)
         item (first (document/citations text []))
         link (str "<a href=\"https://example.com/" mark "\" class=\"cite\"")]

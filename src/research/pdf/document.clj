@@ -149,8 +149,8 @@
                items)
         value (prune value)
         mask (re-pattern (str "(?<!\\])[ \\t]*\\("
-                              "https?://[^\\s\\)]+"
-                              "|[A-Za-z0-9.-]+\\.[A-Za-z]{2,}[^\\s\\)]*"
+                              "(?:https?://[^\\s\\)]+"
+                              "|[A-Za-z0-9.-]+\\.[A-Za-z]{2,}[^\\s\\)]*)"
                               "\\)"))
         value (str/replace value mask "")]
     value))
