@@ -38,7 +38,8 @@ ask processor What compute level? (
     - ultra
     - ultra8x
   - valyu: 
-    - lite
+    - fast
+    - standard
     - heavy
 
 ask topic — minimum 3 questions, up to 5 (in selected language):
@@ -152,7 +153,8 @@ Tip: add `-fast` for speed (pro-fast, ultra-fast)
 
 | Name | Use case |
 |------|----------|
-| `lite` | Faster, lighter research |
+| `fast` | Quickest, lighter research |
+| `standard` | Balanced depth and speed (formerly `lite`) |
 | `heavy` | Deeper, more thorough |
 
 ---

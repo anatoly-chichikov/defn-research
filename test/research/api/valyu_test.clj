@@ -57,6 +57,28 @@
     (is (str/includes? @seen "/v1/deepresearch/tasks")
         "Valyu did not use versioned endpoint")))
 
+(deftest ^{:doc "Ensure Valyu maps lite to standard."}
+  the-valyu-start-maps-lite-to-standard
+  (let [rng (java.util.Random. 17004)
+        run (str "dr_" (.nextInt rng 100000))
+        query (token rng 6 1040 32)
+        key (token rng 5 880 32)
+        body (atom "")
+        model "lite"]
+    (with-redefs [http/post (fn [_ req]
+                              (reset! body (:body req))
+                              (delay {:status 200
+                                      :body (json/write-value-as-string
+                                             {:deepresearch_id run})}))]
+      (let [client (valyu/valyu {:key key
+                                 :base "https://example.com"})]
+        (research/start client query model)))
+    (let [data (json/read-value
+                @body
+                (json/object-mapper {:decode-key-fn keyword}))]
+      (is (= "standard" (:model data))
+          "Valyu did not map lite to standard"))))
+
 (deftest the-valyu-maps-high-confidence
   (let [rng (java.util.Random. 17003)
         title (token rng 6 1040 32)

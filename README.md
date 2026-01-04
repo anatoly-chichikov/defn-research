@@ -117,7 +117,7 @@ Two deep research engines are available:
 | **Sources** | Open internet | Open internet + Academic & proprietary sources |
 | **Strength** | Strategic synthesis, executive summaries | Data-rich analysis, better citations |
 | **Best for** | Business decisions, implementation planning | Academic research, evidence gathering |
-| **Processors** | pro, ultra, ultra2x, ultra4x, ultra8x | lite, heavy |
+| **Processors** | pro, ultra, ultra2x, ultra4x, ultra8x | fast, standard, heavy (lite supported) |
 | **Speed** | 10-40 min | 30-90 min |
 | **Price** | Affordable | Higher (~3-4x) |
 
