@@ -154,7 +154,7 @@ Tip: add `-fast` for speed (pro-fast, ultra-fast)
 | Name | Use case |
 |------|----------|
 | `fast` | Quickest, lighter research |
-| `standard` | Balanced depth and speed (formerly `lite`) |
+| `standard` | Balanced depth and speed |
 | `heavy` | Deeper, more thorough |
 
 ---

@@ -175,8 +175,8 @@
       (is (and (= 2 total) (= 2 uniques))
           "Run did not execute two providers for all"))))
 
-(deftest ^{:doc "Ensure valyu runs use standard for lite."}
-  the-application-run-maps-valyu-lite-to-standard
+(deftest ^{:doc "Ensure valyu rejects legacy processor."}
+  the-application-run-rejects-valyu-lite-processor
   (let [rng (java.util.Random. 25006)
         topic (token rng 6 1040 32)
         query (token rng 7 880 32)
@@ -184,28 +184,10 @@
         language (token rng 4 880 32)
         root (Files/createTempDirectory "app"
                                         (make-array FileAttribute 0))
-        app (main/app root)
-        seen (atom nil)
-        run (token rng 8 1536 32)
-        text (token rng 12 1040 32)
-        reply (response/response {:id run
-                                  :status "completed"
-                                  :output text
-                                  :basis []
-                                  :raw {}})
-        beta (reify research/Researchable
-               (start [_ _ processor]
-                 (reset! seen processor)
-                 run)
-               (stream [_ _] true)
-               (finish [_ _] reply))]
-    (with-redefs [valyu/valyu (fn [_] beta)
-                  main/env (fn [_] "")
-                  document/emit (fn [_ _] nil)
-                  image/generate (fn [_ _ _] nil)]
-      (main/run app topic query processor language "valyu"))
-    (is (= "standard" @seen)
-        "Valyu processor did not map to standard")))
+        app (main/app root)]
+    (is (thrown? clojure.lang.ExceptionInfo
+                 (main/run app topic query processor language "valyu"))
+        "Valyu accepted legacy processor")))
 
 (deftest the-application-skips-cover-when-key-missing
   (let [rng (java.util.Random. 25005)

@@ -30,7 +30,7 @@
   (let [rng (java.util.Random. 17001)
         run (str "dr_" (.nextInt rng 100000))
         query (token rng 6 880 32)
-        model (str "lite-" (.nextInt rng 1000))]
+        model (str "standard-" (.nextInt rng 1000))]
     (with-redefs [http/post (fn [_ _]
                               (delay {:status 200
                                       :body (json/write-value-as-string
@@ -45,7 +45,7 @@
         seen (atom "")
         run (str "dr_" (.nextInt rng 100000))
         query (token rng 6 1040 32)
-        model (str "lite-" (.nextInt rng 1000))
+        model (str "standard-" (.nextInt rng 1000))
         client (valyu/valyu {:key "key"
                              :base "https://api.valyu.ai"})]
     (with-redefs [http/post (fn [url _]
@@ -57,14 +57,14 @@
     (is (str/includes? @seen "/v1/deepresearch/tasks")
         "Valyu did not use versioned endpoint")))
 
-(deftest ^{:doc "Ensure Valyu maps lite to standard."}
-  the-valyu-start-maps-lite-to-standard
+(deftest ^{:doc "Ensure Valyu preserves processor."}
+  the-valyu-start-preserves-processor
   (let [rng (java.util.Random. 17004)
         run (str "dr_" (.nextInt rng 100000))
         query (token rng 6 1040 32)
         key (token rng 5 880 32)
         body (atom "")
-        model "lite"]
+        model (token rng 5 1040 32)]
     (with-redefs [http/post (fn [_ req]
                               (reset! body (:body req))
                               (delay {:status 200
@@ -76,8 +76,8 @@
     (let [data (json/read-value
                 @body
                 (json/object-mapper {:decode-key-fn keyword}))]
-      (is (= "standard" (:model data))
-          "Valyu did not map lite to standard"))))
+      (is (= model (:model data))
+          "Valyu changed processor"))))
 
 (deftest the-valyu-maps-high-confidence
   (let [rng (java.util.Random. 17003)

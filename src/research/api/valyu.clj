@@ -93,12 +93,8 @@
   research/Researchable
   (start [_ query processor]
     (let [url (str base "/deepresearch/tasks")
-          mode (cond
-                 (= processor "lite") "standard"
-                 (= processor "pro") "standard"
-                 :else processor)
           body {:input query
-                :model mode
+                :model processor
                 :output_formats ["markdown" "pdf"]}
           head {"Content-Type" "application/json"
                 "x-api-key" key}
