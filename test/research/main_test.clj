@@ -359,8 +359,7 @@
              (.toFile (.resolve base "response-parallel.json"))
              (json/object-mapper {:decode-key-fn keyword}))
         cover (.resolve base "cover-parallel.jpg")
-        gold (.resolve base (str "2026-01-01_clojure-production-pain-points-"
-                                 "parallel.pdf"))
+        gold (.resolve base "baseline.pdf")
         author (with-open [doc (PDDocument/load (.toFile gold))]
                  (let [strip (PDFTextStripper.)]
                    (.setStartPage strip 1)
