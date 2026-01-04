@@ -175,6 +175,20 @@
       (is (and (= 2 total) (= 2 uniques))
           "Run did not execute two providers for all"))))
 
+(deftest ^{:doc "Ensure valyu rejects legacy processor."}
+  the-application-run-rejects-valyu-lite-processor
+  (let [rng (java.util.Random. 25006)
+        topic (token rng 6 1040 32)
+        query (token rng 7 880 32)
+        processor "lite"
+        language (token rng 4 880 32)
+        root (Files/createTempDirectory "app"
+                                        (make-array FileAttribute 0))
+        app (main/app root)]
+    (is (thrown? clojure.lang.ExceptionInfo
+                 (main/run app topic query processor language "valyu"))
+        "Valyu accepted legacy processor")))
+
 (deftest the-application-skips-cover-when-key-missing
   (let [rng (java.util.Random. 25005)
         topic (token rng 6 1040 32)

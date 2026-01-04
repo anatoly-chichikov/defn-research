@@ -156,14 +156,29 @@
       (subs id 0 8)))
   (run [app topic query processor language provider]
     (let [id (create app topic)
+          mode (cond
+                 (= processor "lite")
+                 (throw (ex-info
+                         "Run failed because processor lite is not supported"
+                         {:processor processor}))
+                 (and (= provider "valyu")
+                      (not (or (= processor "fast")
+                               (= processor "standard")
+                               (= processor "heavy"))))
+                 (throw (ex-info
+                         (str "Run failed because processor is not supported"
+                              " for valyu")
+                         {:processor processor}))
+                 (or (= processor "fast")
+                     (= processor "standard")
+                     (= processor "heavy"))
+                 processor
+                 :else "standard")
           pairs (if (= provider "all")
                   [["parallel" processor]
-                   ["valyu"
-                    (if (or (= processor "lite")
-                            (= processor "heavy"))
-                      processor
-                      "pro")]]
-                  [[provider processor]])]
+                   ["valyu" mode]]
+                  [[provider
+                    (if (= provider "valyu") mode processor)]])]
       (doseq [pair pairs]
         (let [name (first pair)
               proc (second pair)]
@@ -257,23 +272,14 @@
             (let [allow #{"parallel" "valyu"}
                   _ (when-not (contains? allow provider)
                       (throw (ex-info "Provider must be parallel or valyu" {})))
-                  check (or (= processor "lite")
-                            (= processor "heavy")
-                            (= processor "pro"))
+                  check (or (= processor "fast")
+                            (= processor "standard")
+                            (= processor "heavy"))
                   _ (when (and (= provider "valyu") (not check))
                       (throw
                        (ex-info
-                        "Processor must be lite or heavy for valyu"
+                        "Processor must be fast standard or heavy for valyu"
                         {})))
-                  provider (if (and (= provider "valyu") (= processor "pro"))
-                             "valyu"
-                             provider)
-                  processor (if (= provider "valyu")
-                              (if (or (= processor "lite")
-                                      (= processor "heavy"))
-                                processor
-                                "heavy")
-                              processor)
                   exec (if (= provider "valyu")
                          (valyu/valyu {:key (env "VALYU_API_KEY")})
                          (parallel/parallel))
