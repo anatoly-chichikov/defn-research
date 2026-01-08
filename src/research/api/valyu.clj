@@ -3,7 +3,8 @@
             [jsonista.core :as json]
             [org.httpkit.client :as http]
             [research.api.research :as research]
-            [research.api.response :as response]))
+            [research.api.response :as response]
+            [research.config :as config]))
 
 (declare valyu-status valyu-emit)
 
@@ -111,7 +112,8 @@
           run (or (:deepresearch_id data) (:id data) "")]
       run))
   (stream [item id]
-    (let [data (loop [start (System/currentTimeMillis)]
+    (let [timeout-ms (* config/task-timeout-hours 3600000)
+          data (loop [start (System/currentTimeMillis)]
                  (let [data (valyu-status item id)
                        state (or (:status data) "")
                        value (if (map? state) (or (:value state) state) state)
@@ -122,7 +124,7 @@
                        _ (valyu-emit data)]
                    (if done
                      data
-                     (if (> (- (System/currentTimeMillis) start) 7200000)
+                     (if (> (- (System/currentTimeMillis) start) timeout-ms)
                        (throw (ex-info "Valyu task timed out" {:id id}))
                        (do (Thread/sleep 60000) (recur start))))))]
       data))
