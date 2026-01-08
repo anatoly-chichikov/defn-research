@@ -286,48 +286,36 @@
         hold (atom [])
         mark (atom {})
         note (atom 0)
+        push (fn [num link]
+               (let [token (str "@@CITE" @note "@@")
+                     badge (badge (get map link ""))]
+                 (swap! note inc)
+                 (swap! mark
+                        assoc
+                        token
+                        (str "<a href=\""
+                             link
+                             "\" class=\"cite\" "
+                             "target=\"_blank\">["
+                             num
+                             "]</a>"
+                             badge))
+                 (when-not (some #(= link %) @hold)
+                   (swap! hold conj link))
+                 token))
         stash (fn [items]
-                (let [num (second items)
-                      link (trim (nth items 2))
-                      token (str "@@CITE" @note "@@")]
-                  (swap! mark assoc token [num link])
-                  (swap! note inc)
-                  token))
+                (let [num (Integer/parseInt (second items))
+                      link (trim (nth items 2))]
+                  (if (str/blank? link) (first items) (push num link))))
         stage (str/replace text #"\[\[(\d+)\]\]\((https?://[^)\s]+)\)" stash)
         stage (str/replace stage #"\[(\d+)\]\((https?://[^)\s]+)\)" stash)
         render (fn [items]
                  (let [num (Integer/parseInt (second items))
                        link (get refs num "")
                        link (if (str/blank? link) "" (trim link))]
-                   (if (str/blank? link)
-                     (first items)
-                     (do (when-not (some #(= link %) @hold)
-                           (swap! hold conj link))
-                         (str "<a href=\""
-                              link
-                              "\" class=\"cite\" target=\"_blank\">["
-                              num
-                              "]</a>"
-                              (badge (get map link "")))))))
-        value (str/replace stage #"\[(\d+)\]" render)
-        value (reduce
-               (fn [text [token pair]]
-                 (let [num (first pair)
-                       link (second pair)]
-                   (when-not (some #(= link %) @hold)
-                     (swap! hold conj link))
-                   (str/replace
-                    text
-                    token
-                    (str "<a href=\""
-                         link
-                         "\" class=\"cite\" target=\"_blank\">["
-                         num
-                         "]</a>"
-                         (badge (get map link ""))))))
-               value
-               @mark)]
-    [value @hold]))
+                   (if (str/blank? link) (first items) (push num link))))
+        value (str/replace stage #"\[(\d+)\]" render)]
+    [value @hold @mark]))
 
 (defn strip
   "Remove trailing sources section."
@@ -638,7 +626,7 @@
   (let [[text sources] (resultmap item task)
         text (clean text)
         text (emojify text)
-        [text urls] (citations text sources)
+        [text urls mark] (citations text sources)
         text (strip text)
         text (nested text)
         text (normalize text)
@@ -647,6 +635,11 @@
         html (tables html)
         html (codeindent html)
         html (paragraphs html)
+        html (reduce-kv
+              (fn [note token link]
+                (str/replace note token link))
+              html
+              mark)
         body (if (str/blank? html)
                ""
                (str "<div class=\"synthesis\">" html "</div>"))]

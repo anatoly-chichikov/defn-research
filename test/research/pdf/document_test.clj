@@ -564,15 +564,22 @@
 (deftest the-document-citations-convert-references
   (let [rng (java.util.Random. 18039)
         mark (uuid rng)
-        text (str "テキスト-"
-                  mark
-                  " [1]\n\n## References\n\n1. タイトル "
-                  "https://example.com/"
-                  mark)
-        item (first (document/citations text []))
-        link (str "<a href=\"https://example.com/" mark "\" class=\"cite\"")]
-    (is (str/includes? item link)
-        "Citations did not create link from reference")))
+        head (token rng 5 12354 32)
+        host (token rng 6 97 26)
+        link (str "https://" host ".com/" mark)
+        text (str head "-" mark " [1]\n\n## References\n\n1. "
+                  head
+                  " "
+                  link)
+        data (document/citations text [])
+        item (first data)
+        pool (nth data 2)
+        href (str "<a href=\""
+                  link
+                  "\" class=\"cite\" target=\"_blank\">[1]</a>")
+        seen (and (str/includes? item "@@CITE")
+                  (some #(str/includes? % href) (vals pool)))]
+    (is seen "Citations did not create link from reference")))
 
 (deftest the-document-citations-extract-urls
   (let [rng (java.util.Random. 18041)
@@ -581,6 +588,35 @@
                   mark)
         urls (second (document/citations text []))]
     (is (= 1 (count urls)) "Citations did not extract URL")))
+
+(deftest the-document-render-avoids-italic-leak-after-snake-case
+  (let [rng (java.util.Random. 18042)
+        head (token rng 5 1040 32)
+        left (token rng 4 12354 32)
+        right (token rng 4 880 32)
+        word (str left "_" right)
+        host (token rng 6 97 26)
+        path (token rng 6 97 26)
+        link (str "https://" host ".com/" path)
+        text (str head " " word " [1]\n\n## References\n\n1. "
+                  left
+                  " "
+                  link)
+        value (result/->Result text [])
+        task (task/task {:query head
+                         :status "completed"
+                         :result (result/data value)
+                         :created (task/format (task/now))})
+        entry (task/data task)
+        item (session/session {:topic head
+                               :tasks [entry]
+                               :created (session/format (session/now))})
+        root (Paths/get "output" (make-array String 0))
+        doc (document/document item (palette/palette) (Optional/empty) root)
+        html (document/render doc)
+        seen (and (str/includes? html word)
+                  (not (str/includes? html "target=\"</i>blank\"")))]
+    (is seen "HTML contained broken italic target")))
 
 (deftest the-document-references-extract-mapping
   (let [rng (java.util.Random. 18043)
