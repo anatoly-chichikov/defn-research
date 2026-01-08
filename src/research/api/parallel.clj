@@ -4,7 +4,8 @@
             [jsonista.core :as json]
             [org.httpkit.client :as http]
             [research.api.research :as research]
-            [research.api.response :as response]))
+            [research.api.response :as response]
+            [research.config :as config]))
 
 (defn now
   "Return current time millis."
@@ -118,9 +119,11 @@
     (let [url (str base "/v1/tasks/runs/" id "/result")
           head {"x-api-key" key
                 "Content-Type" "application/json"}
+          timeout-sec (* config/task-timeout-hours 3600)
+          timeout-ms (* config/task-timeout-hours 3600000)
           response @(http/get url {:headers head
-                                   :query-params {:api_timeout 7200}
-                                   :timeout 7200000
+                                   :query-params {:api_timeout timeout-sec}
+                                   :timeout timeout-ms
                                    :as :text})
           status (:status response)
           raw (if (= status 200)
