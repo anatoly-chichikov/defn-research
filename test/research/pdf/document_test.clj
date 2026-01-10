@@ -262,6 +262,23 @@
                   (str/includes? item "\n* "))]
     (is mark "Inline bullets were not converted")))
 
+(deftest the-document-listify-keeps-numbered-hyphens
+  (let [rng (java.util.Random. 18031)
+        head (token rng 6 1040 32)
+        left (token rng 6 12354 32)
+        right (token rng 6 256 64)
+        mid (token rng 5 880 32)
+        one (inc (.nextInt rng 8))
+        two (+ one (inc (.nextInt rng 8)))
+        part (str left " - " right)
+        tail (str mid " - " head)
+        text (str head " " one ") " part " " two ") " tail)
+        item (document/listify text)
+        mark (and (str/includes? item part)
+                  (str/includes? item tail)
+                  (not (str/includes? item "\n- ")))]
+    (is mark "Numbered prompts were split into bullet lines")))
+
 (deftest the-document-wraps-list-items-in-paragraphs
   (let [rng (java.util.Random. 18027)
         head (token rng 6 1040 32)

@@ -17,8 +17,7 @@
            (java.nio.file.attribute FileAttribute)
            (javax.imageio ImageIO)
            (org.apache.pdfbox.pdmodel PDDocument)
-           (org.apache.pdfbox.rendering PDFRenderer)
-           (org.apache.pdfbox.text PDFTextStripper)))
+           (org.apache.pdfbox.rendering PDFRenderer)))
 
 (defn token
   "Return deterministic token string."
@@ -374,17 +373,7 @@
              (json/object-mapper {:decode-key-fn keyword}))
         cover (.resolve base "cover-parallel.jpg")
         gold (.resolve base "baseline.pdf")
-        author (with-open [doc (PDDocument/load (.toFile gold))]
-                 (let [strip (PDFTextStripper.)]
-                   (.setStartPage strip 1)
-                   (.setEndPage strip 1)
-                   (let [text (.getText strip doc)
-                         mark (re-find
-                               (re-pattern
-                                (str "AI generated report for "
-                                     "(.+) with"))
-                               text)]
-                     (if mark (second mark) ""))))
+        author "Anatoly Chichikov"
         root (Files/createTempDirectory head (make-array FileAttribute 0))
         data (.resolve root "data")
         out (.resolve root "output")

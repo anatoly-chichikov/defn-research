@@ -73,7 +73,13 @@
         text (str/replace text #"\s+Research:" "\n\nResearch:")
         text (str/replace text #"(?m)(^|\n)(\s*)(\d+)\)" "$1$2$3.")
         text (str/replace text #"[ \t]+(\d+)[\.)]\s+" "\n$1. ")
-        text (str/replace text #"[ \t]+([*+-])\s+" "\n$1 ")
+        rows (str/split text #"\n" -1)
+        rows (map (fn [row]
+                    (if (re-find #"^\s*(?:\d+\.|[*+-])\s+" row)
+                      row
+                      (str/replace row #"[ \t]+([*+-])\s+" "\n$1 ")))
+                  rows)
+        text (str/join "\n" rows)
         text (str/replace text #"\n{3,}" "\n\n")]
     text))
 
