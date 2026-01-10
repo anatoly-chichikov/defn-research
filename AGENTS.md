@@ -16,6 +16,12 @@ If message starts with these commands — it's a research operation, not develop
 
 ---
 
+## Inputs
+
+Screenshots can accompany any command or message. Treat them as additional inputs, extract key points into the current context, and ask clarifying questions if anything is unclear.
+
+---
+
 ## rs
 
 New research. Dialog first, then launch.
