@@ -64,6 +64,8 @@ The agent will understand what to do even with incomplete or vague inputs.
 
 When you run `rs <topic>`, the agent walks you through the entire flow — asks about language, depth, refines the topic with you. At the end, you get a ready PDF in the output folder.
 
+When you run `frk <follow ups>`, it starts a new research run based on an existing one: either adjust the original brief (re-brief) or dig deeper into a specific part of the results (deep-dive). The forked run creates a fresh session and a new PDF, while keeping the original intact.
+
 ## Testing
 
 Run tests in Docker:
