@@ -7,6 +7,7 @@ Agent instructions for research automation.
 | Command | Action |
 |---------|--------|
 | `rs <topic>` | New research |
+| `frk` | Fork existing research |
 | `st` | List sessions with PDF paths |
 | `pdf <topic>` | Generate PDF |
 | `tst` | Run tests in Docker |
@@ -89,6 +90,41 @@ Provider: parallel
 Time: 5-50 min
 PDF: /Users/chichikov/Work/research/output/2025-12-21_clojure-pdf_3e4fc072/2025-12-21_clojure-pdf-parallel.pdf [NOT READY]
 ```
+
+---
+
+## frk
+
+Fork existing research. Dialog first, then launch.
+
+ask source Which research to fork?
+  - If user already specifies, resolve by meaning (folder name, topic, or hint)
+  - Otherwise show last 3-5 from output/ (by mtime) as numbered list
+  - Accept selection by number, folder name, or description ("the one about quantum computing")
+
+ask type What should we do?
+  1. re-brief - adjust the inputs
+  2. deep-dive - go deeper into part of the result
+
+re-brief flow:
+  - Load brief from selected session:
+    - prefer output/<session>/brief-*.md
+    - fallback: output/<session>/input-*.md or data/briefs/<session-id>.md
+  - Ask user for changes, keep brief format from rs
+  - Show diff preview (original brief vs updated brief) before launch, ask confirmation
+  - Run new research with updated brief (provider/processor default to original unless user overrides)
+  - Save as new session in output/
+
+deep-dive flow:
+  - Load output/<session>/response-*.json into context
+  - Summarize sections/fragments and ask which to deepen (3-5 options)
+  - Ask clarifying questions about desired focus
+  - Generate new brief from chosen fragment
+  - Show diff preview (original brief vs new brief) before launch, ask confirmation
+  - Run new research with updated brief (provider/processor default to original unless user overrides)
+  - Save as new session in output/
+
+If multiple providers exist in a session, ask which one to fork.
 
 ---
 

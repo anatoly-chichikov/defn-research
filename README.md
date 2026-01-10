@@ -57,6 +57,7 @@ If something breaks (environment issues, missing dependencies, config problems),
 
 Check `CLAUDE.md` for the agent's instruction set. It's simple — a few commands like:
 - `rs <topic>` for new research
+- `frk` for forking existing research (re-brief or deep-dive)
 - `st` for status
 - `pdf <topic>` for regeneration if needed. 
 The agent will understand what to do even with incomplete or vague inputs.
