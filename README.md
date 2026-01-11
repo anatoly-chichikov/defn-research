@@ -41,7 +41,7 @@ rs quantum computing applications
 # - Generate a PDF report in ./output/
 ```
 
-The agent reads `CLAUDE.md` for instructions. You focus on what you want to research — the agent handles how.
+The agent reads `AGENTS.md` for instructions. You focus on what you want to research — the agent handles how. `AGENTS.md` is the default instruction file for agents.
 
 ### Examples
 
@@ -55,7 +55,7 @@ If something breaks (environment issues, missing dependencies, config problems),
 
 ## DSL
 
-Check `CLAUDE.md` for the agent's instruction set. It's simple — a few commands like:
+Check `AGENTS.md` for the agent's instruction set. It's simple — a few commands like:
 - `rs <topic>` for new research
 - `frk` for forking existing research (re-brief or deep-dive)
 - `st` for status
