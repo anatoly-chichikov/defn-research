@@ -161,6 +161,11 @@
         value (str/replace value mask "")]
     value))
 
+(defn underscorify
+  "Replace outer italic asterisks with underscores when bold ends the span."
+  [text]
+  (str/replace text #"(?<!\*)\*([^*\n]+?)\*\*([^\n]*?)\*\*\*" "_$1**$2**_"))
+
 (defn label
   "Return cleaned source title."
   [item name]
@@ -228,10 +233,10 @@
                         row (str "<li class=\"ref-item\">"
                                  "<a class=\"ref-link\" href=\""
                                  link
-                                 "\" target=\"_blank\">"
-                                 title
-                                 "</a>"
-                                 (if (str/blank? note)
+                                "\" target=\"_blank\">"
+                                title
+                                "</a>"
+                                (if (str/blank? note)
                                    ""
                                    (str "<div class=\"source-excerpt\">"
                                         note
@@ -631,6 +636,7 @@
   [item task]
   (let [[text sources] (resultmap item task)
         text (clean text)
+        text (underscorify text)
         text (emojify text)
         [text urls mark] (citations text sources)
         text (strip text)
