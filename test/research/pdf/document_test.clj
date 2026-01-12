@@ -6,6 +6,7 @@
             [research.domain.task :as task]
             [research.pdf.document :as document]
             [research.pdf.palette :as palette]
+            [research.pdf.style :as style]
             [research.storage.organizer :as organizer])
   (:import (java.nio.file Files Paths)
            (java.nio.file.attribute FileAttribute)
@@ -99,6 +100,12 @@
                 "#BFB5A3"]]
     (is (every? #(str/includes? html %) colors)
         "Rendered document did not include Hokusai palette colors")))
+(deftest the-document-style-includes-italic-bold-weights
+  (let [rng (java.util.Random. 18008)
+        mark (token rng 6 1040 32)
+        css (str (style/css (style/style (palette/palette))) mark)]
+    (is (str/includes? css "1,600;1,700")
+        "Style did not include italic bold weights")))
 
 (deftest the-document-renders-author-name
   (let [rng (java.util.Random. 18009)
@@ -721,6 +728,33 @@
         item (document/nested text)]
     (is (= 2 (count (re-seq #"\n    \* " item)))
         "Nested did not normalize all indented items")))
+(deftest the-document-underscorify-rewrites-nested-bold-in-bullets
+  "underscorify rewrites nested bold at end of italic bullets"
+  (let [rng (java.util.Random. 18061)
+        mark (uuid rng)
+        text (str "- *" mark " **to be fed*** — Ребёнка нужно покормить")
+        item (document/underscorify text)
+        goal (str "- _" mark " **to be fed**_ — Ребёнка нужно покормить")]
+    (is (= goal item)
+        "underscorify failed to rewrite nested bold in bullet")))
+(deftest the-document-underscorify-rewrites-nested-bold-inline
+  "underscorify rewrites nested bold at end of italic inline text"
+  (let [rng (java.util.Random. 18063)
+        mark (uuid rng)
+        text (str "Present Perfect — *The report " mark " **has been written***")
+        item (document/underscorify text)
+        goal (str "Present Perfect — _The report " mark " **has been written**_")]
+    (is (= goal item)
+        "underscorify failed to rewrite nested bold inline")))
+(deftest the-document-underscorify-does-not-touch-bold-heading
+  "underscorify avoids matching inside bold headings"
+  (let [rng (java.util.Random. 18065)
+        mark (uuid rng)
+        text (str "**Заголовок-" mark "** — *The report **has been being written***")
+        item (document/underscorify text)
+        goal (str "**Заголовок-" mark "** — _The report **has been being written**_")]
+    (is (= goal item)
+        "underscorify modified bold heading unexpectedly")))
 
 (deftest the-document-normalize-adds-blank-line-before-numbered-list
   (let [rng (java.util.Random. 18057)
