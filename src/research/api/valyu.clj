@@ -90,6 +90,11 @@
             (reset! note "Low"))]
     @note))
 
+(defn- pause
+  "Sleep for poll delay"
+  [span]
+  (Thread/sleep span))
+
 (defrecord Valyu [key base data]
   research/Researchable
   (start [_ query processor]
@@ -126,7 +131,7 @@
                      data
                      (if (> (- (System/currentTimeMillis) start) timeout-ms)
                        (throw (ex-info "Valyu task timed out" {:id id}))
-                       (do (Thread/sleep 60000) (recur start))))))]
+                       (do (pause 180000) (recur start))))))]
       data))
   (finish [item id]
     (let [data (valyu-status item id)
@@ -167,16 +172,35 @@
   (let [url (str (:base item) "/deepresearch/tasks/" id "/status")
         head {"Content-Type" "application/json"
               "x-api-key" (:key item)}
-        response @(http/get url {:headers head
-                                 :timeout 60000
-                                 :as :text})
-        status (:status response)
-        data (if (< status 300)
-               (json/read-value
-                (:body response)
-                (json/object-mapper {:decode-key-fn keyword}))
-               (throw (ex-info "Valyu status failed" {:status status})))]
-    data))
+        limit 4
+        span 1000]
+    (loop [step 0]
+      (let [result (try {:value @(http/get url {:headers head
+                                                :timeout 60000
+                                                :as :text})}
+                        (catch Exception exc
+                          {:error exc}))
+            response (:value result)
+            status (:status response)
+            body (:body response)
+            data (when (and status (< status 300))
+                   (json/read-value
+                    body
+                    (json/object-mapper {:decode-key-fn keyword})))
+            signal (or (nil? status) (>= status 500) (= status 429) (:error result))
+            fault (some? (:error result))
+            time (min (* span (inc step)) (* span 8))]
+        (if data
+          data
+          (let [note (str "Valyu status non200 id=" id " status=" (or status "none") " attempt=" (inc step) (when fault " error=true") (when signal (str " wait_ms=" time)))]
+            (println (clean note))
+            (if signal
+              (if (< step (dec limit))
+                (do (pause time) (recur (inc step)))
+                (throw (ex-info (str "Valyu status failed id=" id " status=" (or status "none") " attempts=" limit)
+                                {:id id :status status :attempts limit})))
+              (throw (ex-info (str "Valyu status failed id=" id " status=" (or status "none"))
+                              {:id id :status status})))))))))
 
 (defn valyu-emit
   "Emit progress info for Valyu."
