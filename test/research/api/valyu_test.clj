@@ -205,6 +205,78 @@
         result (first (valyu/message value seen "trun_x"))]
     (is (= (str left " " right) result) "list message was not joined")))
 
+(deftest ^{:doc "Ensure Valyu retries transient errors"}
+  the-valyu-retries-transient-errors
+  (let [rng (gen/ids 17019)
+        id (gen/cyrillic rng 6)
+        key (gen/greek rng 5)
+        base (gen/latin rng 6)
+        fault (+ 500 (.nextInt rng 50))
+        success (+ 200 (.nextInt rng 50))
+        state (gen/armenian rng 6)
+        body (json/write-value-as-string {:status state})
+        count (atom 0)]
+    (with-redefs-fn {#'http/get (fn [_ _]
+                                  (swap! count inc)
+                                  (delay (if (= @count 1)
+                                           {:status fault
+                                            :body (gen/greek rng 3)}
+                                           {:status success
+                                            :body body})))
+                     #'valyu/pause (fn [_] nil)
+                     #'clojure.core/println (fn [& _] nil)}
+      (fn []
+        (let [data (valyu/valyu-status {:base base
+                                        :key key} id)]
+          (is (= state (:status data))
+              "valyu did not recover from transient error"))))))
+
+(deftest ^{:doc "Ensure Valyu retries missing status"}
+  the-valyu-retries-missing-status
+  (let [rng (gen/ids 17021)
+        id (gen/cyrillic rng 6)
+        key (gen/hebrew rng 5)
+        base (gen/latin rng 6)
+        success (+ 200 (.nextInt rng 50))
+        state (gen/hiragana rng 6)
+        body (json/write-value-as-string {:status state})
+        count (atom 0)]
+    (with-redefs-fn {#'http/get (fn [_ _]
+                                  (swap! count inc)
+                                  (delay (if (= @count 1)
+                                           nil
+                                           {:status success
+                                            :body body})))
+                     #'valyu/pause (fn [_] nil)
+                     #'clojure.core/println (fn [& _] nil)}
+      (fn []
+        (let [data (valyu/valyu-status {:base base
+                                        :key key} id)]
+          (is (= state (:status data))
+              "valyu did not recover from missing status"))))))
+
+(deftest ^{:doc "Ensure Valyu polls every three minutes"}
+  the-valyu-polls-every-three-minutes
+  (let [rng (gen/ids 17023)
+        id (gen/cyrillic rng 6)
+        key (gen/greek rng 5)
+        base (gen/latin rng 6)
+        mark (atom 0)
+        count (atom 0)
+        client (valyu/valyu {:key key
+                             :base base})
+        phase (gen/arabic rng 6)]
+    (with-redefs-fn {#'valyu/pause (fn [span] (reset! mark span))
+                     #'valyu/valyu-status (fn [_ _]
+                                            (swap! count inc)
+                                            (if (= @count 1)
+                                              {:status phase}
+                                              {:status "completed"}))
+                     #'clojure.core/println (fn [& _] nil)}
+      (fn []
+        (research/stream client id)))
+    (is (= 180000 @mark) "valyu did not wait three minutes between polls")))
+
 (deftest the-valyu-uses-raw-status-payload
   (let [rng (gen/ids 17017)
         ident (str "dr_" (.nextInt rng 100000))
