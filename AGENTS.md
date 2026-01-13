@@ -78,7 +78,6 @@ run docker build -t research .
 query="Язык ответа: {language}.\n\n{brief}"
 run docker run -d --name "research-{timestamp}-{slug}" \
     -v "$(pwd)/output:/app/output" \
-    -v "$(pwd)/data:/app/data" \
     -e PARALLEL_API_KEY -e VALYU_API_KEY -e GEMINI_API_KEY -e REPORT_FOR \
     research run "{topic}" "{query}" --processor "{processor}" --language "{language}" --provider "{provider}"
 
@@ -115,7 +114,7 @@ ask type What should we do?
 re-brief flow:
   - Load brief from selected session:
     - prefer output/<session>/brief-*.md
-    - fallback: output/<session>/input-*.md or data/briefs/<session-id>.md
+    - fallback: output/<session>/input-*.md
   - Ask user for changes, keep brief format from rs
   - Show diff preview (original brief vs updated brief) before launch, ask confirmation
   - Run new research with updated brief (provider/processor default to original unless user overrides)
@@ -159,7 +158,6 @@ Generate PDF by topic. Find session by meaning (not by ID).
 
 run docker run --rm \
     -v "$(pwd)/output:/app/output" \
-    -v "$(pwd)/data:/app/data" \
     -e REPORT_FOR \
     research generate {id}
 

@@ -17,7 +17,6 @@
   (language [_] (:language data))
   (provider [_] (:provider data))
   (data [_] {:run_id id
-             :query query
              :processor (:processor data)
              :language (:language data)
              :provider (:provider data)}))
@@ -27,7 +26,7 @@
   [item]
   (->Pending
    (:run_id item)
-   (:query item)
+   (or (:query item) "")
    {:processor (:processor item)
     :language (:language item)
     :provider (or (:provider item) "parallel")}))

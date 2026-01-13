@@ -1,12 +1,12 @@
 (ns research.pdf.document
-  (:require [clojure.java.io :as io]
-            [clojure.java.shell :as shell]
+  (:require [clojure.java.shell :as shell]
             [clojure.string :as str]
             [jsonista.core :as json]
             [markdown.core :as md]
             [research.api.research :as research]
             [research.api.response :as response]
             [research.api.valyu :as valyu]
+            [research.domain.pending :as pending]
             [research.domain.result :as result]
             [research.domain.session :as sess]
             [research.domain.task :as task]
@@ -469,9 +469,28 @@
 (defn briefpath
   "Return brief file path."
   [item]
-  (let [id (sess/id (:session item))
-        cut (first (str/split id #"-"))]
-    (io/file "data" "briefs" (str cut ".md"))))
+  (let [sess (:session item)
+        root (:root item)
+        org (organizer/organizer root)
+        name (organizer/name
+              org
+              (sess/created sess)
+              (sess/topic sess)
+              (sess/id sess))
+        list (sess/tasks sess)
+        tail (last list)
+        hold (sess/pending sess)
+        slot (if (and (not tail) (.isPresent hold)) (.get hold) nil)
+        service (if tail
+                  (provider tail)
+                  (if slot (pending/provider slot) "provider"))
+        tag (organizer/slug service)
+        tag (if (str/blank? tag) "provider" tag)
+        base (.resolve root name)
+        brief (.resolve base (str "brief-" tag ".md"))
+        input (.resolve base (str "input-" tag ".md"))
+        path (if (Files/exists brief (make-array LinkOption 0)) brief input)]
+    (.toFile path)))
 
 (defn brief
   "Render brief section."

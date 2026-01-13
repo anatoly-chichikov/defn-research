@@ -63,16 +63,22 @@
 
 (deftest the-document-renders-exploration-brief-title
   (let [rng (java.util.Random. 18005)
+        day (inc (.nextInt rng 8))
+        hour (inc (.nextInt rng 8))
+        time (str "2026-01-0" day "T0" hour ":00:00")
         query (token rng 6 1040 32)
-        task (task/task {:query query
-                         :status "completed"
-                         :result nil
-                         :service "valyu.ai"
-                         :created (task/format (task/now))})
-        entry (task/data task)
+        status (token rng 6 1040 32)
+        language (token rng 6 1040 32)
+        service (token rng 6 1040 32)
+        entry {:id (uuid rng)
+               :query query
+               :status status
+               :language language
+               :service service
+               :created time}
         item (session/session {:topic query
                                :tasks [entry]
-                               :created (session/format (session/now))})
+                               :created time})
         root (Paths/get "output" (make-array String 0))
         doc (document/document item (palette/palette) (Optional/empty) root)
         html (document/render doc)]
@@ -301,15 +307,23 @@
 
 (deftest the-document-render-contains-task-query
   (let [rng (java.util.Random. 18021)
+        day (inc (.nextInt rng 8))
+        hour (inc (.nextInt rng 8))
+        time (str "2026-01-0" day "T0" hour ":00:00")
         query (token rng 6 12354 32)
-        task (task/task {:query query
-                         :status "completed"
-                         :result nil
-                         :created (task/format (task/now))})
-        entry (task/data task)
-        item (session/session {:topic "T"
+        status (token rng 6 1040 32)
+        language (token rng 6 1040 32)
+        service (token rng 6 1040 32)
+        entry {:id (uuid rng)
+               :query query
+               :status status
+               :language language
+               :service service
+               :created time}
+        topic (token rng 5 1040 32)
+        item (session/session {:topic topic
                                :tasks [entry]
-                               :created (session/format (session/now))})
+                               :created time})
         root (Paths/get "output" (make-array String 0))
         doc (document/document item (palette/palette) (Optional/empty) root)
         html (document/render doc)]
@@ -662,9 +676,33 @@
                                :created (session/format (session/now))})
         root (Paths/get "output" (make-array String 0))
         doc (document/document item (palette/palette) (Optional/empty) root)
-        path (document/briefpath doc)]
-    (is (str/includes? (str path) short)
-        "Path did not contain short session ID")))
+        path (document/briefpath doc)
+        text (str path)
+        seen (and (str/includes? text short)
+                  (str/includes? text "output")
+                  (or (str/includes? text "input-")
+                      (str/includes? text "brief-")))]
+    (is seen "Path did not target output brief or input file")))
+
+(deftest the-document-briefpath-uses-pending-provider
+  "Uses pending provider for brief path"
+  (let [rng (java.util.Random. 18046)
+        mark (token rng 6 1040 32)
+        entry {:run_id (uuid rng)
+               :query mark
+               :processor "pro"
+               :language mark
+               :provider "valyu"}
+        item (session/session {:id (uuid rng)
+                               :topic mark
+                               :tasks []
+                               :created (session/format (session/now))
+                               :pending entry})
+        root (Paths/get "output" (make-array String 0))
+        doc (document/document item (palette/palette) (Optional/empty) root)
+        path (document/briefpath doc)
+        seen (str/includes? (str path) "input-valyu.md")]
+    (is seen "Brief path did not use pending provider")))
 
 (deftest the-document-brief-reads-from-file
   (let [rng (java.util.Random. 18047)
@@ -692,15 +730,23 @@
 
 (deftest the-document-brief-falls-back-to-query
   (let [rng (java.util.Random. 18049)
+        day (inc (.nextInt rng 8))
+        hour (inc (.nextInt rng 8))
+        time (str "2026-01-0" day "T0" hour ":00:00")
         mark (str "クエリ-" (uuid rng))
-        task (task/task {:query mark
-                         :status "completed"
-                         :result nil
-                         :created (task/format (task/now))})
-        entry (task/data task)
-        item (session/session {:topic "T"
+        status (token rng 6 1040 32)
+        language (token rng 6 1040 32)
+        service (token rng 6 1040 32)
+        entry {:id (uuid rng)
+               :query mark
+               :status status
+               :language language
+               :service service
+               :created time}
+        topic (token rng 5 1040 32)
+        item (session/session {:topic topic
                                :tasks [entry]
-                               :created (session/format (session/now))})
+                               :created time})
         root (Paths/get "output" (make-array String 0))
         doc (document/document item (palette/palette) (Optional/empty) root)
         html (document/brief doc)]
@@ -732,27 +778,41 @@
   "underscorify rewrites nested bold at end of italic bullets"
   (let [rng (java.util.Random. 18061)
         mark (uuid rng)
-        text (str "- *" mark " **to be fed*** — Ребёнка нужно покормить")
+        text (str "- *"
+                  mark
+                  " **to be fed*** — "
+                  "Ребёнка нужно покормить")
         item (document/underscorify text)
-        goal (str "- _" mark " **to be fed**_ — Ребёнка нужно покормить")]
+        goal (str "- _"
+                  mark
+                  " **to be fed**_ — "
+                  "Ребёнка нужно покормить")]
     (is (= goal item)
         "underscorify failed to rewrite nested bold in bullet")))
 (deftest the-document-underscorify-rewrites-nested-bold-inline
   "underscorify rewrites nested bold at end of italic inline text"
   (let [rng (java.util.Random. 18063)
         mark (uuid rng)
-        text (str "Present Perfect — *The report " mark " **has been written***")
+        text (str "Present Perfect — *The report "
+                  mark
+                  " **has been written***")
         item (document/underscorify text)
-        goal (str "Present Perfect — _The report " mark " **has been written**_")]
+        goal (str "Present Perfect — _The report "
+                  mark
+                  " **has been written**_")]
     (is (= goal item)
         "underscorify failed to rewrite nested bold inline")))
 (deftest the-document-underscorify-does-not-touch-bold-heading
   "underscorify avoids matching inside bold headings"
   (let [rng (java.util.Random. 18065)
         mark (uuid rng)
-        text (str "**Заголовок-" mark "** — *The report **has been being written***")
+        text (str "**Заголовок-"
+                  mark
+                  "** — *The report **has been being written***")
         item (document/underscorify text)
-        goal (str "**Заголовок-" mark "** — _The report **has been being written**_")]
+        goal (str "**Заголовок-"
+                  mark
+                  "** — _The report **has been being written**_")]
     (is (= goal item)
         "underscorify modified bold heading unexpectedly")))
 
@@ -776,16 +836,24 @@
 
 (deftest the-document-brief-normalizes-numbered-lists
   (let [rng (java.util.Random. 18061)
+        day (inc (.nextInt rng 8))
+        hour (inc (.nextInt rng 8))
+        time (str "2026-01-0" day "T0" hour ":00:00")
         mark (uuid rng)
         query (str "調査-" mark ":\n1. 最初\n2. 二番目")
-        task (task/task {:query query
-                         :status "completed"
-                         :result nil
-                         :created (task/format (task/now))})
-        entry (task/data task)
-        item (session/session {:topic "T"
+        status (token rng 6 1040 32)
+        language (token rng 6 1040 32)
+        service (token rng 6 1040 32)
+        entry {:id (uuid rng)
+               :query query
+               :status status
+               :language language
+               :service service
+               :created time}
+        topic (token rng 5 1040 32)
+        item (session/session {:topic topic
                                :tasks [entry]
-                               :created (session/format (session/now))})
+                               :created time})
         root (Paths/get "output" (make-array String 0))
         doc (document/document item (palette/palette) (Optional/empty) root)
         html (document/brief doc)]
@@ -794,19 +862,27 @@
 
 (deftest the-document-brief-normalizes-bullet-lists
   (let [rng (java.util.Random. 18062)
+        day (inc (.nextInt rng 8))
+        hour (inc (.nextInt rng 8))
+        time (str "2026-01-0" day "T0" hour ":00:00")
         head (token rng 6 1040 32)
         left (token rng 6 12354 32)
         mid (token rng 6 256 64)
         tail (token rng 6 880 32)
         query (str head ":\n- " left "\n+ " mid "\n* " tail)
-        task (task/task {:query query
-                         :status "completed"
-                         :result nil
-                         :created (task/format (task/now))})
-        entry (task/data task)
-        item (session/session {:topic "T"
+        status (token rng 6 1040 32)
+        language (token rng 6 1040 32)
+        service (token rng 6 1040 32)
+        entry {:id (uuid rng)
+               :query query
+               :status status
+               :language language
+               :service service
+               :created time}
+        topic (token rng 5 1040 32)
+        item (session/session {:topic topic
                                :tasks [entry]
-                               :created (session/format (session/now))})
+                               :created time})
         root (Paths/get "output" (make-array String 0))
         doc (document/document item (palette/palette) (Optional/empty) root)
         html (document/brief doc)

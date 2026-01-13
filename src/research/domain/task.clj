@@ -50,7 +50,6 @@
      (assoc data :status "completed" :completed (Optional/of (now)))
      value))
   (data [_] (let [base {:id id
-                        :query query
                         :status (:status data)
                         :language (:language data)
                         :service (:service data)
@@ -73,6 +72,7 @@
         done (if (:completed item)
                (Optional/of (parse (:completed item)))
                (Optional/empty))
+        query (or (:query item) "")
         data {:status (:status item)
               :language text
               :service name
@@ -81,4 +81,4 @@
         raw (:result item)
         value (result/result raw)
         code (or (:id item) (str (UUID/randomUUID)))]
-    (->Task code (:query item) data value)))
+    (->Task code query data value)))
