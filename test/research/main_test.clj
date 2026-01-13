@@ -9,7 +9,6 @@
             [research.image.generator :as image]
             [research.main :as main]
             [research.pdf.document :as document]
-            [research.storage.file :as file]
             [research.storage.organizer :as organizer]
             [research.storage.repository :as repo])
   (:import (java.io StringWriter)
@@ -211,11 +210,9 @@
                                :pending entry})
         root (Files/createTempDirectory "app"
                                         (make-array FileAttribute 0))
-        data (.resolve root "data")
         out (.resolve root "output")
-        _ (Files/createDirectories data (make-array FileAttribute 0))
         _ (Files/createDirectories out (make-array FileAttribute 0))
-        store (repo/repo (file/file (.resolve data "research.json")))
+        store (repo/repo out)
         _ (repo/save store [sess])
         reply (response/response {:id run
                                   :status "completed"
@@ -266,11 +263,9 @@
                                :pending entry})
         root (Files/createTempDirectory "app"
                                         (make-array FileAttribute 0))
-        data (.resolve root "data")
         out (.resolve root "output")
-        _ (Files/createDirectories data (make-array FileAttribute 0))
         _ (Files/createDirectories out (make-array FileAttribute 0))
-        store (repo/repo (file/file (.resolve data "research.json")))
+        store (repo/repo out)
         _ (repo/save store [sess])
         key (keyword (token rng 6 1040 32))
         value (token rng 6 880 32)
@@ -326,11 +321,9 @@
                                :created stamp})
         root (Files/createTempDirectory "app"
                                         (make-array FileAttribute 0))
-        data (.resolve root "data")
         out (.resolve root "output")
-        _ (Files/createDirectories data (make-array FileAttribute 0))
         _ (Files/createDirectories out (make-array FileAttribute 0))
-        store (repo/repo (file/file (.resolve data "research.json")))
+        store (repo/repo out)
         _ (repo/save store [sess])
         reply (response/response {:id run
                                   :status "completed"
@@ -375,11 +368,9 @@
         gold (.resolve base "baseline.pdf")
         author "Anatoly Chichikov"
         root (Files/createTempDirectory head (make-array FileAttribute 0))
-        data (.resolve root "data")
         out (.resolve root "output")
-        _ (Files/createDirectories data (make-array FileAttribute 0))
         _ (Files/createDirectories out (make-array FileAttribute 0))
-        repo (repo/repo (file/file (.resolve data "research.json")))
+        repo (repo/repo out)
         stamp "2026-01-01T00:00:00"
         ident (uuid rng)
         sess (session/session {:id ident

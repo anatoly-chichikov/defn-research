@@ -15,7 +15,6 @@
             [research.image.generator :as image]
             [research.pdf.document :as document]
             [research.pdf.palette :as palette]
-            [research.storage.file :as file]
             [research.storage.organizer :as organizer]
             [research.storage.repository :as repo])
   (:import (java.nio.file Files LinkOption)
@@ -79,7 +78,7 @@
 (defrecord App [root data out]
   Applied
   (list [_]
-    (let [repo (repo/repo (file/file data))
+    (let [repo (repo/repo data)
           list (repo/load repo)]
       (if (seq list)
         (doseq [item list]
@@ -94,7 +93,7 @@
             (println "")))
         (println "No research sessions found"))))
   (show [_ id]
-    (let [repo (repo/repo (file/file data))
+    (let [repo (repo/repo data)
           list (repo/load repo)
           pick (first (filter #(str/starts-with? (session/id %) id) list))]
       (if pick
@@ -116,7 +115,7 @@
                     (println (str "  Sources: " count)))))))
         (println (str "Session not found: " id)))))
   (generate [_ id html]
-    (let [repo (repo/repo (file/file data))
+    (let [repo (repo/repo data)
           list (repo/load repo)
           pick (first (filter #(str/starts-with? (session/id %) id) list))]
       (if pick
@@ -143,7 +142,7 @@
             (println (str note (.toString path)))))
         (println (str "Session not found: " id)))))
   (create [_ topic]
-    (let [repo (repo/repo (file/file data))
+    (let [repo (repo/repo data)
           id (str (UUID/randomUUID))
           map {:id id
                :topic topic
@@ -184,7 +183,7 @@
               proc (second pair)]
           (research app id query proc language name)))))
   (research [_ id query processor language provider]
-    (let [repo (repo/repo (file/file data))
+    (let [repo (repo/repo data)
           list (repo/load repo)
           pick (first (filter #(str/starts-with? (session/id %) id) list))]
       (if (not pick)
@@ -225,16 +224,6 @@
                           (session/id pick))
                     _ (organizer/response org name provider (response/raw resp))
                     _ (store name provider (response/raw resp) out)
-                    brief (io/file
-                           "data"
-                           "briefs"
-                           (str (session/id pick) ".md"))
-                    _ (when (.exists brief)
-                        (organizer/brief
-                         org
-                         name
-                         provider
-                         (slurp brief :encoding "UTF-8")))
                     summary (response/text resp)
                     sources (response/sources resp)
                     pack {:summary summary
@@ -316,16 +305,6 @@
                           (session/id pick))
                     _ (organizer/response org name provider (response/raw resp))
                     _ (store name provider (response/raw resp) out)
-                    brief (io/file
-                           "data"
-                           "briefs"
-                           (str (session/id pick) ".md"))
-                    _ (when (.exists brief)
-                        (organizer/brief
-                         org
-                         name
-                         provider
-                         (slurp brief :encoding "UTF-8")))
                     summary (response/text resp)
                     sources (response/sources resp)
                     pack {:summary summary
@@ -364,8 +343,8 @@
 (defn app
   "Create application instance."
   [root]
-  (let [data (.resolve root "data/research.json")
-        out (.resolve root "output")]
+  (let [out (.resolve root "output")
+        data out]
     (->App root data out)))
 
 (defn parse

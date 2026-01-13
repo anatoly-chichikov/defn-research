@@ -4,101 +4,134 @@
 
 (defn token
   "Return deterministic token string."
-  [rng size base span]
+  [dice size base span]
   (let [build (StringBuilder.)]
     (dotimes [_ size]
-      (let [pick (.nextInt rng span)
+      (let [pick (.nextInt dice span)
             code (+ base pick)]
         (.append build (char code))))
     (.toString build)))
 
 (deftest the-pending-returns-identifier
-  (let [rng (java.util.Random. 13001)
-        run (token rng 6 1040 32)
+  (let [dice (java.util.Random. 13001)
+        run (token dice 6 1040 32)
+        query (token dice 6 12354 32)
+        processor (token dice 6 945 24)
+        language (token dice 6 1040 32)
+        provider (token dice 6 1040 32)
         item (pending/pending {:run_id run
-                               :query "test"
-                               :processor "pro"
-                               :language "english"
-                               :provider "parallel"})]
+                               :query query
+                               :processor processor
+                               :language language
+                               :provider provider})]
     (is (= run (pending/id item))
         "Pending identifier did not match provided value")))
 
 (deftest the-pending-returns-query
-  (let [rng (java.util.Random. 13003)
-        query (token rng 6 12354 32)
-        item (pending/pending {:run_id "trun_x"
+  (let [dice (java.util.Random. 13003)
+        run (token dice 6 1040 32)
+        query (token dice 6 12354 32)
+        processor (token dice 6 945 24)
+        language (token dice 6 1040 32)
+        provider (token dice 6 1040 32)
+        item (pending/pending {:run_id run
                                :query query
-                               :processor "pro"
-                               :language "english"
-                               :provider "parallel"})]
+                               :processor processor
+                               :language language
+                               :provider provider})]
     (is (= query (pending/query item))
         "Pending query did not match provided value")))
 
 (deftest the-pending-returns-processor
-  (let [rng (java.util.Random. 13005)
-        processor (token rng 6 945 24)
-        item (pending/pending {:run_id "trun_x"
-                               :query "test"
+  (let [dice (java.util.Random. 13005)
+        run (token dice 6 1040 32)
+        query (token dice 6 12354 32)
+        processor (token dice 6 945 24)
+        language (token dice 6 1040 32)
+        provider (token dice 6 1040 32)
+        item (pending/pending {:run_id run
+                               :query query
                                :processor processor
-                               :language "english"
-                               :provider "parallel"})]
+                               :language language
+                               :provider provider})]
     (is (= processor (pending/processor item))
         "Pending processor did not match provided value")))
 
 (deftest the-pending-returns-language
-  (let [rng (java.util.Random. 13007)
-        language (token rng 6 1040 32)
-        item (pending/pending {:run_id "trun_x"
-                               :query "test"
-                               :processor "pro"
+  (let [dice (java.util.Random. 13007)
+        run (token dice 6 1040 32)
+        query (token dice 6 12354 32)
+        processor (token dice 6 945 24)
+        language (token dice 6 1040 32)
+        provider (token dice 6 1040 32)
+        item (pending/pending {:run_id run
+                               :query query
+                               :processor processor
                                :language language
-                               :provider "parallel"})]
+                               :provider provider})]
     (is (= language (pending/language item))
         "Pending language did not match provided value")))
 
 (deftest the-pending-serializes-correctly
-  (let [rng (java.util.Random. 13009)
-        run (token rng 6 1040 32)
+  (let [dice (java.util.Random. 13009)
+        run (token dice 6 1040 32)
+        query (token dice 6 12354 32)
+        processor (token dice 6 945 24)
+        language (token dice 6 1040 32)
+        provider (token dice 6 1040 32)
         item (pending/pending {:run_id run
-                               :query "test"
-                               :processor "ultra"
-                               :language "русский"
-                               :provider "parallel"})
+                               :query query
+                               :processor processor
+                               :language language
+                               :provider provider})
         data (pending/data item)]
     (is (and (contains? data :run_id)
-             (contains? data :query)
              (contains? data :processor)
-             (contains? data :language))
-        "Pending serialize missing fields")))
+             (contains? data :language)
+             (not (contains? data :query)))
+        "Pending serialize included query")))
 
 (deftest the-pending-deserializes-correctly
-  (let [rng (java.util.Random. 13011)
-        run (token rng 6 1040 32)
+  (let [dice (java.util.Random. 13011)
+        run (token dice 6 1040 32)
+        query (token dice 6 12354 32)
+        processor (token dice 6 945 24)
+        language (token dice 6 1040 32)
+        provider (token dice 6 1040 32)
         item (pending/pending {:run_id run
-                               :query "test"
-                               :processor "pro"
-                               :language "english"})]
+                               :query query
+                               :processor processor
+                               :language language
+                               :provider provider})]
     (is (= run (pending/id item))
         "Pending deserialize did not restore identifier")))
 
 (deftest the-pending-returns-provider
-  (let [rng (java.util.Random. 13013)
-        name (token rng 6 1040 32)
-        item (pending/pending {:run_id "trun_x"
-                               :query "test"
-                               :processor "pro"
-                               :language "english"
+  (let [dice (java.util.Random. 13013)
+        run (token dice 6 1040 32)
+        query (token dice 6 12354 32)
+        processor (token dice 6 945 24)
+        language (token dice 6 1040 32)
+        name (token dice 6 1040 32)
+        item (pending/pending {:run_id run
+                               :query query
+                               :processor processor
+                               :language language
                                :provider name})]
     (is (= name (pending/provider item))
         "Pending provider did not match provided value")))
 
 (deftest the-pending-serializes-provider
-  (let [rng (java.util.Random. 13015)
-        name (token rng 6 12354 32)
-        item (pending/pending {:run_id "trun_x"
-                               :query "test"
-                               :processor "pro"
-                               :language "english"
+  (let [dice (java.util.Random. 13015)
+        run (token dice 6 1040 32)
+        query (token dice 6 12354 32)
+        processor (token dice 6 945 24)
+        language (token dice 6 1040 32)
+        name (token dice 6 12354 32)
+        item (pending/pending {:run_id run
+                               :query query
+                               :processor processor
+                               :language language
                                :provider name})
         data (pending/data item)]
     (is (= name (:provider data))
