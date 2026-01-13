@@ -137,8 +137,8 @@
         (is (= 1 (count (session/tasks (.get hit))))
             "Updated session did not contain task")))))
 
-(deftest the-repository-migrates-legacy-folders
-  "Migrates legacy session folders"
+(deftest ^{:doc "Migrates legacy session folders"}
+  the-repository-migrates-legacy-folders
   (let [dice (java.util.Random. 24013)
         root (Files/createTempDirectory "repo"
                                         (make-array FileAttribute 0))
@@ -160,8 +160,8 @@
         flag (.exists (.toFile file))]
     (is flag "Migration did not create session edn")))
 
-(deftest the-repository-builds-tasks-from-responses
-  "Builds tasks from response files"
+(deftest ^{:doc "Builds tasks from response files"}
+  the-repository-builds-tasks-from-responses
   (let [dice (java.util.Random. 24015)
         root (Files/createTempDirectory "repo"
                                         (make-array FileAttribute 0))
@@ -188,8 +188,8 @@
         size (count (session/tasks item))]
     (is (= 2 size) "Migration did not build tasks from responses")))
 
-(deftest the-repository-strips-query-from-session-edn
-  "Strips query from session edn"
+(deftest ^{:doc "Strips query from session edn"}
+  the-repository-strips-query-from-session-edn
   (let [dice (java.util.Random. 24017)
         root (Files/createTempDirectory "repo"
                                         (make-array FileAttribute 0))

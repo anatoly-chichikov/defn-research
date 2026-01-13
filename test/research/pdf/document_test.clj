@@ -684,8 +684,8 @@
                       (str/includes? text "brief-")))]
     (is seen "Path did not target output brief or input file")))
 
-(deftest the-document-briefpath-uses-pending-provider
-  "Uses pending provider for brief path"
+(deftest ^{:doc "Uses pending provider for brief path"}
+  the-document-briefpath-uses-pending-provider
   (let [rng (java.util.Random. 18046)
         mark (token rng 6 1040 32)
         entry {:run_id (uuid rng)
@@ -774,8 +774,8 @@
         item (document/nested text)]
     (is (= 2 (count (re-seq #"\n    \* " item)))
         "Nested did not normalize all indented items")))
-(deftest the-document-underscorify-rewrites-nested-bold-in-bullets
-  "underscorify rewrites nested bold at end of italic bullets"
+(deftest ^{:doc "underscorify rewrites nested bold at end of italic bullets"}
+  the-document-underscorify-rewrites-nested-bold-in-bullets
   (let [rng (java.util.Random. 18061)
         mark (uuid rng)
         text (str "- *"
@@ -789,8 +789,9 @@
                   "Ребёнка нужно покормить")]
     (is (= goal item)
         "underscorify failed to rewrite nested bold in bullet")))
-(deftest the-document-underscorify-rewrites-nested-bold-inline
-  "underscorify rewrites nested bold at end of italic inline text"
+(deftest ^{:doc (str "underscorify rewrites nested bold at end of italic "
+                     "inline text")}
+  the-document-underscorify-rewrites-nested-bold-inline
   (let [rng (java.util.Random. 18063)
         mark (uuid rng)
         text (str "Present Perfect — *The report "
@@ -802,8 +803,8 @@
                   " **has been written**_")]
     (is (= goal item)
         "underscorify failed to rewrite nested bold inline")))
-(deftest the-document-underscorify-does-not-touch-bold-heading
-  "underscorify avoids matching inside bold headings"
+(deftest ^{:doc "underscorify avoids matching inside bold headings"}
+  the-document-underscorify-does-not-touch-bold-heading
   (let [rng (java.util.Random. 18065)
         mark (uuid rng)
         text (str "**Заголовок-"

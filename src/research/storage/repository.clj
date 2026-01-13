@@ -98,7 +98,7 @@
                                 item (session/session data)
                                 note (if flag
                                        (with-out-str
-                                        (pprint/pprint (session/data item)))
+                                         (pprint/pprint (session/data item)))
                                        "")
                                 _ (when flag
                                     (spit (.toFile file)

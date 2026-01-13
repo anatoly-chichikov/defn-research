@@ -233,10 +233,10 @@
                         row (str "<li class=\"ref-item\">"
                                  "<a class=\"ref-link\" href=\""
                                  link
-                                "\" target=\"_blank\">"
-                                title
-                                "</a>"
-                                (if (str/blank? note)
+                                 "\" target=\"_blank\">"
+                                 title
+                                 "</a>"
+                                 (if (str/blank? note)
                                    ""
                                    (str "<div class=\"source-excerpt\">"
                                         note
