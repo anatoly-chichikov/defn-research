@@ -4,16 +4,6 @@
             [research.pdf.palette :as palette]
             [research.pdf.wave :as wave]))
 
-(defn token
-  "Return deterministic token string."
-  [rng size base span]
-  (let [build (StringBuilder.)]
-    (dotimes [_ size]
-      (let [pick (.nextInt rng span)
-            code (+ base pick)]
-        (.append build (char code))))
-    (.toString build)))
-
 (deftest the-wave-render-returns-svg
   (let [pal (palette/palette)
         item (wave/wave pal)

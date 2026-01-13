@@ -7,28 +7,14 @@
             [research.pdf.document :as document]
             [research.pdf.palette :as palette]
             [research.pdf.style :as style]
-            [research.storage.organizer :as organizer])
+            [research.storage.organizer :as organizer]
+            [research.test.ids :as gen])
   (:import (java.nio.file Files Paths)
            (java.nio.file.attribute FileAttribute)
            (java.util Optional)))
-
-(defn token
-  "Return deterministic token string."
-  [rng size base span]
-  (let [build (StringBuilder.)]
-    (dotimes [_ size]
-      (let [pick (.nextInt rng span)
-            code (+ base pick)]
-        (.append build (char code))))
-    (.toString build)))
-
-(defn uuid
-  "Return deterministic UUID string."
-  [rng]
-  (str (java.util.UUID. (.nextLong rng) (.nextLong rng))))
 (deftest the-document-render-contains-doctype
-  (let [rng (java.util.Random. 18001)
-        topic (token rng 6 1040 32)
+  (let [rng (gen/ids 18001)
+        topic (gen/cyrillic rng 6)
         item (session/session {:topic topic
                                :tasks []
                                :created (session/format (session/now))})
@@ -39,8 +25,8 @@
         "Rendered document did not contain DOCTYPE")))
 
 (deftest the-document-render-contains-topic
-  (let [rng (java.util.Random. 18003)
-        topic (token rng 6 12354 32)
+  (let [rng (gen/ids 18003)
+        topic (gen/hiragana rng 6)
         head (document/heading topic)
         item (session/session {:topic topic
                                :tasks []
@@ -52,8 +38,8 @@
         "Rendered document did not contain heading")))
 
 (deftest the-document-heading-uppercases-initial-letter
-  (let [rng (java.util.Random. 18004)
-        text (token rng 6 1072 32)
+  (let [rng (gen/ids 18004)
+        text (gen/cyrillic rng 6)
         head (subs text 0 1)
         tail (subs text 1)
         goal (str (str/upper-case head) tail)
@@ -62,15 +48,15 @@
         "Heading did not uppercase initial letter")))
 
 (deftest the-document-renders-exploration-brief-title
-  (let [rng (java.util.Random. 18005)
+  (let [rng (gen/ids 18005)
         day (inc (.nextInt rng 8))
         hour (inc (.nextInt rng 8))
         time (str "2026-01-0" day "T0" hour ":00:00")
-        query (token rng 6 1040 32)
-        status (token rng 6 1040 32)
-        language (token rng 6 1040 32)
-        service (token rng 6 1040 32)
-        entry {:id (uuid rng)
+        query (gen/cyrillic rng 6)
+        status (gen/cyrillic rng 6)
+        language (gen/cyrillic rng 6)
+        service (gen/cyrillic rng 6)
+        entry {:id (gen/uuid rng)
                :query query
                :status status
                :language language
@@ -86,8 +72,8 @@
         "Exploration Brief title was missing")))
 
 (deftest the-document-includes-palette-colors
-  (let [rng (java.util.Random. 18007)
-        topic (token rng 6 12354 32)
+  (let [rng (gen/ids 18007)
+        topic (gen/hiragana rng 6)
         item (session/session {:topic topic
                                :tasks []
                                :created (session/format (session/now))})
@@ -107,17 +93,17 @@
     (is (every? #(str/includes? html %) colors)
         "Rendered document did not include Hokusai palette colors")))
 (deftest the-document-style-includes-italic-bold-weights
-  (let [rng (java.util.Random. 18008)
-        mark (token rng 6 1040 32)
+  (let [rng (gen/ids 18008)
+        mark (gen/cyrillic rng 6)
         css (str (style/css (style/style (palette/palette))) mark)]
     (is (str/includes? css "1,600;1,700")
         "Style did not include italic bold weights")))
 
 (deftest the-document-renders-author-name
-  (let [rng (java.util.Random. 18009)
-        name (token rng 6 1040 32)
-        service (token rng 4 12354 32)
-        value (token rng 5 880 32)
+  (let [rng (gen/ids 18009)
+        name (gen/cyrillic rng 6)
+        service (gen/hiragana rng 4)
+        value (gen/greek rng 5)
         result (result/->Result value [])
         task (task/task {:query value
                          :status "completed"
@@ -136,10 +122,10 @@
         (is (str/includes? html name) "Author name was missing")))))
 
 (deftest the-document-renders-service-name
-  (let [rng (java.util.Random. 18011)
-        name (token rng 6 1040 32)
+  (let [rng (gen/ids 18011)
+        name (gen/cyrillic rng 6)
         service "parallel.ai"
-        value (token rng 5 880 32)
+        value (gen/greek rng 5)
         result (result/->Result value [])
         task (task/task {:query value
                          :status "completed"
@@ -158,9 +144,9 @@
         (is (str/includes? html service) "Service name was missing")))))
 
 (deftest the-document-renders-parallel-domain
-  (let [rng (java.util.Random. 18013)
-        name (token rng 6 1040 32)
-        value (token rng 5 880 32)
+  (let [rng (gen/ids 18013)
+        name (gen/cyrillic rng 6)
+        value (gen/greek rng 5)
         result (result/->Result value [])
         task (task/task {:query value
                          :status "completed"
@@ -180,9 +166,9 @@
             "Parallel domain was missing")))))
 
 (deftest the-document-renders-valyu-domain
-  (let [rng (java.util.Random. 18015)
-        name (token rng 6 1040 32)
-        value (token rng 5 880 32)
+  (let [rng (gen/ids 18015)
+        name (gen/cyrillic rng 6)
+        value (gen/greek rng 5)
         result (result/->Result value [])
         task (task/task {:query value
                          :status "completed"
@@ -201,9 +187,9 @@
         (is (str/includes? html "valyu.ai") "Valyu domain was missing")))))
 
 (deftest the-document-omits-author-when-missing
-  (let [rng (java.util.Random. 18017)
-        service (token rng 4 12354 32)
-        value (token rng 5 880 32)
+  (let [rng (gen/ids 18017)
+        service (gen/hiragana rng 4)
+        value (gen/greek rng 5)
         result (result/->Result value [])
         task (task/task {:query value
                          :status "completed"
@@ -223,10 +209,10 @@
             "Author span was present")))))
 
 (deftest the-document-inserts-blank-line-before-hyphen-list
-  (let [rng (java.util.Random. 18019)
-        head (token rng 6 1040 32)
-        item (token rng 6 12354 32)
-        tail (token rng 6 256 64)
+  (let [rng (gen/ids 18019)
+        head (gen/cyrillic rng 6)
+        item (gen/hiragana rng 6)
+        tail (gen/latin rng 6)
         text (str head ":\n- " item "\n- " tail)
         result (document/normalize text)]
     (is (str/includes? result ":\n\n-")
@@ -239,9 +225,9 @@
         "Escaped newlines were not converted")))
 
 (deftest the-document-wraps-emoji-characters
-  (let [rng (java.util.Random. 18021)
-        head (token rng 6 1040 32)
-        tail (token rng 6 12354 32)
+  (let [rng (gen/ids 18021)
+        head (gen/cyrillic rng 6)
+        tail (gen/hiragana rng 6)
         mark (String. (Character/toChars 9989))
         text (str head " " mark " " tail)
         html (document/emojify text)
@@ -250,10 +236,10 @@
     (is done "Emoji span was not rendered")))
 
 (deftest the-document-listify-converts-numbered-prompts
-  (let [rng (java.util.Random. 18029)
-        head (token rng 6 1040 32)
-        left (token rng 6 12354 32)
-        right (token rng 6 256 64)
+  (let [rng (gen/ids 18029)
+        head (gen/cyrillic rng 6)
+        left (gen/hiragana rng 6)
+        right (gen/latin rng 6)
         one (inc (.nextInt rng 8))
         two (+ one (inc (.nextInt rng 8)))
         text (str head " " one ") " left " " two ". " right)
@@ -263,11 +249,11 @@
     (is mark "Numbered prompts were not converted")))
 
 (deftest the-document-listify-converts-inline-bullets
-  (let [rng (java.util.Random. 18030)
-        head (token rng 6 1040 32)
-        left (token rng 6 12354 32)
-        mid (token rng 6 256 64)
-        tail (token rng 6 880 32)
+  (let [rng (gen/ids 18030)
+        head (gen/cyrillic rng 6)
+        left (gen/hiragana rng 6)
+        mid (gen/latin rng 6)
+        tail (gen/greek rng 6)
         text (str head " - " left " + " mid " * " tail)
         item (document/listify text)
         mark (and (str/includes? item "\n- ")
@@ -276,11 +262,11 @@
     (is mark "Inline bullets were not converted")))
 
 (deftest the-document-listify-keeps-numbered-hyphens
-  (let [rng (java.util.Random. 18031)
-        head (token rng 6 1040 32)
-        left (token rng 6 12354 32)
-        right (token rng 6 256 64)
-        mid (token rng 5 880 32)
+  (let [rng (gen/ids 18031)
+        head (gen/cyrillic rng 6)
+        left (gen/hiragana rng 6)
+        right (gen/latin rng 6)
+        mid (gen/greek rng 5)
         one (inc (.nextInt rng 8))
         two (+ one (inc (.nextInt rng 8)))
         part (str left " - " right)
@@ -293,9 +279,9 @@
     (is mark "Numbered prompts were split into bullet lines")))
 
 (deftest the-document-wraps-list-items-in-paragraphs
-  (let [rng (java.util.Random. 18027)
-        head (token rng 6 1040 32)
-        tail (token rng 6 12354 32)
+  (let [rng (gen/ids 18027)
+        head (gen/cyrillic rng 6)
+        tail (gen/hiragana rng 6)
         html (str "<ul><li><strong>"
                   head
                   "</strong> "
@@ -306,21 +292,21 @@
         "List items were not wrapped")))
 
 (deftest the-document-render-contains-task-query
-  (let [rng (java.util.Random. 18021)
+  (let [rng (gen/ids 18021)
         day (inc (.nextInt rng 8))
         hour (inc (.nextInt rng 8))
         time (str "2026-01-0" day "T0" hour ":00:00")
-        query (token rng 6 12354 32)
-        status (token rng 6 1040 32)
-        language (token rng 6 1040 32)
-        service (token rng 6 1040 32)
-        entry {:id (uuid rng)
+        query (gen/hiragana rng 6)
+        status (gen/cyrillic rng 6)
+        language (gen/cyrillic rng 6)
+        service (gen/cyrillic rng 6)
+        entry {:id (gen/uuid rng)
                :query query
                :status status
                :language language
                :service service
                :created time}
-        topic (token rng 5 1040 32)
+        topic (gen/cyrillic rng 5)
         item (session/session {:topic topic
                                :tasks [entry]
                                :created time})
@@ -331,8 +317,8 @@
         "Rendered document did not contain task query")))
 
 (deftest the-document-render-contains-synthesis
-  (let [rng (java.util.Random. 18023)
-        summary (token rng 6 12354 32)
+  (let [rng (gen/ids 18023)
+        summary (gen/hiragana rng 6)
         result (result/->Result summary [])
         task (task/task {:query "q"
                          :status "completed"
@@ -349,10 +335,10 @@
         "Rendered document did not contain synthesis")))
 
 (deftest the-document-renders-outputs-for-multiple-providers
-  (let [rng (java.util.Random. 18024)
-        topic (token rng 6 1040 32)
-        first (token rng 8 1040 32)
-        second (token rng 8 1040 32)
+  (let [rng (gen/ids 18024)
+        topic (gen/cyrillic rng 6)
+        first (gen/cyrillic rng 8)
+        second (gen/cyrillic rng 8)
         a (task/task {:query topic
                       :status "completed"
                       :result nil
@@ -396,8 +382,8 @@
     (is seen "Rendered document did not include provider outputs")))
 
 (deftest the-document-renders-confidence-badge
-  (let [rng (java.util.Random. 18025)
-        text (token rng 5 1040 32)
+  (let [rng (gen/ids 18025)
+        text (gen/cyrillic rng 5)
         url (str "https://example.com/"
                  (.nextInt rng 1000)
                  "?utm_source=valyu.ai&utm_medium=referral")
@@ -419,9 +405,9 @@
         "Confidence badge was missing")))
 
 (deftest the-document-renders-sources-section
-  (let [rng (java.util.Random. 18028)
-        head (token rng 6 1040 32)
-        note (token rng 6 1040 32)
+  (let [rng (gen/ids 18028)
+        head (gen/cyrillic rng 6)
+        note (gen/cyrillic rng 6)
         link (str "https://example.com/" (.nextInt rng 1000))
         source (result/->Source head link note "High")
         value (result/->Result head [source])
@@ -441,12 +427,12 @@
         "Sources section was missing")))
 
 (deftest the-document-uses-domain-for-placeholder-title
-  (let [rng (java.util.Random. 18029)
-        name (token rng 6 97 26)
+  (let [rng (gen/ids 18029)
+        name (gen/ascii rng 6)
         host (str name ".com")
-        link (str "https://" host "/" (token rng 5 97 26))
-        head (token rng 6 1040 32)
-        mark (token rng 6 1040 32)
+        link (str "https://" host "/" (gen/ascii rng 5))
+        head (gen/cyrillic rng 6)
+        mark (gen/cyrillic rng 6)
         source (result/->Source "Fetched web page" link "" "High")
         value (result/->Result head [source])
         task (task/task {:query mark
@@ -465,9 +451,9 @@
         "Source domain was missing")))
 
 (deftest the-document-tables-adds-column-class
-  (let [rng (java.util.Random. 18026)
-        head (token rng 4 1040 32)
-        body (token rng 4 12354 32)
+  (let [rng (gen/ids 18026)
+        head (gen/cyrillic rng 4)
+        body (gen/hiragana rng 4)
         html (str "<table><thead><tr><th>"
                   head
                   "</th><th>"
@@ -482,8 +468,8 @@
         "Tables did not add column class")))
 
 (deftest the-document-strips-utm-parameters
-  (let [rng (java.util.Random. 18027)
-        slug (token rng 5 1040 32)
+  (let [rng (gen/ids 18027)
+        slug (gen/cyrillic rng 5)
         link (str "https://example.com/"
                   (.nextInt rng 1000)
                   "?utm_source=valyu.ai&utm_medium=referral&x="
@@ -505,11 +491,11 @@
         "utm parameters were not stripped from document")))
 
 (deftest the-document-removes-parenthetical-urls
-  (let [rng (java.util.Random. 18028)
-        head (token rng 6 1040 32)
-        name (token rng 5 97 26)
-        part (token rng 5 97 26)
-        tail (token rng 4 97 26)
+  (let [rng (gen/ids 18028)
+        head (gen/cyrillic rng 6)
+        name (gen/ascii rng 5)
+        part (gen/ascii rng 5)
+        tail (gen/ascii rng 4)
         link (str name ".net/" part "_radio_" tail ".htm")
         text (str head " (" link "): " head)
         item (document/clean text)]
@@ -517,10 +503,10 @@
         "Parenthetical url was not removed")))
 
 (deftest the-document-preserves-markdown-link-urls
-  (let [rng (java.util.Random. 18029)
-        head (token rng 6 1040 32)
-        host (token rng 6 97 26)
-        path (token rng 6 97 26)
+  (let [rng (gen/ids 18029)
+        head (gen/cyrillic rng 6)
+        host (gen/ascii rng 6)
+        path (gen/ascii rng 6)
         link (str "https://" host ".com/" path "_radio?utm_source=valyu.ai")
         text (str "[" head "](" link ")")
         item (document/clean text)
@@ -540,11 +526,11 @@
         "Rendered document did not escape HTML")))
 
 (deftest the-document-html-creates-file
-  (let [rng (java.util.Random. 18029)
+  (let [rng (gen/ids 18029)
         path (.resolve (Files/createTempDirectory
                         "doc"
                         (make-array FileAttribute 0))
-                       (str "test-" (uuid rng) ".html"))
+                       (str "test-" (gen/uuid rng) ".html"))
         item (session/session {:topic "T"
                                :tasks []
                                :created (session/format (session/now))})
@@ -555,55 +541,55 @@
         "HTML file was not created")))
 
 (deftest the-document-normalize-adds-blank-line-before-list
-  (let [rng (java.util.Random. 18031)
+  (let [rng (gen/ids 18031)
         text (str "**"
-                  (token rng 6 12354 32)
+                  (gen/hiragana rng 6)
                   "**\n* "
-                  (token rng 4 1040 32))
+                  (gen/cyrillic rng 4))
         item (document/normalize text)]
     (is (str/includes? item "**\n\n* ")
         "Normalize did not add blank line before list")))
 
 (deftest the-document-normalize-preserves-existing-blank-lines
-  (let [rng (java.util.Random. 18033)
+  (let [rng (gen/ids 18033)
         text (str "**"
-                  (token rng 6 12354 32)
+                  (gen/hiragana rng 6)
                   "**\n\n* "
-                  (token rng 4 1040 32))
+                  (gen/cyrillic rng 4))
         item (document/normalize text)]
     (is (= text item) "Normalize modified already correct text")))
 
 (deftest the-document-normalize-handles-multiple-lists
-  (let [rng (java.util.Random. 18035)
+  (let [rng (gen/ids 18035)
         text (str "**"
-                  (token rng 6 12354 32)
+                  (gen/hiragana rng 6)
                   "**\n* 一\n**第二**\n* 二")
         item (document/normalize text)]
     (is (= 2 (count (re-seq #"\n\n\* " item)))
         "Normalize did not fix all lists")))
 
 (deftest the-document-normalize-ignores-lists-after-blank-line
-  (let [rng (java.util.Random. 18037)
+  (let [rng (gen/ids 18037)
         text (str "段落-"
-                  (token rng 6 12354 32)
+                  (gen/hiragana rng 6)
                   "\n\n* すでに正しい")
         item (document/normalize text)]
     (is (= 0 (count (re-seq #"\n\n\n" item)))
         "Normalize added extra blank lines")))
 
 (deftest the-document-rule-replaces-separators
-  (let [rng (java.util.Random. 18038)
-        head (token rng 6 1040 32)
-        tail (token rng 6 12354 32)
+  (let [rng (gen/ids 18038)
+        head (gen/cyrillic rng 6)
+        tail (gen/hiragana rng 6)
         text (str head "\n---\n" tail)
         item (document/rule text)]
     (is (str/includes? item "<hr />") "Rule did not convert separator")))
 
 (deftest the-document-citations-convert-references
-  (let [rng (java.util.Random. 18039)
-        mark (uuid rng)
-        head (token rng 5 12354 32)
-        host (token rng 6 97 26)
+  (let [rng (gen/ids 18039)
+        mark (gen/uuid rng)
+        head (gen/hiragana rng 5)
+        host (gen/ascii rng 6)
         link (str "https://" host ".com/" mark)
         text (str head "-" mark " [1]\n\n## References\n\n1. "
                   head
@@ -620,21 +606,21 @@
     (is seen "Citations did not create link from reference")))
 
 (deftest the-document-citations-extract-urls
-  (let [rng (java.util.Random. 18041)
-        mark (uuid rng)
+  (let [rng (gen/ids 18041)
+        mark (gen/uuid rng)
         text (str "参照 [1]\n\n## References\n\n1. ソース https://test.jp/"
                   mark)
         urls (second (document/citations text []))]
     (is (= 1 (count urls)) "Citations did not extract URL")))
 
 (deftest the-document-render-avoids-italic-leak-after-snake-case
-  (let [rng (java.util.Random. 18042)
-        head (token rng 5 1040 32)
-        left (token rng 4 12354 32)
-        right (token rng 4 880 32)
+  (let [rng (gen/ids 18042)
+        head (gen/cyrillic rng 5)
+        left (gen/hiragana rng 4)
+        right (gen/greek rng 4)
         word (str left "_" right)
-        host (token rng 6 97 26)
-        path (token rng 6 97 26)
+        host (gen/ascii rng 6)
+        path (gen/ascii rng 6)
         link (str "https://" host ".com/" path)
         text (str head " " word " [1]\n\n## References\n\n1. "
                   left
@@ -657,8 +643,8 @@
     (is seen "HTML contained broken italic target")))
 
 (deftest the-document-references-extract-mapping
-  (let [rng (java.util.Random. 18043)
-        mark (uuid rng)
+  (let [rng (gen/ids 18043)
+        mark (gen/uuid rng)
         text (str "## References\n\n1. 一 https://a.jp/"
                   mark
                   "\n2. 二 https://b.jp/"
@@ -667,8 +653,8 @@
     (is (= 2 (count refs)) "References did not extract all entries")))
 
 (deftest the-document-path-returns-session-based-path
-  (let [rng (java.util.Random. 18045)
-        ident (uuid rng)
+  (let [rng (gen/ids 18045)
+        ident (gen/uuid rng)
         short (first (str/split ident #"-"))
         item (session/session {:id ident
                                :topic "T"
@@ -686,14 +672,14 @@
 
 (deftest ^{:doc "Uses pending provider for brief path"}
   the-document-briefpath-uses-pending-provider
-  (let [rng (java.util.Random. 18046)
-        mark (token rng 6 1040 32)
-        entry {:run_id (uuid rng)
+  (let [rng (gen/ids 18046)
+        mark (gen/cyrillic rng 6)
+        entry {:run_id (gen/uuid rng)
                :query mark
                :processor "pro"
                :language mark
                :provider "valyu"}
-        item (session/session {:id (uuid rng)
+        item (session/session {:id (gen/uuid rng)
                                :topic mark
                                :tasks []
                                :created (session/format (session/now))
@@ -705,9 +691,9 @@
     (is seen "Brief path did not use pending provider")))
 
 (deftest the-document-brief-reads-from-file
-  (let [rng (java.util.Random. 18047)
-        ident (uuid rng)
-        mark (str "マーカー-" (uuid rng))
+  (let [rng (gen/ids 18047)
+        ident (gen/uuid rng)
+        mark (str "マーカー-" (gen/uuid rng))
         path (.resolve (Files/createTempDirectory
                         "brief"
                         (make-array FileAttribute 0))
@@ -729,21 +715,21 @@
     (is (str/includes? html mark) "Brief did not read from file")))
 
 (deftest the-document-brief-falls-back-to-query
-  (let [rng (java.util.Random. 18049)
+  (let [rng (gen/ids 18049)
         day (inc (.nextInt rng 8))
         hour (inc (.nextInt rng 8))
         time (str "2026-01-0" day "T0" hour ":00:00")
-        mark (str "クエリ-" (uuid rng))
-        status (token rng 6 1040 32)
-        language (token rng 6 1040 32)
-        service (token rng 6 1040 32)
-        entry {:id (uuid rng)
+        mark (str "クエリ-" (gen/uuid rng))
+        status (gen/cyrillic rng 6)
+        language (gen/cyrillic rng 6)
+        service (gen/cyrillic rng 6)
+        entry {:id (gen/uuid rng)
                :query mark
                :status status
                :language language
                :service service
                :created time}
-        topic (token rng 5 1040 32)
+        topic (gen/cyrillic rng 5)
         item (session/session {:topic topic
                                :tasks [entry]
                                :created time})
@@ -753,31 +739,31 @@
     (is (str/includes? html mark) "Brief did not fall back to query")))
 
 (deftest the-document-nested-converts-single-space-indent
-  (let [rng (java.util.Random. 18051)
-        mark (uuid rng)
+  (let [rng (gen/ids 18051)
+        mark (gen/uuid rng)
         text (str "* **親-" mark ":**\n * **子要素:** 内容")
         item (document/nested text)]
     (is (str/includes? item "    * ")
         "Nested did not convert single space to four spaces")))
 
 (deftest the-document-nested-preserves-four-space-indent
-  (let [rng (java.util.Random. 18053)
-        mark (uuid rng)
+  (let [rng (gen/ids 18053)
+        mark (gen/uuid rng)
         text (str "* **親-" mark ":**\n    * **子:** 内容")
         item (document/nested text)]
     (is (= text item) "Nested modified already correct indentation")))
 
 (deftest the-document-nested-handles-multiple-levels
-  (let [rng (java.util.Random. 18055)
-        mark (uuid rng)
+  (let [rng (gen/ids 18055)
+        mark (gen/uuid rng)
         text (str "* 一-" mark "\n  * 二\n   * 三")
         item (document/nested text)]
     (is (= 2 (count (re-seq #"\n    \* " item)))
         "Nested did not normalize all indented items")))
 (deftest ^{:doc "underscorify rewrites nested bold at end of italic bullets"}
   the-document-underscorify-rewrites-nested-bold-in-bullets
-  (let [rng (java.util.Random. 18061)
-        mark (uuid rng)
+  (let [rng (gen/ids 18061)
+        mark (gen/uuid rng)
         text (str "- *"
                   mark
                   " **to be fed*** — "
@@ -792,8 +778,8 @@
 (deftest ^{:doc (str "underscorify rewrites nested bold at end of italic "
                      "inline text")}
   the-document-underscorify-rewrites-nested-bold-inline
-  (let [rng (java.util.Random. 18063)
-        mark (uuid rng)
+  (let [rng (gen/ids 18063)
+        mark (gen/uuid rng)
         text (str "Present Perfect — *The report "
                   mark
                   " **has been written***")
@@ -805,8 +791,8 @@
         "underscorify failed to rewrite nested bold inline")))
 (deftest ^{:doc "underscorify avoids matching inside bold headings"}
   the-document-underscorify-does-not-touch-bold-heading
-  (let [rng (java.util.Random. 18065)
-        mark (uuid rng)
+  (let [rng (gen/ids 18065)
+        mark (gen/uuid rng)
         text (str "**Заголовок-"
                   mark
                   "** — *The report **has been being written***")
@@ -818,16 +804,16 @@
         "underscorify modified bold heading unexpectedly")))
 
 (deftest the-document-normalize-adds-blank-line-before-numbered-list
-  (let [rng (java.util.Random. 18057)
-        mark (uuid rng)
+  (let [rng (gen/ids 18057)
+        mark (gen/uuid rng)
         text (str "調査-" mark ":\n1. 最初の項目")
         item (document/normalize text)]
     (is (str/includes? item ":\n\n1. ")
         "Normalize did not add blank line before numbered list")))
 
 (deftest the-document-normalize-handles-mixed-lists
-  (let [rng (java.util.Random. 18059)
-        mark (uuid rng)
+  (let [rng (gen/ids 18059)
+        mark (gen/uuid rng)
         text (str "テキスト-"
                   mark
                   "\n* 箇条書き\n別のテキスト\n1. 番号付き")
@@ -836,22 +822,22 @@
         "Normalize did not add blank lines before both list types")))
 
 (deftest the-document-brief-normalizes-numbered-lists
-  (let [rng (java.util.Random. 18061)
+  (let [rng (gen/ids 18061)
         day (inc (.nextInt rng 8))
         hour (inc (.nextInt rng 8))
         time (str "2026-01-0" day "T0" hour ":00:00")
-        mark (uuid rng)
+        mark (gen/uuid rng)
         query (str "調査-" mark ":\n1. 最初\n2. 二番目")
-        status (token rng 6 1040 32)
-        language (token rng 6 1040 32)
-        service (token rng 6 1040 32)
-        entry {:id (uuid rng)
+        status (gen/cyrillic rng 6)
+        language (gen/cyrillic rng 6)
+        service (gen/cyrillic rng 6)
+        entry {:id (gen/uuid rng)
                :query query
                :status status
                :language language
                :service service
                :created time}
-        topic (token rng 5 1040 32)
+        topic (gen/cyrillic rng 5)
         item (session/session {:topic topic
                                :tasks [entry]
                                :created time})
@@ -862,25 +848,25 @@
         "Brief did not render numbered list as <ol>")))
 
 (deftest the-document-brief-normalizes-bullet-lists
-  (let [rng (java.util.Random. 18062)
+  (let [rng (gen/ids 18062)
         day (inc (.nextInt rng 8))
         hour (inc (.nextInt rng 8))
         time (str "2026-01-0" day "T0" hour ":00:00")
-        head (token rng 6 1040 32)
-        left (token rng 6 12354 32)
-        mid (token rng 6 256 64)
-        tail (token rng 6 880 32)
+        head (gen/cyrillic rng 6)
+        left (gen/hiragana rng 6)
+        mid (gen/latin rng 6)
+        tail (gen/greek rng 6)
         query (str head ":\n- " left "\n+ " mid "\n* " tail)
-        status (token rng 6 1040 32)
-        language (token rng 6 1040 32)
-        service (token rng 6 1040 32)
-        entry {:id (uuid rng)
+        status (gen/cyrillic rng 6)
+        language (gen/cyrillic rng 6)
+        service (gen/cyrillic rng 6)
+        entry {:id (gen/uuid rng)
                :query query
                :status status
                :language language
                :service service
                :created time}
-        topic (token rng 5 1040 32)
+        topic (gen/cyrillic rng 5)
         item (session/session {:topic topic
                                :tasks [entry]
                                :created time})
@@ -891,8 +877,8 @@
     (is (= 3 mark) "Brief did not render bullet list items")))
 
 (deftest the-document-strips-sources-section
-  (let [rng (java.util.Random. 18063)
-        head (token rng 6 1040 32)
+  (let [rng (gen/ids 18063)
+        head (gen/cyrillic rng 6)
         link (str "https://example.com/" (.nextInt rng 1000))
         text (str head "\n\n## Sources\n1. " link "\n2. " link)
         item (document/strip text)]
@@ -900,18 +886,18 @@
         "Sources section was not stripped")))
 
 (deftest the-document-keeps-sources-without-links
-  (let [rng (java.util.Random. 18065)
-        head (token rng 6 1040 32)
-        note (token rng 5 880 32)
+  (let [rng (gen/ids 18065)
+        head (gen/cyrillic rng 6)
+        note (gen/greek rng 5)
         text (str head "\n\n## Sources\n1. " note "\n2. " note)
         item (document/strip text)]
     (is (str/includes? item "Sources")
         "Sources section was removed without links")))
 
 (deftest the-document-keeps-sources-when-not-last-section
-  (let [rng (java.util.Random. 18067)
-        head (token rng 6 1040 32)
-        note (token rng 5 880 32)
+  (let [rng (gen/ids 18067)
+        head (gen/cyrillic rng 6)
+        note (gen/greek rng 5)
         url (str "https://example.com/" (.nextInt rng 1000))
         text (str head "\n\n## Sources\n1. " url "\n\n## Далее\n" note)
         item (document/strip text)]
@@ -919,9 +905,9 @@
         "Sources section was removed before end")))
 
 (deftest the-document-inserts-images-before-sources
-  (let [rng (java.util.Random. 18069)
-        head (token rng 6 1040 32)
-        title (token rng 5 880 32)
+  (let [rng (gen/ids 18069)
+        head (gen/cyrillic rng 6)
+        title (gen/greek rng 5)
         url (str "https://example.com/" (.nextInt rng 1000))
         image (str "https://example.com/" (.nextInt rng 1000) ".png")
         text (str head "\n\n## Sources\n1. " url)
@@ -944,9 +930,9 @@
         "Images were not inserted before Sources")))
 
 (deftest the-document-preserves-signed-image-urls
-  (let [rng (java.util.Random. 18071)
-        key (token rng 4 880 32)
-        val (token rng 4 1328 32)
+  (let [rng (gen/ids 18071)
+        key (gen/greek rng 4)
+        val (gen/armenian rng 4)
         link (str "https://example.com/"
                   (.nextInt rng 1000)
                   "?"
@@ -960,10 +946,10 @@
         "Image URL was changed despite missing utm parameters")))
 
 (deftest the-document-uses-cached-image-file
-  (let [rng (java.util.Random. 18073)
-        head (token rng 6 1040 32)
-        title (token rng 5 880 32)
-        code (token rng 8 97 26)
+  (let [rng (gen/ids 18073)
+        head (gen/cyrillic rng 6)
+        title (gen/greek rng 5)
+        code (gen/ascii rng 8)
         root (Files/createTempDirectory "images"
                                         (make-array FileAttribute 0))
         task (task/task {:query head
@@ -1001,10 +987,10 @@
         "Cached image file was not used")))
 
 (deftest the-document-strips-utm-fragments-from-text
-  (let [rng (java.util.Random. 18075)
-        head (token rng 6 1040 32)
-        label (token rng 5 880 32)
-        value (token rng 4 1328 32)
+  (let [rng (gen/ids 18075)
+        head (gen/cyrillic rng 6)
+        label (gen/greek rng 5)
+        value (gen/armenian rng 4)
         number (inc (.nextInt rng 90))
         text (str head " [" number "]?utm_" label "=" value ") " head)
         item (document/clean text)]

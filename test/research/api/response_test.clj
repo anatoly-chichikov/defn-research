@@ -2,26 +2,12 @@
   (:require [clojure.string :as str]
             [clojure.test :refer [deftest is]]
             [research.api.response :as response]
-            [research.domain.result :as result]))
-
-(defn token
-  "Return deterministic token string."
-  [rng size base span]
-  (let [build (StringBuilder.)]
-    (dotimes [_ size]
-      (let [pick (.nextInt rng span)
-            code (+ base pick)]
-        (.append build (char code))))
-    (.toString build)))
-
-(defn uuid
-  "Return deterministic UUID string."
-  [rng]
-  (str (java.util.UUID. (.nextLong rng) (.nextLong rng))))
+            [research.domain.result :as result]
+            [research.test.ids :as gen]))
 
 (deftest the-response-returns-identifier
-  (let [rng (java.util.Random. 15001)
-        ident (str "trun_" (uuid rng))
+  (let [rng (gen/ids 15001)
+        ident (str "trun_" (gen/uuid rng))
         item (response/response {:id ident
                                  :status "completed"
                                  :output ""
@@ -30,8 +16,8 @@
         "Response identifier did not match provided value")))
 
 (deftest the-response-detects-completed
-  (let [rng (java.util.Random. 15003)
-        ident (str "trun_" (uuid rng))
+  (let [rng (gen/ids 15003)
+        ident (str "trun_" (gen/uuid rng))
         item (response/response {:id ident
                                  :status "completed"
                                  :output ""
@@ -40,8 +26,8 @@
         "Response was not detected as completed")))
 
 (deftest the-response-detects-failed
-  (let [rng (java.util.Random. 15005)
-        ident (str "trun_" (uuid rng))
+  (let [rng (gen/ids 15005)
+        ident (str "trun_" (gen/uuid rng))
         item (response/response {:id ident
                                  :status "failed"
                                  :output ""
@@ -49,12 +35,12 @@
     (is (response/failed item) "Response was not detected as failed")))
 
 (deftest the-response-returns-markdown
-  (let [rng (java.util.Random. 15007)
+  (let [rng (gen/ids 15007)
         output (str "# "
-                    (token rng 6 1040 32)
+                    (gen/cyrillic rng 6)
                     "\n\n"
-                    (token rng 5 12354 32))
-        item (response/response {:id (uuid rng)
+                    (gen/hiragana rng 5))
+        item (response/response {:id (gen/uuid rng)
                                  :status "completed"
                                  :output output
                                  :basis []})]
@@ -62,13 +48,13 @@
         "Response markdown did not match output")))
 
 (deftest the-response-extracts-sources
-  (let [rng (java.util.Random. 15009)
-        url (str "https://example.com/" (uuid rng))
-        text (token rng 6 1040 32)
+  (let [rng (gen/ids 15009)
+        url (str "https://example.com/" (gen/uuid rng))
+        text (gen/cyrillic rng 6)
         basis [{:citations [{:url url
                              :title "Test"
                              :excerpts [text]}]}]
-        item (response/response {:id (uuid rng)
+        item (response/response {:id (gen/uuid rng)
                                  :status "completed"
                                  :output ""
                                  :basis basis})]
@@ -76,16 +62,16 @@
         "Response did not extract one source")))
 
 (deftest the-response-deduplicates-sources
-  (let [rng (java.util.Random. 15011)
-        url (str "https://example.com/" (uuid rng))
-        text (token rng 6 1040 32)
+  (let [rng (gen/ids 15011)
+        url (str "https://example.com/" (gen/uuid rng))
+        text (gen/cyrillic rng 6)
         basis [{:citations [{:url url
                              :title "A"
                              :excerpts [text]}]}
                {:citations [{:url url
                              :title "B"
                              :excerpts [text]}]}]
-        item (response/response {:id (uuid rng)
+        item (response/response {:id (gen/uuid rng)
                                  :status "completed"
                                  :output ""
                                  :basis basis})]
@@ -93,8 +79,8 @@
         "Response did not deduplicate sources")))
 
 (deftest the-response-parses-data
-  (let [rng (java.util.Random. 15013)
-        ident (str "trun_" (uuid rng))
+  (let [rng (gen/ids 15013)
+        ident (str "trun_" (gen/uuid rng))
         item (response/response {:id ident
                                  :status "completed"
                                  :output "markdown"
@@ -103,8 +89,8 @@
         "Parsed response identifier did not match")))
 
 (deftest the-response-handles-empty-basis
-  (let [rng (java.util.Random. 15015)
-        item (response/response {:id (uuid rng)
+  (let [rng (gen/ids 15015)
+        item (response/response {:id (gen/uuid rng)
                                  :status "completed"
                                  :output ""
                                  :basis []})]
@@ -112,15 +98,15 @@
         "Response sources was not empty for empty basis")))
 
 (deftest the-response-extracts-confidence
-  (let [rng (java.util.Random. 15017)
+  (let [rng (gen/ids 15017)
         confidence "High"
-        url (str "https://example.com/" (uuid rng))
-        text (token rng 6 1040 32)
+        url (str "https://example.com/" (gen/uuid rng))
+        text (gen/cyrillic rng 6)
         basis [{:citations [{:url url
                              :title "T"
                              :excerpts [text]}]
                 :confidence confidence}]
-        item (response/response {:id (uuid rng)
+        item (response/response {:id (gen/uuid rng)
                                  :status "completed"
                                  :output ""
                                  :basis basis})
@@ -129,13 +115,13 @@
         "Source confidence did not match basis")))
 
 (deftest the-response-handles-missing-confidence
-  (let [rng (java.util.Random. 15019)
-        url (str "https://example.com/" (uuid rng))
-        text (token rng 6 1040 32)
+  (let [rng (gen/ids 15019)
+        url (str "https://example.com/" (gen/uuid rng))
+        text (gen/cyrillic rng 6)
         basis [{:citations [{:url url
                              :title "T"
                              :excerpts [text]}]}]
-        item (response/response {:id (uuid rng)
+        item (response/response {:id (gen/uuid rng)
                                  :status "completed"
                                  :output ""
                                  :basis basis})
@@ -144,10 +130,10 @@
         "Source confidence was not empty when missing")))
 
 (deftest the-response-returns-cost
-  (let [rng (java.util.Random. 15021)
+  (let [rng (gen/ids 15021)
         value (/ (.nextInt rng 10000) 100.0)
-        output (token rng 6 1040 32)
-        item (response/response {:id (uuid rng)
+        output (gen/cyrillic rng 6)
+        item (response/response {:id (gen/uuid rng)
                                  :status "completed"
                                  :output output
                                  :basis []
@@ -156,14 +142,14 @@
         "Cost did not return expected value")))
 
 (deftest the-response-strips-utm-from-markdown
-  (let [rng (java.util.Random. 15023)
-        slug (token rng 6 1040 32)
+  (let [rng (gen/ids 15023)
+        slug (gen/cyrillic rng 6)
         link (str "https://example.com/"
                   (.nextInt rng 1000)
                   "?utm_source=valyu.ai&utm_medium=referral&x="
                   (.nextInt rng 9))
         output (str "Источники " slug "\n1. " link)
-        item (response/response {:id (uuid rng)
+        item (response/response {:id (gen/uuid rng)
                                  :status "completed"
                                  :output output
                                  :basis []})]
@@ -171,8 +157,8 @@
         "utm parameters were not stripped from markdown")))
 
 (deftest the-response-strips-utm-from-sources
-  (let [rng (java.util.Random. 15025)
-        slug (token rng 5 12354 32)
+  (let [rng (gen/ids 15025)
+        slug (gen/hiragana rng 5)
         link (str "https://example.com/"
                   (.nextInt rng 1000)
                   "?utm_source=valyu.ai&utm_medium=referral&x="
@@ -180,7 +166,7 @@
         basis [{:citations [{:url link
                              :title slug
                              :excerpts [slug]}]}]
-        item (response/response {:id (uuid rng)
+        item (response/response {:id (gen/uuid rng)
                                  :status "completed"
                                  :output slug
                                  :basis basis})
@@ -189,10 +175,10 @@
         "utm parameters were not stripped from sources")))
 
 (deftest the-response-preserves-signed-urls
-  (let [rng (java.util.Random. 15027)
-        text (token rng 6 1040 32)
-        key (token rng 4 880 32)
-        val (token rng 4 1328 32)
+  (let [rng (gen/ids 15027)
+        text (gen/cyrillic rng 6)
+        key (gen/greek rng 4)
+        val (gen/armenian rng 4)
         link (str "https://example.com/"
                   (.nextInt rng 1000)
                   "?"
@@ -202,7 +188,7 @@
                   "&sig="
                   (.nextInt rng 1000))
         output (str text " " link)
-        item (response/response {:id (uuid rng)
+        item (response/response {:id (gen/uuid rng)
                                  :status "completed"
                                  :output output
                                  :basis []})]

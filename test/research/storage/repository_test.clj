@@ -3,31 +3,17 @@
             [research.domain.result :as result]
             [research.domain.session :as session]
             [research.domain.task :as task]
-            [research.storage.repository :as repo])
+            [research.storage.repository :as repo]
+            [research.test.ids :as gen])
   (:import (java.nio.file Files)
            (java.nio.file.attribute FileAttribute)))
 
-(defn token
-  "Return deterministic token string."
-  [dice size base span]
-  (let [build (StringBuilder.)]
-    (dotimes [_ size]
-      (let [pick (.nextInt dice span)
-            code (+ base pick)]
-        (.append build (char code))))
-    (.toString build)))
-
-(defn uuid
-  "Return deterministic UUID string."
-  [dice]
-  (str (java.util.UUID. (.nextLong dice) (.nextLong dice))))
-
 (deftest the-repository-returns-empty-for-empty-folder
-  (let [dice (java.util.Random. 24001)
+  (let [rng (gen/ids 24001)
         root (Files/createTempDirectory "repo"
                                         (make-array FileAttribute 0))
-        mark (token dice 4 97 26)
-        name (str mark "-" (uuid dice))
+        mark (gen/ascii rng 4)
+        name (str mark "-" (gen/uuid rng))
         path (.resolve root name)
         _ (Files/createDirectories path (make-array FileAttribute 0))
         item (repo/repo root)]
@@ -35,14 +21,14 @@
         "Load did not return empty list for empty folder")))
 
 (deftest the-repository-saves-and-loads-session
-  (let [dice (java.util.Random. 24003)
+  (let [rng (gen/ids 24003)
         root (Files/createTempDirectory "repo"
                                         (make-array FileAttribute 0))
         item (repo/repo root)
-        topic (token dice 6 1040 32)
-        ident (uuid dice)
-        day (inc (.nextInt dice 8))
-        hour (inc (.nextInt dice 8))
+        topic (gen/cyrillic rng 6)
+        ident (gen/uuid rng)
+        day (inc (.nextInt rng 8))
+        hour (inc (.nextInt rng 8))
         time (str "2026-01-0" day "T0" hour ":00:00")
         entry (session/session {:id ident
                                 :topic topic
@@ -53,20 +39,20 @@
         "Loaded session topic did not match saved")))
 
 (deftest the-repository-append-adds-session
-  (let [dice (java.util.Random. 24005)
+  (let [rng (gen/ids 24005)
         root (Files/createTempDirectory "repo"
                                         (make-array FileAttribute 0))
         item (repo/repo root)
-        topic (token dice 6 1040 32)
-        label (token dice 6 1040 32)
-        day (inc (.nextInt dice 8))
-        hour (inc (.nextInt dice 8))
+        topic (gen/cyrillic rng 6)
+        label (gen/cyrillic rng 6)
+        day (inc (.nextInt rng 8))
+        hour (inc (.nextInt rng 8))
         time (str "2026-01-0" day "T0" hour ":00:00")
-        alpha (session/session {:id (uuid dice)
+        alpha (session/session {:id (gen/uuid rng)
                                 :topic topic
                                 :tasks []
                                 :created time})
-        beta (session/session {:id (uuid dice)
+        beta (session/session {:id (gen/uuid rng)
                                :topic label
                                :tasks []
                                :created time})]
@@ -76,14 +62,14 @@
         "Repository did not contain two sessions after append")))
 
 (deftest the-repository-find-returns-matching-session
-  (let [dice (java.util.Random. 24007)
+  (let [rng (gen/ids 24007)
         root (Files/createTempDirectory "repo"
                                         (make-array FileAttribute 0))
         item (repo/repo root)
-        topic (token dice 6 1040 32)
-        ident (uuid dice)
-        day (inc (.nextInt dice 8))
-        hour (inc (.nextInt dice 8))
+        topic (gen/cyrillic rng 6)
+        ident (gen/uuid rng)
+        day (inc (.nextInt rng 8))
+        hour (inc (.nextInt rng 8))
         time (str "2026-01-0" day "T0" hour ":00:00")
         entry (session/session {:id ident
                                 :topic topic
@@ -95,36 +81,36 @@
           "Found session topic did not match"))))
 
 (deftest the-repository-find-returns-empty-for-missing
-  (let [dice (java.util.Random. 24009)
+  (let [rng (gen/ids 24009)
         root (Files/createTempDirectory "repo"
                                         (make-array FileAttribute 0))
         item (repo/repo root)
-        code (token dice 6 1040 32)
+        code (gen/cyrillic rng 6)
         hit (repo/find item code)]
     (is (not (.isPresent hit)) "Find returned value for missing ID")))
 
 (deftest the-repository-update-modifies-session
-  (let [dice (java.util.Random. 24011)
+  (let [rng (gen/ids 24011)
         root (Files/createTempDirectory "repo"
                                         (make-array FileAttribute 0))
         item (repo/repo root)
-        topic (token dice 6 1040 32)
-        ident (uuid dice)
-        day (inc (.nextInt dice 8))
-        hour (inc (.nextInt dice 8))
+        topic (gen/cyrillic rng 6)
+        ident (gen/uuid rng)
+        day (inc (.nextInt rng 8))
+        hour (inc (.nextInt rng 8))
         time (str "2026-01-0" day "T0" hour ":00:00")
         entry (session/session {:id ident
                                 :topic topic
                                 :tasks []
                                 :created time})]
     (repo/append item entry)
-    (let [query (token dice 6 1040 32)
-          status (token dice 6 1040 32)
-          language (token dice 5 1040 32)
-          service (token dice 4 1040 32)
-          summary (token dice 6 1040 32)
+    (let [query (gen/cyrillic rng 6)
+          status (gen/cyrillic rng 6)
+          language (gen/cyrillic rng 5)
+          service (gen/cyrillic rng 4)
+          summary (gen/cyrillic rng 6)
           value (result/->Result summary [])
-          task (task/task {:id (uuid dice)
+          task (task/task {:id (gen/uuid rng)
                            :query query
                            :status status
                            :language language
@@ -139,17 +125,17 @@
 
 (deftest ^{:doc "Migrates legacy session folders"}
   the-repository-migrates-legacy-folders
-  (let [dice (java.util.Random. 24013)
+  (let [rng (gen/ids 24013)
         root (Files/createTempDirectory "repo"
                                         (make-array FileAttribute 0))
-        date (str "2026-01-0" (inc (.nextInt dice 8)))
-        slug (token dice 6 97 26)
-        code (subs (uuid dice) 0 8)
+        date (str "2026-01-0" (inc (.nextInt rng 8)))
+        slug (gen/ascii rng 6)
+        code (subs (gen/uuid rng) 0 8)
         name (str date "_" slug "_" code)
         path (.resolve root name)
         _ (Files/createDirectories path (make-array FileAttribute 0))
-        tag (token dice 4 97 26)
-        text (str "данные-" (uuid dice))
+        tag (gen/ascii rng 4)
+        text (str "данные-" (gen/uuid rng))
         input (.resolve path (str "input-" tag ".md"))
         response (.resolve path (str "response-" tag ".json"))
         _ (spit (.toFile input) text :encoding "UTF-8")
@@ -162,18 +148,18 @@
 
 (deftest ^{:doc "Builds tasks from response files"}
   the-repository-builds-tasks-from-responses
-  (let [dice (java.util.Random. 24015)
+  (let [rng (gen/ids 24015)
         root (Files/createTempDirectory "repo"
                                         (make-array FileAttribute 0))
-        date (str "2026-01-0" (inc (.nextInt dice 8)))
-        slug (token dice 6 97 26)
-        code (subs (uuid dice) 0 8)
+        date (str "2026-01-0" (inc (.nextInt rng 8)))
+        slug (gen/ascii rng 6)
+        code (subs (gen/uuid rng) 0 8)
         name (str date "_" slug "_" code)
         path (.resolve root name)
         _ (Files/createDirectories path (make-array FileAttribute 0))
-        alpha (token dice 4 97 26)
-        beta (token dice 4 97 26)
-        text (str "데이터-" (uuid dice))
+        alpha (gen/ascii rng 4)
+        beta (gen/ascii rng 4)
+        text (str "데이터-" (gen/uuid rng))
         input (.resolve path (str "input-" alpha ".md"))
         note (.resolve path (str "input-" beta ".md"))
         left (.resolve path (str "response-" alpha ".json"))
@@ -190,33 +176,33 @@
 
 (deftest ^{:doc "Strips query from session edn"}
   the-repository-strips-query-from-session-edn
-  (let [dice (java.util.Random. 24017)
+  (let [rng (gen/ids 24017)
         root (Files/createTempDirectory "repo"
                                         (make-array FileAttribute 0))
-        date (str "2026-01-0" (inc (.nextInt dice 8)))
-        slug (token dice 6 97 26)
-        code (subs (uuid dice) 0 8)
+        date (str "2026-01-0" (inc (.nextInt rng 8)))
+        slug (gen/ascii rng 6)
+        code (subs (gen/uuid rng) 0 8)
         name (str date "_" slug "_" code)
         path (.resolve root name)
         _ (Files/createDirectories path (make-array FileAttribute 0))
-        tag (token dice 4 97 26)
-        note (token dice 6 1040 32)
+        tag (gen/ascii rng 4)
+        note (gen/cyrillic rng 6)
         input (.resolve path (str "input-" tag ".md"))
         _ (spit (.toFile input) note :encoding "UTF-8")
         time (str date "T00:00:00")
-        task {:id (uuid dice)
-              :query (token dice 6 1040 32)
-              :status (token dice 6 945 24)
-              :language (token dice 5 1040 32)
+        task {:id (gen/uuid rng)
+              :query (gen/cyrillic rng 6)
+              :status (gen/greek rng 6)
+              :language (gen/cyrillic rng 5)
               :service tag
               :created time}
-        hold {:run_id (uuid dice)
-              :query (token dice 6 1040 32)
-              :processor (token dice 6 945 24)
-              :language (token dice 6 1040 32)
+        hold {:run_id (gen/uuid rng)
+              :query (gen/cyrillic rng 6)
+              :processor (gen/greek rng 6)
+              :language (gen/cyrillic rng 6)
               :provider tag}
-        data {:id (uuid dice)
-              :topic (token dice 6 1040 32)
+        data {:id (gen/uuid rng)
+              :topic (gen/cyrillic rng 6)
               :tasks [task]
               :pending hold
               :created time}

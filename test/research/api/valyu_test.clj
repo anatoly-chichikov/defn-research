@@ -6,30 +6,16 @@
             [research.api.research :as research]
             [research.api.response :as response]
             [research.api.valyu :as valyu]
-            [research.domain.result :as result])
+            [research.domain.result :as result]
+            [research.test.ids :as gen])
   (:import (com.sun.net.httpserver HttpServer HttpHandler)
            (java.net InetSocketAddress)
            (java.util.concurrent Executors)))
 
-(defn token
-  "Return deterministic token string."
-  [rng size base span]
-  (let [build (StringBuilder.)]
-    (dotimes [_ size]
-      (let [pick (.nextInt rng span)
-            code (+ base pick)]
-        (.append build (char code))))
-    (.toString build)))
-
-(defn uuid
-  "Return deterministic UUID string."
-  [rng]
-  (str (java.util.UUID. (.nextLong rng) (.nextLong rng))))
-
 (deftest the-valyu-start-returns-run-identifier
-  (let [rng (java.util.Random. 17001)
+  (let [rng (gen/ids 17001)
         run (str "dr_" (.nextInt rng 100000))
-        query (token rng 6 880 32)
+        query (gen/greek rng 6)
         model (str "standard-" (.nextInt rng 1000))]
     (with-redefs [http/post (fn [_ _]
                               (delay {:status 200
@@ -41,10 +27,10 @@
         (is (= run result) "start did not return expected identifier")))))
 
 (deftest the-valyu-start-uses-versioned-endpoint
-  (let [rng (java.util.Random. 17002)
+  (let [rng (gen/ids 17002)
         seen (atom "")
         run (str "dr_" (.nextInt rng 100000))
-        query (token rng 6 1040 32)
+        query (gen/cyrillic rng 6)
         model (str "standard-" (.nextInt rng 1000))
         client (valyu/valyu {:key "key"
                              :base "https://api.valyu.ai"})]
@@ -59,12 +45,12 @@
 
 (deftest ^{:doc "Ensure Valyu preserves processor."}
   the-valyu-start-preserves-processor
-  (let [rng (java.util.Random. 17004)
+  (let [rng (gen/ids 17004)
         run (str "dr_" (.nextInt rng 100000))
-        query (token rng 6 1040 32)
-        key (token rng 5 880 32)
+        query (gen/cyrillic rng 6)
+        key (gen/greek rng 5)
         body (atom "")
-        model (token rng 5 1040 32)]
+        model (gen/cyrillic rng 5)]
     (with-redefs [http/post (fn [_ req]
                               (reset! body (:body req))
                               (delay {:status 200
@@ -80,9 +66,9 @@
           "Valyu changed processor"))))
 
 (deftest the-valyu-maps-high-confidence
-  (let [rng (java.util.Random. 17003)
-        title (token rng 6 1040 32)
-        text (token rng 8 880 32)
+  (let [rng (gen/ids 17003)
+        title (gen/cyrillic rng 6)
+        text (gen/greek rng 8)
         url (str "https://example.com/" (.nextInt rng 10000))
         date (str "202"
                   (.nextInt rng 5)
@@ -113,9 +99,9 @@
         "confidence was not high for paper with doi")))
 
 (deftest the-valyu-maps-unknown-confidence
-  (let [rng (java.util.Random. 17005)
-        title (token rng 6 1328 32)
-        text (token rng 9 1424 32)
+  (let [rng (gen/ids 17005)
+        title (gen/armenian rng 6)
+        text (gen/hebrew rng 9)
         url (str "https://example.com/" (.nextInt rng 10000))
         source {:title title
                 :url url
@@ -133,9 +119,9 @@
         "confidence was not unknown for missing metadata")))
 
 (deftest the-valyu-maps-medium-confidence-trusted
-  (let [rng (java.util.Random. 17007)
-        title (token rng 7 1040 32)
-        text (token rng 8 12354 32)
+  (let [rng (gen/ids 17007)
+        title (gen/cyrillic rng 7)
+        text (gen/hiragana rng 8)
         url (str "https://www.wikipedia.org/" (.nextInt rng 10000))
         source {:title title
                 :url url
@@ -153,9 +139,9 @@
         "confidence was not medium for trusted domain")))
 
 (deftest the-valyu-maps-medium-confidence-public
-  (let [rng (java.util.Random. 17009)
-        title (token rng 6 1328 32)
-        text (token rng 9 1040 32)
+  (let [rng (gen/ids 17009)
+        title (gen/armenian rng 6)
+        text (gen/cyrillic rng 9)
         url (str "https://www.nasa.gov/" (.nextInt rng 10000))
         source {:title title
                 :url url
@@ -173,8 +159,8 @@
         "confidence was not medium for gov domain")))
 
 (deftest the-valyu-maps-low-confidence
-  (let [rng (java.util.Random. 17011)
-        text (token rng 7 12354 32)
+  (let [rng (gen/ids 17011)
+        text (gen/hiragana rng 7)
         url (str "https://example.com/" (.nextInt rng 10000))
         date (str "202"
                   (.nextInt rng 5)
@@ -203,27 +189,27 @@
         "confidence was not low for low relevance")))
 
 (deftest the-valyu-reads-progress-messages
-  (let [rng (java.util.Random. 17013)
-        token (token rng 6 1040 32)
+  (let [rng (gen/ids 17013)
+        token (gen/cyrillic rng 6)
         seen {}
         value {:messages [{:message token}]}
         result (first (valyu/message value seen "trun_x"))]
     (is (= token result) "message was not returned")))
 
 (deftest the-valyu-formats-list-messages
-  (let [rng (java.util.Random. 17015)
-        left (token rng 4 1040 32)
-        right (token rng 4 1328 32)
+  (let [rng (gen/ids 17015)
+        left (gen/cyrillic rng 4)
+        right (gen/armenian rng 4)
         seen {}
         value {:messages [{:message [left right]}]}
         result (first (valyu/message value seen "trun_x"))]
     (is (= (str left " " right) result) "list message was not joined")))
 
 (deftest the-valyu-uses-raw-status-payload
-  (let [rng (java.util.Random. 17017)
+  (let [rng (gen/ids 17017)
         ident (str "dr_" (.nextInt rng 100000))
-        output (token rng 6 1040 32)
-        title (token rng 5 880 32)
+        output (gen/cyrillic rng 6)
+        title (gen/greek rng 5)
         url (str "http://example.com/" (.nextInt rng 1000))
         payload {:success true
                  :status "completed"
