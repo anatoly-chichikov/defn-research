@@ -2,17 +2,8 @@
   (:require [clojure.string :as str]
             [clojure.test :refer [deftest is]]
             [research.pdf.palette :as palette]
-            [research.pdf.style :as style]))
-
-(defn token
-  "Return deterministic token string."
-  [rng size base span]
-  (let [build (StringBuilder.)]
-    (dotimes [_ size]
-      (let [pick (.nextInt rng span)
-            code (+ base pick)]
-        (.append build (char code))))
-    (.toString build)))
+            [research.pdf.style :as style]
+            [research.test.ids :as gen]))
 
 (defn pal
   "Return palette that yields value."
@@ -30,15 +21,15 @@
     (border [_] value)))
 
 (deftest the-style-includes-image-constraints
-  (let [rng (java.util.Random. 20001)
-        value (token rng 6 1040 32)
+  (let [rng (gen/ids 20001)
+        value (gen/cyrillic rng 6)
         css (style/css (style/style (pal value)))]
     (is (str/includes? css ".synthesis img")
         "Image constraints were not included in stylesheet")))
 
 (deftest the-style-h1-omits-underline
-  (let [rng (java.util.Random. 20003)
-        value (token rng 6 1040 32)
+  (let [rng (gen/ids 20003)
+        value (gen/cyrillic rng 6)
         css (style/css (style/style (pal value)))
         snippet (str/join
                  "\n"
@@ -52,8 +43,8 @@
     (is (not (str/includes? css snippet)) "H1 underline was present")))
 
 (deftest the-style-h2-omits-underline
-  (let [rng (java.util.Random. 20005)
-        value (token rng 6 1040 32)
+  (let [rng (gen/ids 20005)
+        value (gen/cyrillic rng 6)
         css (style/css (style/style (pal value)))
         snippet (str/join
                  "\n"
@@ -68,8 +59,8 @@
     (is (not (str/includes? css snippet)) "H2 underline was present")))
 
 (deftest the-style-h2-draws-accent-bar
-  (let [rng (java.util.Random. 20007)
-        value (token rng 6 1040 32)
+  (let [rng (gen/ids 20007)
+        value (gen/cyrillic rng 6)
         css (style/css (style/style (pal value)))
         snippet (str/join
                  "\n"
@@ -87,50 +78,50 @@
     (is (str/includes? css snippet) "Heading accent bar was missing")))
 
 (deftest the-style-synthesis-omits-left-border
-  (let [rng (java.util.Random. 20009)
-        value (token rng 6 1040 32)
+  (let [rng (gen/ids 20009)
+        value (gen/cyrillic rng 6)
         css (style/css (style/style (pal value)))]
     (is (str/includes? css "border-left: none;")
         "Synthesis left border was present")))
 
 (deftest the-style-hr-hides-divider-line
-  (let [rng (java.util.Random. 20011)
-        value (token rng 6 1040 32)
+  (let [rng (gen/ids 20011)
+        value (gen/cyrillic rng 6)
         css (style/css (style/style (pal value)))]
     (is (str/includes? css "border-top: 0;")
         "Horizontal rule line was visible")))
 
 (deftest the-style-brief-query-uses-quote-colors
-  (let [rng (java.util.Random. 20013)
-        value (token rng 6 1040 32)
+  (let [rng (gen/ids 20013)
+        value (gen/cyrillic rng 6)
         css (style/css (style/style (pal value)))]
     (is (str/includes? css "background: var(--quote-bg);")
         "Brief query background was not quote color")))
 
 (deftest the-style-brief-query-uses-link-tone
-  (let [rng (java.util.Random. 20015)
-        value (token rng 6 1040 32)
+  (let [rng (gen/ids 20015)
+        value (gen/cyrillic rng 6)
         css (style/css (style/style (pal value)))]
     (is (str/includes? css "border-left: 3px solid var(--link);")
         "Brief query border did not use link color")))
 
 (deftest the-style-blockquote-uses-link-tone
-  (let [rng (java.util.Random. 20017)
-        value (token rng 6 1040 32)
+  (let [rng (gen/ids 20017)
+        value (gen/cyrillic rng 6)
         css (style/css (style/style (pal value)))]
     (is (str/includes? css "border-left: 3px solid var(--link);")
         "Blockquote border did not use link color")))
 
 (deftest the-style-serif-font-includes-japanese-fallback
-  (let [rng (java.util.Random. 20019)
-        value (token rng 6 1040 32)
+  (let [rng (gen/ids 20019)
+        value (gen/cyrillic rng 6)
         css (style/css (style/style (pal value)))]
     (is (str/includes? css "Noto Serif JP")
         "Japanese fallback font was missing")))
 
 (deftest the-style-includes-emoji-fallbacks
-  (let [rng (java.util.Random. 20021)
-        value (token rng 6 1040 32)
+  (let [rng (gen/ids 20021)
+        value (gen/cyrillic rng 6)
         css (style/css (style/style (pal value)))]
     (is (str/includes? css ".emoji")
         "Emoji class was missing from stylesheet")))

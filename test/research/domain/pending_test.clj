@@ -1,24 +1,15 @@
 (ns research.domain.pending-test
   (:require [clojure.test :refer [deftest is]]
-            [research.domain.pending :as pending]))
-
-(defn token
-  "Return deterministic token string."
-  [dice size base span]
-  (let [build (StringBuilder.)]
-    (dotimes [_ size]
-      (let [pick (.nextInt dice span)
-            code (+ base pick)]
-        (.append build (char code))))
-    (.toString build)))
+            [research.domain.pending :as pending]
+            [research.test.ids :as gen]))
 
 (deftest the-pending-returns-identifier
-  (let [dice (java.util.Random. 13001)
-        run (token dice 6 1040 32)
-        query (token dice 6 12354 32)
-        processor (token dice 6 945 24)
-        language (token dice 6 1040 32)
-        provider (token dice 6 1040 32)
+  (let [rng (gen/ids 13001)
+        run (gen/cyrillic rng 6)
+        query (gen/hiragana rng 6)
+        processor (gen/greek rng 6)
+        language (gen/cyrillic rng 6)
+        provider (gen/cyrillic rng 6)
         item (pending/pending {:run_id run
                                :query query
                                :processor processor
@@ -28,12 +19,12 @@
         "Pending identifier did not match provided value")))
 
 (deftest the-pending-returns-query
-  (let [dice (java.util.Random. 13003)
-        run (token dice 6 1040 32)
-        query (token dice 6 12354 32)
-        processor (token dice 6 945 24)
-        language (token dice 6 1040 32)
-        provider (token dice 6 1040 32)
+  (let [rng (gen/ids 13003)
+        run (gen/cyrillic rng 6)
+        query (gen/hiragana rng 6)
+        processor (gen/greek rng 6)
+        language (gen/cyrillic rng 6)
+        provider (gen/cyrillic rng 6)
         item (pending/pending {:run_id run
                                :query query
                                :processor processor
@@ -43,12 +34,12 @@
         "Pending query did not match provided value")))
 
 (deftest the-pending-returns-processor
-  (let [dice (java.util.Random. 13005)
-        run (token dice 6 1040 32)
-        query (token dice 6 12354 32)
-        processor (token dice 6 945 24)
-        language (token dice 6 1040 32)
-        provider (token dice 6 1040 32)
+  (let [rng (gen/ids 13005)
+        run (gen/cyrillic rng 6)
+        query (gen/hiragana rng 6)
+        processor (gen/greek rng 6)
+        language (gen/cyrillic rng 6)
+        provider (gen/cyrillic rng 6)
         item (pending/pending {:run_id run
                                :query query
                                :processor processor
@@ -58,12 +49,12 @@
         "Pending processor did not match provided value")))
 
 (deftest the-pending-returns-language
-  (let [dice (java.util.Random. 13007)
-        run (token dice 6 1040 32)
-        query (token dice 6 12354 32)
-        processor (token dice 6 945 24)
-        language (token dice 6 1040 32)
-        provider (token dice 6 1040 32)
+  (let [rng (gen/ids 13007)
+        run (gen/cyrillic rng 6)
+        query (gen/hiragana rng 6)
+        processor (gen/greek rng 6)
+        language (gen/cyrillic rng 6)
+        provider (gen/cyrillic rng 6)
         item (pending/pending {:run_id run
                                :query query
                                :processor processor
@@ -73,12 +64,12 @@
         "Pending language did not match provided value")))
 
 (deftest the-pending-serializes-correctly
-  (let [dice (java.util.Random. 13009)
-        run (token dice 6 1040 32)
-        query (token dice 6 12354 32)
-        processor (token dice 6 945 24)
-        language (token dice 6 1040 32)
-        provider (token dice 6 1040 32)
+  (let [rng (gen/ids 13009)
+        run (gen/cyrillic rng 6)
+        query (gen/hiragana rng 6)
+        processor (gen/greek rng 6)
+        language (gen/cyrillic rng 6)
+        provider (gen/cyrillic rng 6)
         item (pending/pending {:run_id run
                                :query query
                                :processor processor
@@ -92,12 +83,12 @@
         "Pending serialize included query")))
 
 (deftest the-pending-deserializes-correctly
-  (let [dice (java.util.Random. 13011)
-        run (token dice 6 1040 32)
-        query (token dice 6 12354 32)
-        processor (token dice 6 945 24)
-        language (token dice 6 1040 32)
-        provider (token dice 6 1040 32)
+  (let [rng (gen/ids 13011)
+        run (gen/cyrillic rng 6)
+        query (gen/hiragana rng 6)
+        processor (gen/greek rng 6)
+        language (gen/cyrillic rng 6)
+        provider (gen/cyrillic rng 6)
         item (pending/pending {:run_id run
                                :query query
                                :processor processor
@@ -107,12 +98,12 @@
         "Pending deserialize did not restore identifier")))
 
 (deftest the-pending-returns-provider
-  (let [dice (java.util.Random. 13013)
-        run (token dice 6 1040 32)
-        query (token dice 6 12354 32)
-        processor (token dice 6 945 24)
-        language (token dice 6 1040 32)
-        name (token dice 6 1040 32)
+  (let [rng (gen/ids 13013)
+        run (gen/cyrillic rng 6)
+        query (gen/hiragana rng 6)
+        processor (gen/greek rng 6)
+        language (gen/cyrillic rng 6)
+        name (gen/cyrillic rng 6)
         item (pending/pending {:run_id run
                                :query query
                                :processor processor
@@ -122,12 +113,12 @@
         "Pending provider did not match provided value")))
 
 (deftest the-pending-serializes-provider
-  (let [dice (java.util.Random. 13015)
-        run (token dice 6 1040 32)
-        query (token dice 6 12354 32)
-        processor (token dice 6 945 24)
-        language (token dice 6 1040 32)
-        name (token dice 6 12354 32)
+  (let [rng (gen/ids 13015)
+        run (gen/cyrillic rng 6)
+        query (gen/hiragana rng 6)
+        processor (gen/greek rng 6)
+        language (gen/cyrillic rng 6)
+        name (gen/hiragana rng 6)
         item (pending/pending {:run_id run
                                :query query
                                :processor processor

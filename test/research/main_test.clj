@@ -10,28 +10,14 @@
             [research.main :as main]
             [research.pdf.document :as document]
             [research.storage.organizer :as organizer]
-            [research.storage.repository :as repo])
+            [research.storage.repository :as repo]
+            [research.test.ids :as gen])
   (:import (java.io StringWriter)
            (java.nio.file Files Paths)
            (java.nio.file.attribute FileAttribute)
            (javax.imageio ImageIO)
            (org.apache.pdfbox.pdmodel PDDocument)
            (org.apache.pdfbox.rendering PDFRenderer)))
-
-(defn token
-  "Return deterministic token string."
-  [rng size base span]
-  (let [build (StringBuilder.)]
-    (dotimes [_ size]
-      (let [pick (.nextInt rng span)
-            code (+ base pick)]
-        (.append build (char code))))
-    (.toString build)))
-
-(defn uuid
-  "Return deterministic UUID string."
-  [rng]
-  (str (java.util.UUID. (.nextLong rng) (.nextLong rng))))
 
 (defn screens
   "Render PDF pages into images."
@@ -74,18 +60,18 @@
           0)))))
 
 (deftest the-cli-parses-command
-  (let [rng (java.util.Random. 25001)
-        text (token rng 6 1040 32)
+  (let [rng (gen/ids 25001)
+        text (gen/cyrillic rng 6)
         data (main/parse ["create" text])]
     (is (= "create" (:cmd data)) "CLI parse is incorrect")))
 
 (deftest the-cli-parses-options
-  (let [rng (java.util.Random. 25002)
-        topic (token rng 6 1040 32)
-        query (token rng 7 1040 32)
-        processor (token rng 5 1040 32)
-        language (token rng 4 1040 32)
-        provider (token rng 6 1040 32)
+  (let [rng (gen/ids 25002)
+        topic (gen/cyrillic rng 6)
+        query (gen/cyrillic rng 7)
+        processor (gen/cyrillic rng 5)
+        language (gen/cyrillic rng 4)
+        provider (gen/cyrillic rng 6)
         data (main/parse ["run"
                           topic
                           query
@@ -103,13 +89,13 @@
     (is (= goal value) "Options were not parsed")))
 
 (deftest the-application-run-forwards-parameters
-  (let [rng (java.util.Random. 25003)
-        topic (token rng 6 1040 32)
-        query (token rng 7 880 32)
-        code (token rng 5 1328 32)
-        processor (token rng 4 1040 32)
-        language (token rng 4 880 32)
-        provider (token rng 4 12354 32)
+  (let [rng (gen/ids 25003)
+        topic (gen/cyrillic rng 6)
+        query (gen/greek rng 7)
+        code (gen/armenian rng 5)
+        processor (gen/cyrillic rng 4)
+        language (gen/greek rng 4)
+        provider (gen/hiragana rng 4)
         store (atom nil)
         item (reify main/Applied
                (list [_] nil)
@@ -131,11 +117,11 @@
         "Run did not pass data")))
 
 (deftest the-application-run-executes-all-providers
-  (let [rng (java.util.Random. 25004)
-        topic (token rng 6 1040 32)
-        query (token rng 7 880 32)
-        processor (token rng 4 1040 32)
-        language (token rng 4 880 32)
+  (let [rng (gen/ids 25004)
+        topic (gen/cyrillic rng 6)
+        query (gen/greek rng 7)
+        processor (gen/cyrillic rng 4)
+        language (gen/greek rng 4)
         root (Files/createTempDirectory "app"
                                         (make-array FileAttribute 0))
         app (main/app root)
@@ -148,7 +134,7 @@
                 (finish [_ id]
                   (response/response {:id id
                                       :status "completed"
-                                      :output (token rng 6 1040 32)
+                                      :output (gen/cyrillic rng 6)
                                       :basis []
                                       :raw {}})))
         beta (reify research/Researchable
@@ -159,7 +145,7 @@
                (finish [_ id]
                  (response/response {:id id
                                      :status "completed"
-                                     :output (token rng 6 1040 32)
+                                     :output (gen/cyrillic rng 6)
                                      :basis []
                                      :raw {}})))]
     (with-redefs [parallel/parallel (fn [] alpha)
@@ -175,11 +161,11 @@
 
 (deftest ^{:doc "Ensure valyu rejects legacy processor."}
   the-application-run-rejects-valyu-lite-processor
-  (let [rng (java.util.Random. 25006)
-        topic (token rng 6 1040 32)
-        query (token rng 7 880 32)
+  (let [rng (gen/ids 25006)
+        topic (gen/cyrillic rng 6)
+        query (gen/greek rng 7)
         processor "lite"
-        language (token rng 4 880 32)
+        language (gen/greek rng 4)
         root (Files/createTempDirectory "app"
                                         (make-array FileAttribute 0))
         app (main/app root)]
@@ -188,16 +174,16 @@
         "Valyu accepted legacy processor")))
 
 (deftest the-application-skips-cover-when-key-missing
-  (let [rng (java.util.Random. 25005)
-        topic (token rng 6 1040 32)
-        query (token rng 7 880 32)
-        processor (token rng 5 1328 32)
-        language (token rng 4 12354 32)
+  (let [rng (gen/ids 25005)
+        topic (gen/cyrillic rng 6)
+        query (gen/greek rng 7)
+        processor (gen/armenian rng 5)
+        language (gen/hiragana rng 4)
         provider "parallel"
-        run (token rng 8 1536 32)
-        text (token rng 12 1040 32)
+        run (gen/arabic rng 8)
+        text (gen/cyrillic rng 12)
         stamp (session/format (session/now))
-        ident (uuid rng)
+        ident (gen/uuid rng)
         entry {:run_id run
                :query query
                :processor processor
@@ -241,16 +227,16 @@
           "Cover image was generated despite missing key"))))
 
 (deftest the-application-writes-raw-response
-  (let [rng (java.util.Random. 25007)
-        topic (token rng 6 1040 32)
-        query (token rng 7 880 32)
-        processor (token rng 5 1328 32)
-        language (token rng 4 12354 32)
-        provider (token rng 5 1040 32)
-        run (token rng 8 1536 32)
-        text (token rng 12 1040 32)
+  (let [rng (gen/ids 25007)
+        topic (gen/cyrillic rng 6)
+        query (gen/greek rng 7)
+        processor (gen/armenian rng 5)
+        language (gen/hiragana rng 4)
+        provider (gen/cyrillic rng 5)
+        run (gen/arabic rng 8)
+        text (gen/cyrillic rng 12)
         stamp (session/format (session/now))
-        ident (uuid rng)
+        ident (gen/uuid rng)
         entry {:run_id run
                :query query
                :processor processor
@@ -267,10 +253,10 @@
         _ (Files/createDirectories out (make-array FileAttribute 0))
         store (repo/repo out)
         _ (repo/save store [sess])
-        key (keyword (token rng 6 1040 32))
-        value (token rng 6 880 32)
-        nest (keyword (token rng 5 1328 32))
-        inner (keyword (token rng 4 12354 32))
+        key (keyword (gen/cyrillic rng 6))
+        value (gen/greek rng 6)
+        nest (keyword (gen/armenian rng 5))
+        inner (keyword (gen/hiragana rng 4))
         raw {key value
              nest {inner (.nextInt rng 1000)}}
         reply (response/response {:id run
@@ -305,16 +291,16 @@
       (is (= raw data) "Raw response did not match stored response"))))
 
 (deftest the-application-saves-input-markdown
-  (let [rng (java.util.Random. 25009)
-        topic (token rng 6 1040 32)
-        query (str (token rng 5 1040 32) "\n\n" (token rng 7 880 32))
+  (let [rng (gen/ids 25009)
+        topic (gen/cyrillic rng 6)
+        query (str (gen/cyrillic rng 5) "\n\n" (gen/greek rng 7))
         processor "pro"
-        language (token rng 4 1040 32)
+        language (gen/cyrillic rng 4)
         provider "parallel"
-        run (token rng 8 1536 32)
-        text (token rng 12 1040 32)
+        run (gen/arabic rng 8)
+        text (gen/cyrillic rng 12)
         stamp (session/format (session/now))
-        ident (uuid rng)
+        ident (gen/uuid rng)
         sess (session/session {:id ident
                                :topic topic
                                :tasks []
@@ -355,9 +341,9 @@
       (is (= query data) "Input markdown was not saved"))))
 
 (deftest ^:integration the-application-generates-pdf-screenshots
-  (let [rng (java.util.Random. 25011)
-        lang (token rng 6 1040 32)
-        head (token rng 6 97 26)
+  (let [rng (gen/ids 25011)
+        lang (gen/cyrillic rng 6)
+        head (gen/ascii rng 6)
         base (Paths/get "baseline-research" (make-array String 0))
         input (slurp (.toFile (.resolve base "input-parallel.md"))
                      :encoding "UTF-8")
@@ -372,13 +358,13 @@
         _ (Files/createDirectories out (make-array FileAttribute 0))
         repo (repo/repo out)
         stamp "2026-01-01T00:00:00"
-        ident (uuid rng)
+        ident (gen/uuid rng)
         sess (session/session {:id ident
                                :topic "Clojure production pain points"
                                :tasks []
                                :created stamp})
         _ (repo/save repo [sess])
-        run (token rng 8 97 26)
+        run (gen/ascii rng 8)
         fake (reify research/Researchable
                (start [_ _ _] run)
                (stream [_ _] true)
