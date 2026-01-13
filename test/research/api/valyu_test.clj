@@ -219,12 +219,15 @@
     (with-redefs-fn {#'http/get (fn [_ _]
                                   (swap! count inc)
                                   (delay (if (= @count 1)
-                                           {:status fault :body (gen/greek rng 3)}
-                                           {:status success :body body})))
+                                           {:status fault
+                                            :body (gen/greek rng 3)}
+                                           {:status success
+                                            :body body})))
                      #'valyu/pause (fn [_] nil)
                      #'clojure.core/println (fn [& _] nil)}
       (fn []
-        (let [data (valyu/valyu-status {:base base :key key} id)]
+        (let [data (valyu/valyu-status {:base base
+                                        :key key} id)]
           (is (= state (:status data))
               "valyu did not recover from transient error"))))))
 
@@ -242,11 +245,13 @@
                                   (swap! count inc)
                                   (delay (if (= @count 1)
                                            nil
-                                           {:status success :body body})))
+                                           {:status success
+                                            :body body})))
                      #'valyu/pause (fn [_] nil)
                      #'clojure.core/println (fn [& _] nil)}
       (fn []
-        (let [data (valyu/valyu-status {:base base :key key} id)]
+        (let [data (valyu/valyu-status {:base base
+                                        :key key} id)]
           (is (= state (:status data))
               "valyu did not recover from missing status"))))))
 

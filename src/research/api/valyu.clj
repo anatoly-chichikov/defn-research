@@ -187,20 +187,41 @@
                    (json/read-value
                     body
                     (json/object-mapper {:decode-key-fn keyword})))
-            signal (or (nil? status) (>= status 500) (= status 429) (:error result))
+            signal (or (nil? status)
+                       (>= status 500)
+                       (= status 429)
+                       (:error result))
             fault (some? (:error result))
             time (min (* span (inc step)) (* span 8))]
         (if data
           data
-          (let [note (str "Valyu status non200 id=" id " status=" (or status "none") " attempt=" (inc step) (when fault " error=true") (when signal (str " wait_ms=" time)))]
+          (let [note (str "Valyu status non200 id="
+                          id
+                          " status="
+                          (or status "none")
+                          " attempt="
+                          (inc step)
+                          (when fault " error=true")
+                          (when signal (str " wait_ms=" time)))]
             (println (clean note))
             (if signal
               (if (< step (dec limit))
                 (do (pause time) (recur (inc step)))
-                (throw (ex-info (str "Valyu status failed id=" id " status=" (or status "none") " attempts=" limit)
-                                {:id id :status status :attempts limit})))
-              (throw (ex-info (str "Valyu status failed id=" id " status=" (or status "none"))
-                              {:id id :status status})))))))))
+                (throw (ex-info (str "Valyu status failed id="
+                                     id
+                                     " status="
+                                     (or status "none")
+                                     " attempts="
+                                     limit)
+                                {:id id
+                                 :status status
+                                 :attempts limit})))
+              (throw (ex-info (str "Valyu status failed id="
+                                   id
+                                   " status="
+                                   (or status "none"))
+                              {:id id
+                               :status status})))))))))
 
 (defn valyu-emit
   "Emit progress info for Valyu."
