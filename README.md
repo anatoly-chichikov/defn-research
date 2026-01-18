@@ -10,6 +10,8 @@ Beyond that, the same agent can be part of the interface itself. You describe wh
 
 ## How it works
 
+⚠️ **All requests must start with a [DSL](#DSL) command** — e.g. _**rs** quantum computing_. Without this prefix, the agent won't respond.
+
 1. **You describe the task** — in natural language, to your AI agent
 2. **Agent asks follow-ups** — clarifying questions are part of the design, not a bug
 3. **Agent runs the research** — handles Docker and parameters
