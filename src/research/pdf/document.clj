@@ -14,7 +14,8 @@
             [research.storage.organizer :as organizer])
   (:import (java.nio.file Files LinkOption)
            (java.nio.file.attribute FileAttribute)
-           (org.jsoup Jsoup)))
+           (org.jsoup Jsoup)
+           (org.jsoup.parser Parser)))
 
 (defprotocol Signed
   "Object with author signature."
@@ -49,6 +50,12 @@
       (str/replace "<" "&lt;")
       (str/replace ">" "&gt;")
       (str/replace "\"" "&quot;")))
+
+(defn decode
+  "Decode HTML entities."
+  [text]
+  (let [value (Parser/unescapeEntities (or text "") true)]
+    (Parser/unescapeEntities value true)))
 
 (defn heading
   "Return heading text with uppercase initial letter."
@@ -170,7 +177,7 @@
   "Return cleaned source title."
   [item name]
   (let [text (str/replace
-              (str/trim (or (result/title item) ""))
+              (decode (str/trim (or (result/title item) "")))
               #"\s+"
               " ")
         link (trim (result/url item))
@@ -185,7 +192,8 @@
 (defn excerpt
   "Return cleaned excerpt text."
   [text]
-  (let [text (str/replace (str/trim (or text "")) #"\s+" " ")
+  (let [text (decode (str/trim (or text "")))
+        text (str/replace text #"\s+" " ")
         size 220
         text (if (> (count text) size)
                (str (subs text 0 (dec size)) "...")
@@ -409,6 +417,24 @@
                                 "</code></pre>")))]
     (str/replace text #"<pre><code>(.*?)</code></pre>" mark)))
 
+(defn stars
+  "Replace star ratings with fractions."
+  [text]
+  (let [mark (fn [items]
+               (let [value (if (string? items) items (first items))
+                     size (count value)
+                     sum (reduce (fn [sum item]
+                                   (if (= item \u2605) (inc sum) sum))
+                                 0
+                                 value)]
+                 (str sum "/" size)))]
+    (str/replace text #"[★☆]+" mark)))
+
+(defn backslash
+  "Unescape encoded backslashes in HTML."
+  [text]
+  (str/replace text "&amp;#92;" "&#92;"))
+
 (defn env
   "Return environment value by key."
   [key]
@@ -504,9 +530,11 @@
         text (listify text)
         text (normalize text)
         text (rule text)
+        text (stars text)
         html (md/md-to-html-string text)
         html (tables html)
-        html (codeindent html)]
+        html (codeindent html)
+        html (backslash html)]
     (if (str/blank? html)
       ""
       (str "<div class=\"brief\"><div class=\"container\">"
@@ -656,6 +684,7 @@
   (let [[text sources] (resultmap item task)
         text (clean text)
         text (underscorify text)
+        text (stars text)
         text (emojify text)
         [text urls mark] (citations text sources)
         text (strip text)
@@ -666,6 +695,7 @@
         html (tables html)
         html (codeindent html)
         html (paragraphs html)
+        html (backslash html)
         html (reduce-kv
               (fn [note token link]
                 (str/replace note token link))

@@ -11,7 +11,8 @@
             [research.test.ids :as gen])
   (:import (java.nio.file Files Paths)
            (java.nio.file.attribute FileAttribute)
-           (java.util Optional)))
+           (java.util Optional)
+           (org.jsoup Jsoup)))
 (deftest the-document-render-contains-doctype
   (let [rng (gen/ids 18001)
         topic (gen/cyrillic rng 6)
@@ -290,6 +291,118 @@
         item (document/paragraphs html)]
     (is (some? (re-find #"(?s)<li[^>]*>.*<p>" item))
         "List items were not wrapped")))
+
+(deftest ^{:doc "Ensures code spans keep backslashes."}
+  the-document-unescapes-backslashes-in-code
+  (let [rng (gen/ids 18032)
+        day (inc (.nextInt rng 8))
+        hour (inc (.nextInt rng 8))
+        time (str "2026-01-0" day "T0" hour ":00:00")
+        head (gen/cyrillic rng 6)
+        left (gen/latin rng 4)
+        mid (gen/hiragana rng 4)
+        right (gen/greek rng 4)
+        path (str "C:\\" left "\\" mid "\\" right ".exe")
+        text (str head " `" path "`")
+        result (result/->Result text [])
+        task (task/task {:query head
+                         :status "completed"
+                         :result (result/data result)
+                         :language head
+                         :service "valyu.ai"
+                         :created time})
+        entry (task/data task)
+        item (session/session {:topic head
+                               :tasks [entry]
+                               :created time})
+        root (Paths/get "output" (make-array String 0))
+        doc (document/document
+             item
+             (palette/palette)
+             (Optional/empty)
+             root)
+        pair (document/taskhtml doc task)
+        html (first pair)
+        tree (Jsoup/parseBodyFragment html)
+        code (.text (.selectFirst tree "code"))]
+    (is (= path code)
+        "Backslashes were still escaped in code")))
+
+(deftest ^{:doc "Ensures star ratings are normalized."}
+  the-document-replaces-star-ratings
+  (let [rng (gen/ids 18033)
+        day (inc (.nextInt rng 8))
+        hour (inc (.nextInt rng 8))
+        time (str "2026-01-0" day "T0" hour ":00:00")
+        head (gen/cyrillic rng 6)
+        left (gen/hiragana rng 5)
+        right (gen/greek rng 5)
+        ink (inc (.nextInt rng 4))
+        void (inc (.nextInt rng 4))
+        core (apply str (repeat ink (char 0x2605)))
+        shell (apply str (repeat void (char 0x2606)))
+        stars (str core shell)
+        rate (str ink "/" (+ ink void))
+        rows (str "| " head " | " left " |\n"
+                  "|---|---|\n"
+                  "| " right " (" stars ") | " head " |")
+        result (result/->Result rows [])
+        task (task/task {:query head
+                         :status "completed"
+                         :result (result/data result)
+                         :language head
+                         :service "valyu.ai"
+                         :created time})
+        entry (task/data task)
+        item (session/session {:topic head
+                               :tasks [entry]
+                               :created time})
+        root (Paths/get "output" (make-array String 0))
+        doc (document/document item (palette/palette) (Optional/empty) root)
+        pair (document/taskhtml doc task)
+        html (first pair)
+        tree (Jsoup/parseBodyFragment html)
+        text (.text (.selectFirst tree "table"))
+        mark (and (str/includes? text rate) (not (re-find #"[★☆]" text)))]
+    (is mark "Star ratings were not converted")))
+
+(deftest ^{:doc "Ensures source excerpts render decoded entities."}
+  the-document-normalizes-source-entities
+  (let [rng (gen/ids 18034)
+        day (inc (.nextInt rng 8))
+        hour (inc (.nextInt rng 8))
+        time (str "2026-01-0" day "T0" hour ":00:00")
+        head (gen/cyrillic rng 6)
+        left (gen/hiragana rng 4)
+        right (gen/greek rng 4)
+        title (str head " " left)
+        link (str "https://example.com/" (gen/latin rng 6))
+        excerpt (str "&gt;&gt;&gt; df = pd.DataFrame({&#x27;A&#x27; : ['"
+                     right
+                     "']})")
+        source (result/source {:title title
+                               :url link
+                               :excerpt excerpt
+                               :confidence "Unknown"})
+        result (result/->Result head [source])
+        task (task/task {:query head
+                         :status "completed"
+                         :result (result/data result)
+                         :language head
+                         :service "valyu.ai"
+                         :created time})
+        entry (task/data task)
+        item (session/session {:topic head
+                               :tasks [entry]
+                               :created time})
+        root (Paths/get "output" (make-array String 0))
+        doc (document/document item (palette/palette) (Optional/empty) root)
+        html (document/render doc)
+        tree (Jsoup/parseBodyFragment html)
+        text (.text (.selectFirst tree ".source-excerpt"))
+        mark (and (str/includes? text ">>> df = pd.DataFrame({'A' : ['")
+                  (str/includes? text right))]
+    (is mark "Source excerpts were not normalized")))
 
 (deftest the-document-render-contains-task-query
   (let [rng (gen/ids 18021)
