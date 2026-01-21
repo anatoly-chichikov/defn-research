@@ -110,21 +110,38 @@ pre-commit run --all-files
 
 - `PARALLEL_API_KEY`: Parallel AI API access for research runs
 - `VALYU_API_KEY`: Valyu API access for research runs
+- `XAI_API_KEY`: XAI API access for social/X runs
 - `GEMINI_API_KEY` (optional): Gemini API access for cover image generation, empty means no image
 - `REPORT_FOR` (optional): name inserted into report attribution line, empty means no name
 
+## Python dependencies (uv)
+
+Python deps are declared in `deps.edn` under `:python :deps`. `pyproject.toml` mirrors the same list for `uv sync`.
+
+Local setup:
+
+```bash
+uv sync
+```
+
+Optional override for XAI:
+
+```bash
+export XAI_PYTHON="$PWD/.venv/bin/python"
+```
+
 ## Providers
 
-Two deep research engines are available:
+Three deep research engines are available:
 
-| Aspect | Parallel | Valyu |
-|--------|----------|-------|
-| **Sources** | Open internet | Open internet + Academic & proprietary sources |
-| **Strength** | Strategic synthesis, executive summaries | Data-rich analysis, better citations |
-| **Best for** | Business decisions, implementation planning | Academic research, evidence gathering |
-| **Processors** | pro, ultra, ultra2x, ultra4x, ultra8x | fast, standard, heavy |
-| **Speed** | 10-40 min | 30-90 min |
-| **Price** | Affordable | Higher (~3-4x) |
+| Aspect | Parallel | Valyu | XAI |
+|--------|----------|-------|-----|
+| **Sources** | Open internet | Open internet + Academic & proprietary sources | Web + X tools |
+| **Strength** | Strategic synthesis, executive summaries | Data-rich analysis, better citations | Social-heavy coverage |
+| **Best for** | Business decisions, implementation planning | Academic research, evidence gathering | Social signals and discourse |
+| **Processors** | pro, ultra, ultra2x, ultra4x, ultra8x | fast, standard, heavy | 30, 90, 365 |
+| **Speed** | 10-40 min | 30-90 min | 5-20 min |
+| **Price** | Affordable | Higher (~3-4x) | Varies |
 
 You can also pass `--provider all` to run both providers sequentially in
 the same session folder.
@@ -133,6 +150,7 @@ the same session folder.
 
 - **Parallel**: You need actionable recommendations, broad internet coverage, or faster turnaround
 - **Valyu**: You need academic sources, proper citations, or comprehensive data analysis
+- **XAI**: You need social coverage and X search with a time window (use `--processor` as days: 30, 90, 365)
 
 ## License
 

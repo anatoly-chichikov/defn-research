@@ -37,6 +37,7 @@ After language selected — switch all follow-up questions to that language.
 ask provider Which data provider?
   - parallel (cheaper and faster)
   - valyu (more thorough, premium result)
+  - xai (social + X with time window)
   - all (run parallel then valyu)
 
 ask processor What compute level? (
@@ -48,6 +49,16 @@ ask processor What compute level? (
     - fast
     - standard
     - heavy
+  - xai:
+    - 30
+    - 90
+    - 365
+
+For xai, `processor` is not a speed tier. It is a strict time window (in days) counted back from the current date when the run starts. This window is used for X search (tweets). Web search stays limited to social domains but is not date-bounded.
+- 30 = last 30 days from today
+- 90 = last 90 days from today
+- 365 = last 365 days from today
+Only these three values are allowed. Any other value is invalid.
 
 ask topic — minimum 3 questions, up to 5 (in selected language):
   - Scope: narrow vs broad? specific case or general overview?
@@ -197,6 +208,14 @@ Tip: add `-fast` for speed (pro-fast, ultra-fast)
 | `standard` | Balanced depth and speed |
 | `heavy` | Deeper, more thorough |
 
+## XAI windows
+
+| Name | Use case |
+|------|----------|
+| `30` | X search: last 30 days from today |
+| `90` | X search: last 90 days from today |
+| `365` | X search: last 365 days from today |
+
 ---
 
 ## Environment
@@ -204,6 +223,7 @@ Tip: add `-fast` for speed (pro-fast, ultra-fast)
 ```bash
 export PARALLEL_API_KEY="..."
 export VALYU_API_KEY="..."
+export XAI_API_KEY="..."
 export GEMINI_API_KEY="..."
 export REPORT_FOR="..."
 ```

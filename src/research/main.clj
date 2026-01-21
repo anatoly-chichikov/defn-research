@@ -8,6 +8,7 @@
             [research.api.research :as research]
             [research.api.response :as response]
             [research.api.valyu :as valyu]
+            [research.api.xai :as xai]
             [research.domain.pending :as pending]
             [research.domain.result :as result]
             [research.domain.session :as session]
@@ -197,9 +198,12 @@
                   processor (pending/processor pend)
                   language (pending/language pend)
                   provider (pending/provider pend)
-                  exec (if (= provider "valyu")
+                  exec (cond
+                         (= provider "valyu")
                          (valyu/valyu {:key (env "VALYU_API_KEY")})
-                         (parallel/parallel))
+                         (= provider "xai")
+                         (xai/xai {:root root})
+                         :else (parallel/parallel))
                   org (organizer/organizer out)
                   name (organizer/name
                         org
@@ -258,9 +262,11 @@
                       path (organizer/report org name provider)]
                   (document/save doc path)
                   (println (str "PDF generated: " (.toString path))))))
-            (let [allow #{"parallel" "valyu"}
+            (let [allow #{"parallel" "valyu" "xai"}
                   _ (when-not (contains? allow provider)
-                      (throw (ex-info "Provider must be parallel or valyu" {})))
+                      (throw (ex-info
+                              "Provider must be parallel valyu or xai"
+                              {})))
                   check (or (= processor "fast")
                             (= processor "standard")
                             (= processor "heavy"))
@@ -269,9 +275,12 @@
                        (ex-info
                         "Processor must be fast standard or heavy for valyu"
                         {})))
-                  exec (if (= provider "valyu")
+                  exec (cond
+                         (= provider "valyu")
                          (valyu/valyu {:key (env "VALYU_API_KEY")})
-                         (parallel/parallel))
+                         (= provider "xai")
+                         (xai/xai {:root root})
+                         :else (parallel/parallel))
                   org (organizer/organizer out)
                   name (organizer/name
                         org
