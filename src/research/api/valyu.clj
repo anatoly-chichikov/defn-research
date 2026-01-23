@@ -1,17 +1,16 @@
 (ns research.api.valyu
   (:require [clojure.string :as str]
             [jsonista.core :as json]
-            [org.httpkit.client :as http]
+            [research.api.http :as request]
+            [research.api.link :as link]
+            [research.api.progress :as progress]
             [research.api.research :as research]
             [research.api.response :as response]
+            [research.api.valyu.sources :as sources]
+            [research.api.valyu.status :as status]
             [research.config :as config]))
 
-(declare valyu-status valyu-emit)
-
-(defn clean
-  "Remove periods from log text."
-  [text]
-  (str/replace text #"\." ""))
+(declare valyu-emit)
 
 (defn message
   "Return newest message and updated seen map."
@@ -29,72 +28,6 @@
             next (assoc seen token (count items))]
         [text next]))))
 
-(defn domain
-  "Extract domain from URL string."
-  [text]
-  (try (let [part (java.net.URI. text)
-             host (.getHost part)]
-         (if host (str/replace host "www." "") ""))
-       (catch Exception _ "")))
-
-(defn trusted
-  "Return true when domain is trusted."
-  [item text]
-  (let [list (:trust item)
-        tail (str text)]
-    (cond
-      (some #(or (= tail %) (str/ends-with? tail (str "." %))) list) true
-      (or (str/ends-with? tail ".gov") (str/includes? tail ".gov.")) true
-      (or (str/ends-with? tail ".edu") (str/includes? tail ".edu.")) true
-      (or (str/ends-with? tail ".ac") (str/includes? tail ".ac.")) true
-      (or (str/ends-with? tail ".mil") (str/includes? tail ".mil.")) true
-      (or (str/ends-with? tail ".int") (str/includes? tail ".int.")) true
-      :else false)))
-
-(defn level
-  "Return confidence level from source."
-  [item data]
-  (let [kind (or (:source data) "")
-        form (or (:source_type data) (:category data) "")
-        count (or (:citation_count data) 0)
-        names (or (:authors data) [])
-        code (or (:doi data) "")
-        date (or (:publication_date data) "")
-        score (:relevance_score data)
-        link (or (:url data) "")
-        host (if (str/blank? link) "" (domain link))
-        detail (or (pos? count)
-                   (seq names)
-                   (not (str/blank? code))
-                   (not (str/blank? date)))
-        note (atom "Unknown")
-        _ (when (or (contains? (:science item) kind) (= form "paper"))
-            (reset! note "Medium"))
-        _ (when (and (or (contains? (:science item) kind) (= form "paper"))
-                     (>= count 10))
-            (reset! note "High"))
-        _ (when (and (= form "paper") (seq names) (not (str/blank? code)))
-            (reset! note "High"))
-        _ (when (and (= form "paper") (str/blank? code) (not= @note "High"))
-            (reset! note "Medium"))
-        _ (when (and (= kind "web")
-                     (seq names)
-                     (not (str/blank? date))
-                     (not= @note "High"))
-            (reset! note "Medium"))
-        _ (when (and (contains? (:finance item) kind) (not= @note "High"))
-            (reset! note "Medium"))
-        _ (when (and (trusted item host) (= @note "Unknown"))
-            (reset! note "Medium"))
-        _ (when (and (some? score) (< score 0.5) detail (= @note "Unknown"))
-            (reset! note "Low"))]
-    @note))
-
-(defn- pause
-  "Sleep for poll delay"
-  [span]
-  (Thread/sleep span))
-
 (defrecord Valyu [key base data]
   research/Researchable
   (start [_ query processor]
@@ -104,10 +37,12 @@
                 :output_formats ["markdown" "pdf"]}
           head {"Content-Type" "application/json"
                 "x-api-key" key}
-          response @(http/post url {:headers head
-                                    :body (json/write-value-as-string body)
-                                    :timeout 60000
-                                    :as :text})
+          net (:net data)
+          response @(request/post net url {:headers head
+                                           :body
+                                           (json/write-value-as-string body)
+                                           :timeout 60000
+                                           :as :text})
           status (:status response)
           data (if (< status 300)
                  (json/read-value
@@ -118,23 +53,26 @@
       run))
   (stream [item id]
     (let [timeout-ms (* config/task-timeout-hours 3600000)
-          data (loop [start (System/currentTimeMillis)]
-                 (let [data (valyu-status item id)
+          log (:log (:data item))
+          unit (:state (:data item))
+          info (loop [start (System/currentTimeMillis)]
+                 (let [data (status/status unit id)
                        state (or (:status data) "")
                        value (if (map? state) (or (:value state) state) state)
                        done (or (= value "completed")
                                 (= value "failed")
                                 (= value "cancelled")
                                 (= value "canceled"))
-                       _ (valyu-emit data)]
+                       _ (valyu-emit log data)]
                    (if done
                      data
                      (if (> (- (System/currentTimeMillis) start) timeout-ms)
                        (throw (ex-info "Valyu task timed out" {:id id}))
-                       (do (pause 180000) (recur start))))))]
-      data))
+                       (do (status/pause unit 180000) (recur start))))))]
+      info))
   (finish [item id]
-    (let [data (valyu-status item id)
+    (let [unit (:state (:data item))
+          data (status/status unit id)
           output (:output data)
           text (if (map? output)
                  (or (:markdown output) (:content output) "")
@@ -151,81 +89,27 @@
                           :raw data})))
   research/Grounded
   (basis [item sources]
-    (reduce
-     (fn [list data]
-       (let [link (or (:url data) "")
-             text (or (:content data) (:snippet data) (:description data) "")
-             title (or (:title data) (if (str/blank? link) "" (domain link)))
-             level (level (:data item) data)]
-         (if (str/blank? link)
-           list
-           (conj list {:citations [{:title title
-                                    :url link
-                                    :excerpts [text]}]
-                       :confidence level}))))
-     []
-     sources)))
-
-(defn valyu-status
-  "Return status payload from Valyu API."
-  [item id]
-  (let [url (str (:base item) "/deepresearch/tasks/" id "/status")
-        head {"Content-Type" "application/json"
-              "x-api-key" (:key item)}
-        limit 4
-        span 1000]
-    (loop [step 0]
-      (let [result (try {:value @(http/get url {:headers head
-                                                :timeout 60000
-                                                :as :text})}
-                        (catch Exception exc
-                          {:error exc}))
-            response (:value result)
-            status (:status response)
-            body (:body response)
-            data (when (and status (< status 300))
-                   (json/read-value
-                    body
-                    (json/object-mapper {:decode-key-fn keyword})))
-            signal (or (nil? status)
-                       (>= status 500)
-                       (= status 429)
-                       (:error result))
-            fault (some? (:error result))
-            time (min (* span (inc step)) (* span 8))]
-        (if data
-          data
-          (let [note (str "Valyu status non200 id="
-                          id
-                          " status="
-                          (or status "none")
-                          " attempt="
-                          (inc step)
-                          (when fault " error=true")
-                          (when signal (str " wait_ms=" time)))]
-            (println (clean note))
-            (if signal
-              (if (< step (dec limit))
-                (do (pause time) (recur (inc step)))
-                (throw (ex-info (str "Valyu status failed id="
-                                     id
-                                     " status="
-                                     (or status "none")
-                                     " attempts="
-                                     limit)
-                                {:id id
-                                 :status status
-                                 :attempts limit})))
-              (throw (ex-info (str "Valyu status failed id="
-                                   id
-                                   " status="
-                                   (or status "none"))
-                              {:id id
-                               :status status})))))))))
+    (let [policy (link/make)]
+      (reduce
+       (fn [list data]
+         (let [url (or (:url data) "")
+               text (or (:content data) (:snippet data) (:description data) "")
+               source (:source (:data item))
+               title (or (:title data)
+                         (if (str/blank? url) "" (link/domain policy url)))
+               level (sources/level source data)]
+           (if (str/blank? url)
+             list
+             (conj list {:citations [{:title title
+                                      :url url
+                                      :excerpts [text]}]
+                         :confidence level}))))
+       []
+       sources))))
 
 (defn valyu-emit
   "Emit progress info for Valyu."
-  [data]
+  [log data]
   (let [status (or (:status data) "")
         progress (or (:progress data) {})
         current (get progress :current_step nil)
@@ -239,7 +123,7 @@
                 (not (str/blank? message))
                 (conj message))
         line (if (seq items) (str/join " | " items) (str data))]
-    (println (clean (str "[PROGRESS] " line)))))
+    (progress/emit log (str "[PROGRESS] " line))))
 
 (defn valyu
   "Create Valyu client from env or map."
@@ -290,9 +174,20 @@
                        "wikipedia.org"
                        "wiley.com"
                        "w3.org"
-                       "wsj.com"}}]
+                       "wsj.com"}
+              :log (progress/make)
+              :net (request/make)}
+        source (sources/make {:science (:science data)
+                              :finance (:finance data)
+                              :trust (:trust data)
+                              :link (link/make)})
+        unit (status/make base key {:log (:log data)
+                                    :net (:net data)})
+        source (or (:source item) source)
+        unit (or (:state item) unit)]
     (if (and (str/blank? key) (not= mode "basis"))
       (throw (ex-info "VALYU_API_KEY is required" {}))
-      (->Valyu key base {:science (:science data)
-                         :finance (:finance data)
-                         :trust (:trust data)}))))
+      (->Valyu key base {:log (:log data)
+                         :net (:net data)
+                         :source source
+                         :state unit}))))

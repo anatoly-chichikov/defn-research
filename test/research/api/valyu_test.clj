@@ -6,7 +6,7 @@
             [research.api.research :as research]
             [research.api.response :as response]
             [research.api.valyu :as valyu]
-            [research.domain.result :as result]
+            [research.api.valyu.status :as status]
             [research.test.ids :as gen])
   (:import (com.sun.net.httpserver HttpServer HttpHandler)
            (java.net InetSocketAddress)
@@ -65,129 +65,6 @@
       (is (= model (:model data))
           "Valyu changed processor"))))
 
-(deftest the-valyu-maps-high-confidence
-  (let [rng (gen/ids 17003)
-        title (gen/cyrillic rng 6)
-        text (gen/greek rng 8)
-        url (str "https://example.com/" (.nextInt rng 10000))
-        date (str "202"
-                  (.nextInt rng 5)
-                  "-0"
-                  (inc (.nextInt rng 8))
-                  "-1"
-                  (.nextInt rng 9))
-        source {:title title
-                :url url
-                :content text
-                :source (str "source-" (.nextInt rng 1000))
-                :source_type "paper"
-                :authors [(str "author-" (.nextInt rng 1000))]
-                :doi (str "10." (.nextInt rng 1000) "/" (.nextInt rng 10000))
-                :publication_date date
-                :citation_count 1
-                :relevance_score 0.9}
-        client (valyu/valyu {:key "key"
-                             :base "https://example.com"})
-        base (research/basis client [source])
-        source (first
-                (response/sources
-                 (response/response {:id "x"
-                                     :status "completed"
-                                     :output ""
-                                     :basis base})))]
-    (is (= "High" (result/confidence source))
-        "confidence was not high for paper with doi")))
-
-(deftest the-valyu-maps-unknown-confidence
-  (let [rng (gen/ids 17005)
-        title (gen/armenian rng 6)
-        text (gen/hebrew rng 9)
-        url (str "https://example.com/" (.nextInt rng 10000))
-        source {:title title
-                :url url
-                :content text}
-        client (valyu/valyu {:key "key"
-                             :base "https://example.com"})
-        base (research/basis client [source])
-        source (first
-                (response/sources
-                 (response/response {:id "x"
-                                     :status "completed"
-                                     :output ""
-                                     :basis base})))]
-    (is (= "Unknown" (result/confidence source))
-        "confidence was not unknown for missing metadata")))
-
-(deftest the-valyu-maps-medium-confidence-trusted
-  (let [rng (gen/ids 17007)
-        title (gen/cyrillic rng 7)
-        text (gen/hiragana rng 8)
-        url (str "https://www.wikipedia.org/" (.nextInt rng 10000))
-        source {:title title
-                :url url
-                :content text}
-        client (valyu/valyu {:key "key"
-                             :base "https://example.com"})
-        base (research/basis client [source])
-        source (first
-                (response/sources
-                 (response/response {:id "x"
-                                     :status "completed"
-                                     :output ""
-                                     :basis base})))]
-    (is (= "Medium" (result/confidence source))
-        "confidence was not medium for trusted domain")))
-
-(deftest the-valyu-maps-medium-confidence-public
-  (let [rng (gen/ids 17009)
-        title (gen/armenian rng 6)
-        text (gen/cyrillic rng 9)
-        url (str "https://www.nasa.gov/" (.nextInt rng 10000))
-        source {:title title
-                :url url
-                :content text}
-        client (valyu/valyu {:key "key"
-                             :base "https://example.com"})
-        base (research/basis client [source])
-        source (first
-                (response/sources
-                 (response/response {:id "x"
-                                     :status "completed"
-                                     :output ""
-                                     :basis base})))]
-    (is (= "Medium" (result/confidence source))
-        "confidence was not medium for gov domain")))
-
-(deftest the-valyu-maps-low-confidence
-  (let [rng (gen/ids 17011)
-        text (gen/hiragana rng 7)
-        url (str "https://example.com/" (.nextInt rng 10000))
-        date (str "202"
-                  (.nextInt rng 5)
-                  "-0"
-                  (inc (.nextInt rng 8))
-                  "-2"
-                  (.nextInt rng 9))
-        source {:title text
-                :url url
-                :content text
-                :source "web"
-                :source_type "web"
-                :authors []
-                :publication_date date
-                :relevance_score 0.2}
-        client (valyu/valyu {:key "key"
-                             :base "https://example.com"})
-        base (research/basis client [source])
-        source (first
-                (response/sources
-                 (response/response {:id "x"
-                                     :status "completed"
-                                     :output ""
-                                     :basis base})))]
-    (is (= "Low" (result/confidence source))
-        "confidence was not low for low relevance")))
-
 (deftest the-valyu-reads-progress-messages
   (let [rng (gen/ids 17013)
         token (gen/cyrillic rng 6)
@@ -205,56 +82,6 @@
         result (first (valyu/message value seen "trun_x"))]
     (is (= (str left " " right) result) "list message was not joined")))
 
-(deftest ^{:doc "Ensure Valyu retries transient errors"}
-  the-valyu-retries-transient-errors
-  (let [rng (gen/ids 17019)
-        id (gen/cyrillic rng 6)
-        key (gen/greek rng 5)
-        base (gen/latin rng 6)
-        fault (+ 500 (.nextInt rng 50))
-        success (+ 200 (.nextInt rng 50))
-        state (gen/armenian rng 6)
-        body (json/write-value-as-string {:status state})
-        count (atom 0)]
-    (with-redefs-fn {#'http/get (fn [_ _]
-                                  (swap! count inc)
-                                  (delay (if (= @count 1)
-                                           {:status fault
-                                            :body (gen/greek rng 3)}
-                                           {:status success
-                                            :body body})))
-                     #'valyu/pause (fn [_] nil)
-                     #'clojure.core/println (fn [& _] nil)}
-      (fn []
-        (let [data (valyu/valyu-status {:base base
-                                        :key key} id)]
-          (is (= state (:status data))
-              "valyu did not recover from transient error"))))))
-
-(deftest ^{:doc "Ensure Valyu retries missing status"}
-  the-valyu-retries-missing-status
-  (let [rng (gen/ids 17021)
-        id (gen/cyrillic rng 6)
-        key (gen/hebrew rng 5)
-        base (gen/latin rng 6)
-        success (+ 200 (.nextInt rng 50))
-        state (gen/hiragana rng 6)
-        body (json/write-value-as-string {:status state})
-        count (atom 0)]
-    (with-redefs-fn {#'http/get (fn [_ _]
-                                  (swap! count inc)
-                                  (delay (if (= @count 1)
-                                           nil
-                                           {:status success
-                                            :body body})))
-                     #'valyu/pause (fn [_] nil)
-                     #'clojure.core/println (fn [& _] nil)}
-      (fn []
-        (let [data (valyu/valyu-status {:base base
-                                        :key key} id)]
-          (is (= state (:status data))
-              "valyu did not recover from missing status"))))))
-
 (deftest ^{:doc "Ensure Valyu polls every three minutes"}
   the-valyu-polls-every-three-minutes
   (let [rng (gen/ids 17023)
@@ -263,16 +90,18 @@
         base (gen/latin rng 6)
         mark (atom 0)
         count (atom 0)
+        phase (gen/arabic rng 6)
+        unit (reify status/Statused
+               (status [_ _]
+                 (swap! count inc)
+                 (if (= @count 1)
+                   {:status phase}
+                   {:status "completed"}))
+               (pause [_ span] (reset! mark span)))
         client (valyu/valyu {:key key
-                             :base base})
-        phase (gen/arabic rng 6)]
-    (with-redefs-fn {#'valyu/pause (fn [span] (reset! mark span))
-                     #'valyu/valyu-status (fn [_ _]
-                                            (swap! count inc)
-                                            (if (= @count 1)
-                                              {:status phase}
-                                              {:status "completed"}))
-                     #'clojure.core/println (fn [& _] nil)}
+                             :base base
+                             :state unit})]
+    (with-redefs-fn {#'clojure.core/println (fn [& _] nil)}
       (fn []
         (research/stream client id)))
     (is (= 180000 @mark) "valyu did not wait three minutes between polls")))

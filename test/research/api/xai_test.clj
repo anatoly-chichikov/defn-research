@@ -1,12 +1,10 @@
 (ns research.api.xai-test
-  (:require [clojure.java.shell :as shell]
-            [clojure.string :as str]
-            [clojure.test :refer [deftest is]]
+  (:require [clojure.test :refer [deftest is]]
             [jsonista.core :as json]
-            [libpython-clj2.python :as py]
             [research.api.research :as research]
             [research.api.response :as response]
             [research.api.xai :as xai]
+            [research.api.xai.bridge :as bridge]
             [research.test.ids :as gen])
   (:import (java.nio.file Files)
            (java.nio.file.attribute FileAttribute)))
@@ -19,7 +17,7 @@
         query (gen/cyrillic rng 6)
         model (gen/latin rng 6)
         mode (gen/greek rng 5)
-        unit (reify xai/Bound
+        unit (reify bridge/Bound
                (run [_ _ _] {}))
         item (xai/xai {:root root
                        :model model
@@ -47,7 +45,7 @@
         root (Files/createTempDirectory (gen/ascii rng 8)
                                         (make-array FileAttribute 0))
         query (gen/cyrillic rng 5)
-        unit (reify xai/Bound
+        unit (reify bridge/Bound
                (run [_ _ _] {}))
         item (xai/xai {:root root
                        :model (gen/latin rng 6)
@@ -78,7 +76,7 @@
                                         (make-array FileAttribute 0))
         query (gen/cyrillic rng 5)
         bad (gen/hiragana rng 4)
-        unit (reify xai/Bound
+        unit (reify bridge/Bound
                (run [_ _ _] {}))
         item (xai/xai {:root root
                        :model (gen/latin rng 6)
@@ -105,7 +103,7 @@
         model (gen/latin rng 7)
         text (gen/hebrew rng 8)
         code (gen/ascii rng 10)
-        unit (reify xai/Bound
+        unit (reify bridge/Bound
                (run [_ _ _]
                  {:run {:run_id code
                         :status "completed"}
@@ -124,49 +122,3 @@
         run (research/start item query "365")
         result (research/finish item run)]
     (is (= text (response/text result)) "Markdown did not match output")))
-
-(deftest ^{:doc "Xai note stringifies tools."}
-  the-xai-note-stringifies-tools
-  (let [rng (gen/ids 17005)
-        model (gen/latin rng 6)
-        tool (gen/cyrillic rng 5)
-        text (gen/greek rng 7)
-        turn (inc (.nextInt rng 4))
-        token (+ 1 (.nextInt rng 1000))
-        items [(gen/armenian rng 4) (gen/hebrew rng 4)]
-        node (reify Object
-               (toString [_] tool)
-               (hashCode [_] (throw (RuntimeException. tool))))
-        note (#'xai/note model turn token items [node] text)]
-    (is (= [tool] (:tools note)) "Tools were not stringified")))
-
-(deftest ^{:doc "Xai batch handles python containers."}
-  the-xai-batch-handles-containers
-  (let [rng (gen/ids 17006)
-        data (gen/cyrillic rng 5)
-        probe (str "import os,sysconfig\n"
-                   "libdir = sysconfig.get_config_var('LIBDIR') or ''\n"
-                   "lib = sysconfig.get_config_var('LDLIBRARY') or ''\n"
-                   "print(os.path.join(libdir, lib))\n")
-        info (shell/sh "python3" "-c" probe)
-        path (str/trim (:out info))
-        code (str "box = ['" data "']\n")]
-    (py/initialize! {:python-executable "python3"
-                     :library-path path})
-    (py/with-gil-stack-rc-context
-      (py/run-simple-string code)
-      (let [main (py/import-module "__main__")
-            box (py/get-attr main "box")
-            core (py/import-module "builtins")
-            items (#'xai/batch core box)]
-        (is (= [data] (mapv str items)) "Items did not handle container")))))
-
-(deftest ^{:doc "Xai index maps unicode codepoints."}
-  the-xai-index-maps-codepoints
-  (let [rng (gen/ids 17007)
-        head (gen/latin rng 1)
-        tail (gen/cyrillic rng 1)
-        face (String. (Character/toChars 128512))
-        text (str head face tail)
-        spot (#'xai/index text 2)]
-    (is (= 3 spot) "Index did not map codepoints")))
