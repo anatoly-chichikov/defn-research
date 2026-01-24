@@ -42,8 +42,8 @@
           (println (str "\nTasks (" (count (session/tasks pick)) "):"))
           (doseq [task (session/tasks pick)]
             (println (str "\n  [" (task/status task) "] " (task/query task)))
-            (let [value (task/result task)]
-              (when (result/present value)
+            (let [value (task/report task)]
+              (when (result/presence value)
                 (let [head (subs (result/summary value)
                                  0
                                  (min 100 (count (result/summary value))))]
@@ -61,7 +61,7 @@
     (if pick
       (let [provider (if (seq (session/tasks pick))
                        (let [last (last (session/tasks pick))
-                             name (task/service last)]
+                             name (task/provider last)]
                          (if (str/ends-with? name ".ai")
                            (first (str/split name #"\."))
                            name))

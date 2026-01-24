@@ -145,5 +145,5 @@
     (if (seq raw)
       (let [resp (responsemap item raw task)]
         [(response/text resp) (response/sources resp)])
-      (let [value (task/result task)]
+      (let [value (task/report task)]
         [(result/summary value) (result/sources value)]))))

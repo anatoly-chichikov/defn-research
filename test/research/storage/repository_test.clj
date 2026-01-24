@@ -109,7 +109,7 @@
           language (gen/cyrillic rng 5)
           service (gen/cyrillic rng 4)
           summary (gen/cyrillic rng 6)
-          value (result/->Result summary [])
+          value (result/->ResearchReport summary [])
           task (task/task {:id (gen/uuid rng)
                            :query query
                            :status status

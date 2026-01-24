@@ -20,11 +20,11 @@
   "Object that can serialize to map."
   (data [item] "Return map representation."))
 
-(defprotocol Present
+(defprotocol Presence
   "Object with presence signal."
-  (present [item] "Return true when value is present."))
+  (presence [item] "Return true when value is present."))
 
-(defrecord Source [title url excerpt confidence]
+(defrecord CitationSource [title url excerpt confidence]
   Sourced
   (title [_] title)
   (url [_] url)
@@ -43,7 +43,7 @@
 (defn source
   "Create source from map."
   [item]
-  (->Source
+  (->CitationSource
    (:title item)
    (:url item)
    (:excerpt item)
@@ -56,7 +56,7 @@
         value (str/replace text pattern "")]
     value))
 
-(defrecord Result [summary sources]
+(defrecord ResearchReport [summary sources]
   Summarized
   (summary [_] (purge summary))
   Listed
@@ -64,12 +64,12 @@
   Serialized
   (data [_] {:summary summary
              :sources (mapv data sources)})
-  Present
-  (present [_] true)
+  Presence
+  (presence [_] true)
   Object
   (toString [_] summary))
 
-(defrecord Empty [summary sources]
+(defrecord EmptyReport [summary sources]
   Summarized
   (summary [_] summary)
   Listed
@@ -77,8 +77,8 @@
   Serialized
   (data [_] {:summary summary
              :sources sources})
-  Present
-  (present [_] false))
+  Presence
+  (presence [_] false))
 
 (defn result
   "Create result from map."
@@ -87,5 +87,5 @@
     (let [raw (:summary item)
           text (if (map? raw) (:content raw "") raw)
           list (mapv source (:sources item))]
-      (->Result text list))
-    (->Empty "" [])))
+      (->ResearchReport text list))
+    (->EmptyReport "" [])))

@@ -94,7 +94,7 @@
   [item]
   (let [list (sess/tasks item)
         last (last list)]
-    (if last (task/service last) "parallel.ai")))
+    (if last (task/provider last) "parallel.ai")))
 (defn coverimage
   "Render cover image html."
   [item]
@@ -108,7 +108,7 @@
 (defn provider
   "Return provider slug from task service."
   [item]
-  (let [name (task/service item)]
+  (let [name (task/provider item)]
     (if (str/ends-with? name ".ai") (first (str/split name #"\.")) name)))
 (defn briefpath
   "Return brief file path."

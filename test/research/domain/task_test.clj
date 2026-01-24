@@ -14,7 +14,7 @@
         language (gen/cyrillic rng 5)
         service (gen/cyrillic rng 4)
         summary (gen/cyrillic rng 6)
-        value (result/->Result summary [])
+        value (result/->ResearchReport summary [])
         item (task/task {:query query
                          :status status
                          :language language
@@ -34,7 +34,7 @@
         language (gen/cyrillic rng 5)
         service (gen/cyrillic rng 4)
         summary (gen/cyrillic rng 6)
-        value (result/->Result summary [])
+        value (result/->ResearchReport summary [])
         item (task/task {:id (gen/uuid rng)
                          :query query
                          :status status
@@ -55,7 +55,7 @@
         language (gen/cyrillic rng 5)
         service (gen/cyrillic rng 4)
         summary (gen/cyrillic rng 6)
-        value (result/->Result summary [])
+        value (result/->ResearchReport summary [])
         item (task/task {:id (gen/uuid rng)
                          :query query
                          :status status
@@ -76,7 +76,7 @@
         language (gen/cyrillic rng 5)
         service (gen/cyrillic rng 4)
         summary (gen/cyrillic rng 5)
-        value (result/->Result summary [])
+        value (result/->ResearchReport summary [])
         item (task/task {:id (gen/uuid rng)
                          :query query
                          :status status
@@ -98,7 +98,7 @@
         language (gen/cyrillic rng 5)
         service (gen/cyrillic rng 4)
         summary (gen/cyrillic rng 6)
-        value (result/->Result summary [])
+        value (result/->ResearchReport summary [])
         item (task/task {:id (gen/uuid rng)
                          :query query
                          :status status
@@ -120,7 +120,7 @@
         language (gen/cyrillic rng 5)
         service (gen/cyrillic rng 4)
         summary (gen/cyrillic rng 6)
-        value (result/->Result summary [])
+        value (result/->ResearchReport summary [])
         item (task/task {:id (gen/uuid rng)
                          :query query
                          :status status
@@ -142,7 +142,7 @@
         language (gen/cyrillic rng 5)
         service (gen/cyrillic rng 4)
         summary (gen/cyrillic rng 6)
-        value (result/->Result summary [])
+        value (result/->ResearchReport summary [])
         item (task/task {:id (gen/uuid rng)
                          :query query
                          :status status
@@ -164,7 +164,7 @@
         language (gen/cyrillic rng 5)
         service (gen/cyrillic rng 4)
         summary (gen/cyrillic rng 6)
-        value (result/->Result summary [])
+        value (result/->ResearchReport summary [])
         data {:id (gen/uuid rng)
               :query query
               :status status

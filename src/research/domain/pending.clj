@@ -9,7 +9,7 @@
   (provider [item] "Return provider name.")
   (data [item] "Return map representation."))
 
-(defrecord Pending [id query data]
+(defrecord PendingRun [id query data]
   Pendinged
   (id [_] id)
   (query [_] query)
@@ -24,7 +24,7 @@
 (defn pending
   "Create pending run from map."
   [item]
-  (->Pending
+  (->PendingRun
    (:run_id item)
    (or (:query item) "")
    {:processor (:processor item)

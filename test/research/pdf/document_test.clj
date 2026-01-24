@@ -105,7 +105,7 @@
         name (gen/cyrillic rng 6)
         service (gen/hiragana rng 4)
         value (gen/greek rng 5)
-        result (result/->Result value [])
+        result (result/->ResearchReport value [])
         task (task/task {:query value
                          :status "completed"
                          :result (result/data result)
@@ -127,7 +127,7 @@
         name (gen/cyrillic rng 6)
         service "parallel.ai"
         value (gen/greek rng 5)
-        result (result/->Result value [])
+        result (result/->ResearchReport value [])
         task (task/task {:query value
                          :status "completed"
                          :result (result/data result)
@@ -148,7 +148,7 @@
   (let [rng (gen/ids 18013)
         name (gen/cyrillic rng 6)
         value (gen/greek rng 5)
-        result (result/->Result value [])
+        result (result/->ResearchReport value [])
         task (task/task {:query value
                          :status "completed"
                          :result (result/data result)
@@ -170,7 +170,7 @@
   (let [rng (gen/ids 18015)
         name (gen/cyrillic rng 6)
         value (gen/greek rng 5)
-        result (result/->Result value [])
+        result (result/->ResearchReport value [])
         task (task/task {:query value
                          :status "completed"
                          :result (result/data result)
@@ -191,7 +191,7 @@
   (let [rng (gen/ids 18017)
         service (gen/hiragana rng 4)
         value (gen/greek rng 5)
-        result (result/->Result value [])
+        result (result/->ResearchReport value [])
         task (task/task {:query value
                          :status "completed"
                          :result (result/data result)
@@ -304,7 +304,7 @@
         right (gen/greek rng 4)
         path (str "C:\\" left "\\" mid "\\" right ".exe")
         text (str head " `" path "`")
-        result (result/->Result text [])
+        result (result/->ResearchReport text [])
         task (task/task {:query head
                          :status "completed"
                          :result (result/data result)
@@ -346,7 +346,7 @@
         rows (str "| " head " | " left " |\n"
                   "|---|---|\n"
                   "| " right " (" stars ") | " head " |")
-        result (result/->Result rows [])
+        result (result/->ResearchReport rows [])
         task (task/task {:query head
                          :status "completed"
                          :result (result/data result)
@@ -384,7 +384,7 @@
                                :url link
                                :excerpt excerpt
                                :confidence "Unknown"})
-        result (result/->Result head [source])
+        result (result/->ResearchReport head [source])
         task (task/task {:query head
                          :status "completed"
                          :result (result/data result)
@@ -432,7 +432,7 @@
 (deftest the-document-render-contains-synthesis
   (let [rng (gen/ids 18023)
         summary (gen/hiragana rng 6)
-        result (result/->Result summary [])
+        result (result/->ResearchReport summary [])
         task (task/task {:query "q"
                          :status "completed"
                          :result (result/data result)
@@ -500,9 +500,9 @@
         url (str "https://example.com/"
                  (.nextInt rng 1000)
                  "?utm_source=valyu.ai&utm_medium=referral")
-        source (result/->Source text url text "High")
+        source (result/->CitationSource text url text "High")
         summary (str text "\n\n## References\n1. " url)
-        result (result/->Result summary [source])
+        result (result/->ResearchReport summary [source])
         task (task/task {:query text
                          :status "completed"
                          :result (result/data result)
@@ -522,8 +522,8 @@
         head (gen/cyrillic rng 6)
         note (gen/cyrillic rng 6)
         link (str "https://example.com/" (.nextInt rng 1000))
-        source (result/->Source head link note "High")
-        value (result/->Result head [source])
+        source (result/->CitationSource head link note "High")
+        value (result/->ResearchReport head [source])
         task (task/task {:query head
                          :status "completed"
                          :result (result/data value)
@@ -546,8 +546,8 @@
         link (str "https://" host "/" (gen/ascii rng 5))
         head (gen/cyrillic rng 6)
         mark (gen/cyrillic rng 6)
-        source (result/->Source "Fetched web page" link "" "High")
-        value (result/->Result head [source])
+        source (result/->CitationSource "Fetched web page" link "" "High")
+        value (result/->ResearchReport head [source])
         task (task/task {:query mark
                          :status "completed"
                          :result (result/data value)
@@ -588,7 +588,7 @@
                   "?utm_source=valyu.ai&utm_medium=referral&x="
                   (.nextInt rng 9))
         summary (str "Sources\n1. " link "\n2. " slug)
-        result (result/->Result summary [])
+        result (result/->ResearchReport summary [])
         task (task/task {:query slug
                          :status "completed"
                          :result (result/data result)
@@ -739,7 +739,7 @@
                   left
                   " "
                   link)
-        value (result/->Result text [])
+        value (result/->ResearchReport text [])
         task (task/task {:query head
                          :status "completed"
                          :result (result/data value)

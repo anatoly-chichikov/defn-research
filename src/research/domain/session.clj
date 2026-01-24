@@ -33,7 +33,7 @@
   [time]
   (.format time DateTimeFormatter/ISO_LOCAL_DATE_TIME))
 
-(defrecord Session [id topic tasks data]
+(defrecord ResearchSession [id topic tasks data]
   Sessioned
   (id [_] id)
   (topic [_] topic)
@@ -41,15 +41,19 @@
   (created [_] (:created data))
   (pending [_] (:pending data))
   (extend [_ value]
-    (->Session
+    (->ResearchSession
      id
      topic
      (conj tasks value)
      (assoc data :pending (Optional/empty))))
   (start [_ value]
-    (->Session id topic tasks (assoc data :pending (Optional/of value))))
+    (->ResearchSession
+     id
+     topic
+     tasks
+     (assoc data :pending (Optional/of value))))
   (reset [_]
-    (->Session id topic tasks (assoc data :pending (Optional/empty))))
+    (->ResearchSession id topic tasks (assoc data :pending (Optional/empty))))
   (data [_] (let [base {:id id
                         :topic topic
                         :tasks (mapv task/data tasks)
@@ -71,4 +75,4 @@
         data {:created time
               :pending hold}
         code (or (:id item) (str (UUID/randomUUID)))]
-    (->Session code (:topic item) list data)))
+    (->ResearchSession code (:topic item) list data)))

@@ -10,9 +10,9 @@
   (id [item] "Return task identifier.")
   (query [item] "Return research query.")
   (status [item] "Return task status.")
-  (result [item] "Return task result object.")
+  (report [item] "Return task result object.")
   (language [item] "Return task language.")
-  (service [item] "Return task service.")
+  (provider [item] "Return task provider.")
   (created [item] "Return creation time.")
   (completed [item] "Return completion time.")
   (finish [item value] "Return task marked as completed.")
@@ -33,18 +33,18 @@
   [time]
   (.format time DateTimeFormatter/ISO_LOCAL_DATE_TIME))
 
-(defrecord Task [id query data result]
+(defrecord ResearchRun [id query data result]
   Tasked
   (id [_] id)
   (query [_] query)
   (status [_] (:status data))
-  (result [_] result)
+  (report [_] result)
   (language [_] (:language data))
-  (service [_] (:service data))
+  (provider [_] (:service data))
   (created [_] (:created data))
   (completed [_] (:completed data))
   (finish [_ value]
-    (->Task
+    (->ResearchRun
      id
      query
      (assoc data :status "completed" :completed (Optional/of (now)))
@@ -58,7 +58,7 @@
                   ready (if (.isPresent done)
                           (assoc base :completed (format (.get done)))
                           base)
-                  pack (if (result/present result)
+                  pack (if (result/presence result)
                          (assoc ready :result (result/data result))
                          ready)]
               pack)))
@@ -81,4 +81,4 @@
         raw (:result item)
         value (result/result raw)
         code (or (:id item) (str (UUID/randomUUID)))]
-    (->Task code query data value)))
+    (->ResearchRun code query data value)))

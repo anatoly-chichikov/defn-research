@@ -55,7 +55,7 @@
                                    note (if (seq ex) (first ex) "")
                                    head (or (:title cite)
                                             (link/domain policy url))
-                                   item (result/->Source
+                                   item (result/->CitationSource
                                          head
                                          url
                                          note
