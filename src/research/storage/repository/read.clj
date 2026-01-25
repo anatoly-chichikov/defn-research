@@ -28,40 +28,60 @@
                               data (edn/read-string text)
                               tasks (:tasks data)
                               hold (:pending data)
-                              flag (or (some #(contains? % :query) tasks)
-                                       (and hold (contains? hold :query)))
+                              flag (or (some #(or (contains? % :query)
+                                                  (contains? % :result)
+                                                  (not (contains? % :brief)))
+                                             tasks)
+                                       (and hold
+                                            (or (contains? hold :query)
+                                                (contains? hold :result)
+                                                (not (contains? hold :brief)))))
                               items (mapv
                                      (fn [item]
-                                       (let [service (or (:service item)
-                                                         "provider")
-                                             size (count service)
-                                             cut (- size 3)
-                                             name (if (str/ends-with?
-                                                       service
-                                                       ".ai")
-                                                    (subs service 0 cut)
-                                                    service)
-                                             tag (organizer/slug name)
-                                             tag (if (str/blank? tag)
-                                                   "provider"
-                                                   tag)
-                                             input (.resolve
-                                                    path
-                                                    (str "input-" tag ".md"))
-                                             brief (.resolve
-                                                    path
-                                                    (str "brief-" tag ".md"))
-                                             text (cond
-                                                    (Files/exists input opts)
-                                                    (slurp
-                                                     (.toFile input)
-                                                     :encoding "UTF-8")
-                                                    (Files/exists brief opts)
-                                                    (slurp
-                                                     (.toFile brief)
-                                                     :encoding "UTF-8")
-                                                    :else "")]
-                                         (assoc item :query text)))
+                                       (let [state (or (contains? item :brief)
+                                                       (contains? item :query))]
+                                         (if state
+                                           item
+                                           (let [service (or (:service item)
+                                                             "provider")
+                                                 size (count service)
+                                                 cut (- size 3)
+                                                 name (if (str/ends-with?
+                                                           service
+                                                           ".ai")
+                                                        (subs service 0 cut)
+                                                        service)
+                                                 tag (organizer/slug name)
+                                                 tag (if (str/blank? tag)
+                                                       "provider"
+                                                       tag)
+                                                 input (.resolve
+                                                        path
+                                                        (str "input-"
+                                                             tag
+                                                             ".md"))
+                                                 brief (.resolve
+                                                        path
+                                                        (str "brief-"
+                                                             tag
+                                                             ".md"))
+                                                 text (cond
+                                                        (Files/exists
+                                                         input
+                                                         opts)
+                                                        (slurp
+                                                         (.toFile input)
+                                                         :encoding "UTF-8")
+                                                        (Files/exists
+                                                         brief
+                                                         opts)
+                                                        (slurp
+                                                         (.toFile brief)
+                                                         :encoding "UTF-8")
+                                                        :else "")]
+                                             (if (str/blank? text)
+                                               item
+                                               (assoc item :query text))))))
                                      tasks)
                               provider (if hold
                                          (or (:provider hold) "provider")
@@ -70,13 +90,23 @@
                               tag (if (str/blank? tag) "provider" tag)
                               input (.resolve path (str "input-" tag ".md"))
                               brief (.resolve path (str "brief-" tag ".md"))
-                              text (cond
-                                     (Files/exists input opts)
-                                     (slurp (.toFile input) :encoding "UTF-8")
-                                     (Files/exists brief opts)
-                                     (slurp (.toFile brief) :encoding "UTF-8")
-                                     :else "")
-                              hold (if hold (assoc hold :query text) hold)
+                              text (if (and hold
+                                            (not (contains? hold :brief))
+                                            (not (contains? hold :query)))
+                                     (cond
+                                       (Files/exists input opts)
+                                       (slurp (.toFile input)
+                                              :encoding "UTF-8")
+                                       (Files/exists brief opts)
+                                       (slurp (.toFile brief)
+                                              :encoding "UTF-8")
+                                       :else "")
+                                     "")
+                              hold (if hold
+                                     (if (str/blank? text)
+                                       hold
+                                       (assoc hold :query text))
+                                     hold)
                               data (assoc data :tasks items :pending hold)
                               item (session/session data)
                               note (if flag

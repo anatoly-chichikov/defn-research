@@ -39,14 +39,7 @@
                        (valyu/valyu {:key (env "VALYU_API_KEY")})
                        (= provider "xai")
                        (xai/xai {:root root})
-                       :else (parallel/parallel))
-                org (organizer/organizer out)
-                name (organizer/name
-                      org
-                      (session/created pick)
-                      (session/topic pick)
-                      (session/id pick))
-                _ (organizer/input org name provider query)]
+                       :else (parallel/parallel))]
             (println (str "Resuming run: "
                           (subs run 0 (min 16 (count run)))))
             (println (str "Query: " query))
@@ -74,6 +67,7 @@
                                    :status "completed"
                                    :language language
                                    :service (str provider ".ai")
+                                   :processor processor
                                    :created (task/format (task/now))
                                    :result pack})
                   final (session/extend updated task)
@@ -119,13 +113,6 @@
                        (= provider "xai")
                        (xai/xai {:root root})
                        :else (parallel/parallel))
-                org (organizer/organizer out)
-                name (organizer/name
-                      org
-                      (session/created pick)
-                      (session/topic pick)
-                      (session/id pick))
-                _ (organizer/input org name provider query)
                 run (research/start exec query processor)
                 pend (pending/pending {:run_id run
                                        :query query
@@ -161,6 +148,7 @@
                                    :status "completed"
                                    :language language
                                    :service (str provider ".ai")
+                                   :processor processor
                                    :created (task/format (task/now))
                                    :result pack})
                   final (session/extend updated task)

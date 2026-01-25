@@ -6,12 +6,9 @@
             [research.domain.session :as sess]
             [research.domain.task :as task]
             [research.pdf.document.citations :as cite]
-            [research.pdf.document.text :as text]
-            [research.storage.organizer :as organizer])
+            [research.pdf.document.text :as text])
   (:import (java.nio.file Files LinkOption)
            (java.nio.file.attribute FileAttribute)))
-
-(declare provider)
 
 (defn env
   "Return environment value by key."
@@ -71,41 +68,18 @@
            "\" alt=\"Cover\" /></div>")
       "")))
 
-(defn briefpath
-  "Return brief file path."
-  [item]
-  (let [sess (:session item)
-        root (:root item)
-        org (organizer/organizer root)
-        name (organizer/name
-              org
-              (sess/created sess)
-              (sess/topic sess)
-              (sess/id sess))
-        list (sess/tasks sess)
-        tail (last list)
-        hold (sess/pending sess)
-        slot (if (and (not tail) (.isPresent hold)) (.get hold) nil)
-        service (if tail
-                  (provider tail)
-                  (if slot (pending/provider slot) "provider"))
-        tag (organizer/slug service)
-        tag (if (str/blank? tag) "provider" tag)
-        base (.resolve root name)
-        brief (.resolve base (str "brief-" tag ".md"))
-        input (.resolve base (str "input-" tag ".md"))
-        path (if (Files/exists brief (make-array LinkOption 0)) brief input)]
-    (.toFile path)))
-
 (defn brief
   "Render brief section."
   [item]
-  (let [list (sess/tasks (:session item))
+  (let [sess (:session item)
+        list (sess/tasks sess)
         head (first list)
-        path (briefpath item)
-        text (if (and head (.exists path))
-               (slurp path :encoding "UTF-8")
-               (if head (task/query head) ""))
+        hold (sess/pending sess)
+        slot (if (and (not head) (.isPresent hold)) (.get hold) nil)
+        text (cond
+               head (task/query head)
+               slot (pending/query slot)
+               :else "")
         text (text/listify text)
         text (text/normalize text)
         text (text/rule text)

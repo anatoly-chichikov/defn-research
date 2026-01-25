@@ -1,5 +1,6 @@
 (ns research.main-test
-  (:require [clojure.test :refer [deftest is]]
+  (:require [clojure.edn :as edn]
+            [clojure.test :refer [deftest is]]
             [jsonista.core :as json]
             [research.api.parallel :as parallel]
             [research.api.research :as research]
@@ -290,7 +291,7 @@
                 (json/object-mapper {:decode-key-fn keyword}))]
       (is (= raw data) "Raw response did not match stored response"))))
 
-(deftest the-application-saves-input-markdown
+(deftest the-application-saves-brief-in-session
   (let [rng (gen/ids 25009)
         topic (gen/cyrillic rng 6)
         query (str (gen/cyrillic rng 5) "\n\n" (gen/greek rng 7))
@@ -333,12 +334,14 @@
                 (session/created sess)
                 (session/topic sess)
                 (session/id sess))
-          tag (organizer/slug provider)
-          tag (if (empty? tag) "provider" tag)
           folder (organizer/folder org name provider)
-          path (.resolve folder (str "input-" tag ".md"))
-          data (slurp (.toFile path) :encoding "UTF-8")]
-      (is (= query data) "Input markdown was not saved"))))
+          path (.resolve folder "session.edn")
+          data (edn/read-string (slurp (.toFile path) :encoding "UTF-8"))
+          brief (get-in data [:tasks 0 :brief])
+          seen (and (= query (:text brief))
+                    (contains? brief :topic)
+                    (contains? brief :items))]
+      (is seen "Brief was not stored in session edn"))))
 
 (deftest ^:integration the-application-generates-pdf-screenshots
   (let [rng (gen/ids 25011)

@@ -1,6 +1,7 @@
 (ns research.domain.task
   (:refer-clojure :exclude [format])
-  (:require [research.domain.result :as result])
+  (:require [clojure.string :as str]
+            [research.domain.result :as result])
   (:import (java.time LocalDateTime)
            (java.time.format DateTimeFormatter)
            (java.util Optional UUID)))
@@ -33,10 +34,23 @@
   [time]
   (.format time DateTimeFormatter/ISO_LOCAL_DATE_TIME))
 
-(defrecord ResearchRun [id query data result]
+(defrecord ResearchRun [id brief data result]
   Tasked
   (id [_] id)
-  (query [_] query)
+  (query [_]
+    (let [text (str (or (:text brief) ""))
+          topic (str (or (:topic brief) ""))
+          items (or (:items brief) [])
+          items (vec (remove str/blank? items))
+          rows (map-indexed (fn [idx item] (str (inc idx) ". " item)) items)
+          tail (str/join "\n" rows)
+          note (cond
+                 (not (str/blank? text)) text
+                 (and (not (str/blank? topic)) (seq rows))
+                 (str topic "\n\nResearch:\n" tail)
+                 (seq rows) (str "Research:\n" tail)
+                 :else topic)]
+      note))
   (status [_] (:status data))
   (report [_] result)
   (language [_] (:language data))
@@ -46,22 +60,25 @@
   (finish [_ value]
     (->ResearchRun
      id
-     query
+     brief
      (assoc data :status "completed" :completed (Optional/of (now)))
      value))
   (data [_] (let [base {:id id
                         :status (:status data)
                         :language (:language data)
                         :service (:service data)
+                        :processor (:processor data)
+                        :brief brief
                         :created (format (:created data))}
                   done (:completed data)
                   ready (if (.isPresent done)
                           (assoc base :completed (format (.get done)))
                           base)
-                  pack (if (result/presence result)
-                         (assoc ready :result (result/data result))
-                         ready)]
-              pack)))
+                  proc (:processor data)
+                  ready (if (str/blank? (str proc))
+                          (dissoc ready :processor)
+                          ready)]
+              ready)))
 
 (defn task
   "Create task from map."
@@ -72,13 +89,69 @@
         done (if (:completed item)
                (Optional/of (parse (:completed item)))
                (Optional/empty))
-        query (or (:query item) "")
+        entry (:brief item)
+        query (or (:text entry) (:query item) "")
+        rows (str/split-lines (str query))
+        label "Research:"
+        spot (first (keep-indexed
+                     (fn [idx line]
+                       (when (= label (str/trim line)) idx))
+                     rows))
+        edge (first (keep-indexed
+                     (fn [idx line]
+                       (let [line (str/trim line)
+                             hit (re-find
+                                  #"^(?:\d+\s*[\.)]|\d+|[*+-])\s+"
+                                  line)]
+                         (when hit idx)))
+                     rows))
+        cut (if (some? spot) spot edge)
+        head (vec (if (some? cut) (take cut rows) rows))
+        tail (if (some? cut)
+               (drop (if (some? spot) (inc spot) cut) rows)
+               [])
+        list (loop [list [] chunk tail]
+               (if (seq chunk)
+                 (let [line (str/trim (first chunk))]
+                   (if (str/blank? line)
+                     (recur list (rest chunk))
+                     (let [num (re-find #"^\d+\s*[\.)]\s+(.+)$" line)
+                           raw (re-find #"^\d+\s+(.+)$" line)
+                           bul (re-find #"^[*+-]\s+(.+)$" line)
+                           part (cond
+                                  num (second num)
+                                  raw (second raw)
+                                  bul (second bul)
+                                  :else nil)
+                           part (if (and part (not (str/blank? part)))
+                                  (str/trim part)
+                                  nil)
+                           list (if part
+                                  (conj list part)
+                                  (if (seq list)
+                                    (conj (vec (butlast list))
+                                          (str (last list) " " line))
+                                    (conj list line)))]
+                       (recur list (rest chunk)))))
+                 list))
+        list (vec (remove str/blank? (map str/trim list)))
+        top (reduce
+             (fn [text line]
+               (if (str/blank? (str/trim line)) text (str/trim line)))
+             ""
+             head)
+        topic (or (:topic entry) top "")
+        items (vec (or (:items entry) list []))
+        brief {:text query
+               :topic topic
+               :items items}
         data {:status (:status item)
               :language text
               :service name
+              :processor (:processor item)
               :created time
               :completed done}
         raw (:result item)
         value (result/result raw)
         code (or (:id item) (str (UUID/randomUUID)))]
-    (->ResearchRun code query data value)))
+    (->ResearchRun code brief data value)))

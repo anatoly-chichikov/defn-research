@@ -139,6 +139,7 @@
         time (str "2026-01-0" day "T0" hour ":00:00")
         query (gen/hiragana rng 6)
         status (gen/cyrillic rng 6)
+        processor (gen/greek rng 6)
         language (gen/cyrillic rng 5)
         service (gen/cyrillic rng 4)
         summary (gen/cyrillic rng 6)
@@ -148,11 +149,20 @@
                          :status status
                          :language language
                          :service service
+                         :processor processor
                          :result (result/data value)
                          :created time})
         data (task/data item)]
-    (is (not (contains? data :query))
-        "Serialized task still included query")))
+    (is (and (contains? data :brief)
+             (contains? (:brief data) :text)
+             (contains? (:brief data) :topic)
+             (contains? (:brief data) :items)
+             (= processor (:processor data))
+             (not (contains? data :query))
+             (not (contains? data :result)))
+        (str
+         "Serialized task did not include brief or still included "
+         "query or result"))))
 
 (deftest the-task-deserializes-correctly
   (let [rng (gen/ids 11015)

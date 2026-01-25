@@ -79,8 +79,12 @@
     (is (and (contains? data :run_id)
              (contains? data :processor)
              (contains? data :language)
+             (contains? data :brief)
+             (contains? (:brief data) :text)
+             (contains? (:brief data) :topic)
+             (contains? (:brief data) :items)
              (not (contains? data :query)))
-        "Pending serialize included query")))
+        "Pending serialize did not include brief or still included query")))
 
 (deftest the-pending-deserializes-correctly
   (let [rng (gen/ids 13011)

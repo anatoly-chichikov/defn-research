@@ -385,13 +385,12 @@
                                :excerpt excerpt
                                :confidence "Unknown"})
         result (result/->ResearchReport head [source])
-        task (task/task {:query head
-                         :status "completed"
-                         :result (result/data result)
-                         :language head
-                         :service "valyu.ai"
-                         :created time})
-        entry (task/data task)
+        entry {:query head
+               :status "completed"
+               :result (result/data result)
+               :language head
+               :service "valyu.ai"
+               :created time}
         item (session/session {:topic head
                                :tasks [entry]
                                :created time})
@@ -433,11 +432,10 @@
   (let [rng (gen/ids 18023)
         summary (gen/hiragana rng 6)
         result (result/->ResearchReport summary [])
-        task (task/task {:query "q"
-                         :status "completed"
-                         :result (result/data result)
-                         :created (task/format (task/now))})
-        entry (task/data task)
+        entry {:query "q"
+               :status "completed"
+               :result (result/data result)
+               :created (task/format (task/now))}
         item (session/session {:topic "T"
                                :tasks [entry]
                                :created (session/format (session/now))})
@@ -524,12 +522,11 @@
         link (str "https://example.com/" (.nextInt rng 1000))
         source (result/->CitationSource head link note "High")
         value (result/->ResearchReport head [source])
-        task (task/task {:query head
-                         :status "completed"
-                         :result (result/data value)
-                         :service "valyu.ai"
-                         :created (task/format (task/now))})
-        entry (task/data task)
+        entry {:query head
+               :status "completed"
+               :result (result/data value)
+               :service "valyu.ai"
+               :created (task/format (task/now))}
         item (session/session {:topic head
                                :tasks [entry]
                                :created (session/format (session/now))})
@@ -548,12 +545,11 @@
         mark (gen/cyrillic rng 6)
         source (result/->CitationSource "Fetched web page" link "" "High")
         value (result/->ResearchReport head [source])
-        task (task/task {:query mark
-                         :status "completed"
-                         :result (result/data value)
-                         :service "parallel.ai"
-                         :created (task/format (task/now))})
-        entry (task/data task)
+        entry {:query mark
+               :status "completed"
+               :result (result/data value)
+               :service "parallel.ai"
+               :created (task/format (task/now))}
         item (session/session {:topic mark
                                :tasks [entry]
                                :created (session/format (session/now))})
@@ -740,11 +736,10 @@
                   " "
                   link)
         value (result/->ResearchReport text [])
-        task (task/task {:query head
-                         :status "completed"
-                         :result (result/data value)
-                         :created (task/format (task/now))})
-        entry (task/data task)
+        entry {:query head
+               :status "completed"
+               :result (result/data value)
+               :created (task/format (task/now))}
         item (session/session {:topic head
                                :tasks [entry]
                                :created (session/format (session/now))})
@@ -765,33 +760,19 @@
         refs (document/references text)]
     (is (= 2 (count refs)) "References did not extract all entries")))
 
-(deftest the-document-path-returns-session-based-path
+(deftest the-document-brief-uses-pending-when-no-tasks
   (let [rng (gen/ids 18045)
-        ident (gen/uuid rng)
-        short (first (str/split ident #"-"))
-        item (session/session {:id ident
-                               :topic "T"
-                               :tasks []
-                               :created (session/format (session/now))})
-        root (Paths/get "output" (make-array String 0))
-        doc (document/document item (palette/palette) (Optional/empty) root)
-        path (document/briefpath doc)
-        text (str path)
-        seen (and (str/includes? text short)
-                  (str/includes? text "output")
-                  (or (str/includes? text "input-")
-                      (str/includes? text "brief-")))]
-    (is seen "Path did not target output brief or input file")))
-
-(deftest ^{:doc "Uses pending provider for brief path"}
-  the-document-briefpath-uses-pending-provider
-  (let [rng (gen/ids 18046)
         mark (gen/cyrillic rng 6)
-        entry {:run_id (gen/uuid rng)
-               :query mark
-               :processor "pro"
-               :language mark
-               :provider "valyu"}
+        run (gen/uuid rng)
+        processor (gen/greek rng 6)
+        language (gen/cyrillic rng 6)
+        provider (gen/cyrillic rng 6)
+        query (str "調査-" mark "\n1. " (gen/greek rng 4))
+        entry {:run_id run
+               :query query
+               :processor processor
+               :language language
+               :provider provider}
         item (session/session {:id (gen/uuid rng)
                                :topic mark
                                :tasks []
@@ -799,33 +780,38 @@
                                :pending entry})
         root (Paths/get "output" (make-array String 0))
         doc (document/document item (palette/palette) (Optional/empty) root)
-        path (document/briefpath doc)
-        seen (str/includes? (str path) "input-valyu.md")]
-    (is seen "Brief path did not use pending provider")))
+        html (document/brief doc)]
+    (is (str/includes? html mark) "Brief did not use pending query")))
 
-(deftest the-document-brief-reads-from-file
-  (let [rng (gen/ids 18047)
-        ident (gen/uuid rng)
-        mark (str "マーカー-" (gen/uuid rng))
-        path (.resolve (Files/createTempDirectory
-                        "brief"
-                        (make-array FileAttribute 0))
-                       (str ident ".md"))
-        _ (spit (.toFile path) mark :encoding "UTF-8")
-        task (task/task {:query "fallback"
-                         :status "completed"
-                         :result nil
-                         :created (task/format (task/now))})
+(deftest the-document-brief-uses-task-when-present
+  (let [rng (gen/ids 18046)
+        day (inc (.nextInt rng 8))
+        hour (inc (.nextInt rng 8))
+        time (str "2026-01-0" day "T0" hour ":00:00")
+        mark (gen/uuid rng)
+        query (str "調査-" mark "\n1. " (gen/greek rng 4))
+        status (gen/cyrillic rng 6)
+        language (gen/cyrillic rng 6)
+        service (gen/cyrillic rng 6)
+        task (task/task {:query query
+                         :status status
+                         :language language
+                         :service service
+                         :created time})
         entry (task/data task)
-        item (session/session {:id ident
-                               :topic "T"
+        hold {:run_id (gen/uuid rng)
+              :query (gen/hiragana rng 6)
+              :processor (gen/greek rng 6)
+              :language (gen/cyrillic rng 6)
+              :provider (gen/cyrillic rng 6)}
+        item (session/session {:topic (gen/cyrillic rng 5)
                                :tasks [entry]
-                               :created (session/format (session/now))})
+                               :created time
+                               :pending hold})
         root (Paths/get "output" (make-array String 0))
         doc (document/document item (palette/palette) (Optional/empty) root)
-        html (with-redefs [document/briefpath (fn [_] (.toFile path))]
-               (document/brief doc))]
-    (is (str/includes? html mark) "Brief did not read from file")))
+        html (document/brief doc)]
+    (is (str/includes? html mark) "Brief did not use task query")))
 
 (deftest the-document-brief-falls-back-to-query
   (let [rng (gen/ids 18049)

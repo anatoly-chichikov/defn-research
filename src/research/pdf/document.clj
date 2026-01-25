@@ -10,8 +10,7 @@
             [research.pdf.document.sources :as docsources]
             [research.pdf.document.tasks :as doctasks]
             [research.pdf.document.text :as doctext]
-            [research.pdf.style :as style]
-            [research.storage.organizer :as organizer])
+            [research.pdf.style :as style])
   (:import (java.nio.file Files LinkOption)))
 (declare author service coverimage brief emit)
 (defprotocol Signed
@@ -105,45 +104,18 @@
            (.toString (.toUri (.get cover)))
            "\" alt=\"Cover\" /></div>")
       "")))
-(defn provider
-  "Return provider slug from task service."
-  [item]
-  (let [name (task/provider item)]
-    (if (str/ends-with? name ".ai") (first (str/split name #"\.")) name)))
-(defn briefpath
-  "Return brief file path."
-  [item]
-  (let [sess (:session item)
-        root (:root item)
-        org (organizer/organizer root)
-        name (organizer/name
-              org
-              (sess/created sess)
-              (sess/topic sess)
-              (sess/id sess))
-        list (sess/tasks sess)
-        tail (last list)
-        hold (sess/pending sess)
-        slot (if (and (not tail) (.isPresent hold)) (.get hold) nil)
-        service (if tail
-                  (provider tail)
-                  (if slot (pending/provider slot) "provider"))
-        tag (organizer/slug service)
-        tag (if (str/blank? tag) "provider" tag)
-        base (.resolve root name)
-        brief (.resolve base (str "brief-" tag ".md"))
-        input (.resolve base (str "input-" tag ".md"))
-        path (if (Files/exists brief (make-array LinkOption 0)) brief input)]
-    (.toFile path)))
 (defn brief
   "Render brief section."
   [item]
-  (let [list (sess/tasks (:session item))
+  (let [sess (:session item)
+        list (sess/tasks sess)
         head (first list)
-        path (briefpath item)
-        text (if (and head (.exists path))
-               (slurp path :encoding "UTF-8")
-               (if head (task/query head) ""))
+        hold (sess/pending sess)
+        slot (if (and (not head) (.isPresent hold)) (.get hold) nil)
+        text (cond
+               head (task/query head)
+               slot (pending/query slot)
+               :else "")
         text (doctext/listify text)
         text (doctext/normalize text)
         text (doctext/rule text)

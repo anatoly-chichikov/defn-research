@@ -195,7 +195,9 @@
               :status (gen/greek rng 6)
               :language (gen/cyrillic rng 5)
               :service tag
-              :created time}
+              :created time
+              :result {:summary note
+                       :sources []}}
         hold {:run_id (gen/uuid rng)
               :query (gen/cyrillic rng 6)
               :processor (gen/greek rng 6)
@@ -211,5 +213,7 @@
         repo (repo/repo root)
         _ (repo/load repo)
         body (slurp (.toFile file) :encoding "UTF-8")
-        flag (not (re-find #":query" body))]
-    (is flag "Session edn still included query")))
+        flag (and (not (re-find #":query" body))
+                  (not (re-find #":result" body))
+                  (re-find #":brief" body))]
+    (is flag "Session edn still included query or result or missed brief")))

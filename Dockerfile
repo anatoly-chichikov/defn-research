@@ -20,6 +20,5 @@ RUN uv sync
 
 COPY resources ./resources
 COPY src ./src
-COPY data ./data
 
 ENTRYPOINT ["lein", "run"]

@@ -1,10 +1,10 @@
 (ns research.main.print
   (:refer-clojure :exclude [list])
   (:require [clojure.string :as str]
-            [research.domain.result :as result]
             [research.domain.session :as session]
             [research.domain.task :as task]
             [research.pdf.document :as document]
+            [research.pdf.document.data :as docdata]
             [research.pdf.palette :as palette]
             [research.storage.organizer :as organizer]
             [research.storage.repository :as repo]))
@@ -42,14 +42,14 @@
           (println (str "\nTasks (" (count (session/tasks pick)) "):"))
           (doseq [task (session/tasks pick)]
             (println (str "\n  [" (task/status task) "] " (task/query task)))
-            (let [value (task/report task)]
-              (when (result/presence value)
-                (let [head (subs (result/summary value)
-                                 0
-                                 (min 100 (count (result/summary value))))]
-                  (println (str "  Summary: " head " [truncated]")))
-                (let [count (count (result/sources value))]
-                  (println (str "  Sources: " count)))))))
+            (let [info {:root data
+                        :session pick}
+                  [text sources] (docdata/resultmap info task)
+                  part (subs text 0 (min 100 (count text)))]
+              (when (seq text)
+                (println (str "  Summary: " part " [truncated]")))
+              (when (seq sources)
+                (println (str "  Sources: " (count sources)))))))
       (println (str "Session not found: " id)))))
 
 (defn render
