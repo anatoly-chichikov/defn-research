@@ -33,8 +33,9 @@
                                :query query
                                :processor processor
                                :language language
-                               :provider provider})]
-    (is (= query (pending/query item))
+                               :provider provider})
+        expect (str "Язык ответа: " language ".\n\n" query)]
+    (is (= expect (pending/query item))
         "Pending query did not match provided value")))
 
 (deftest the-pending-returns-processor
@@ -93,11 +94,11 @@
              (contains? data :processor)
              (contains? data :language)
              (contains? data :brief)
-             (contains? brief :text)
              (contains? brief :topic)
              (contains? brief :items)
              (contains? node :text)
              (contains? node :items)
+             (not (contains? brief :text))
              (not (contains? data :query)))
         "Pending serialize did not include brief or still included query")))
 

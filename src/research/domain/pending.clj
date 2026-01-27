@@ -115,20 +115,24 @@
 
 (defn- render
   "Render brief into query text."
-  [brief]
-  (let [text (str (or (:text brief) ""))
+  [brief language]
+  (let [lang (str/trim (str (or language "")))
+        lead (if (str/blank? lang) "" (str "Язык ответа: " lang "."))
         topic (str (or (:topic brief) ""))
         items (or (:items brief) [])
         items (mapv node items)
         rows (lines items 0)
         tail (str/join "\n" rows)
-        note (cond
+        body (cond
                (seq rows)
                (if (str/blank? topic)
                  (str "Research:\n" tail)
                  (str topic "\n\nResearch:\n" tail))
-               (not (str/blank? text)) text
-               :else topic)]
+               :else topic)
+        note (cond
+               (and (seq lead) (seq body)) (str lead "\n\n" body)
+               (seq lead) lead
+               :else body)]
     note))
 
 (defrecord PendingRun [id brief data]
@@ -136,7 +140,7 @@
   (id [_] id)
   (brief [_] brief)
   (query [_]
-    (render brief))
+    (render brief (:language data)))
   (processor [_] (:processor data))
   (language [_] (:language data))
   (provider [_] (:provider data))
@@ -144,7 +148,7 @@
              :processor (:processor data)
              :language (:language data)
              :provider (:provider data)
-             :brief brief}))
+             :brief (dissoc brief :text)}))
 
 (defn pending
   "Create pending run from map."
@@ -175,8 +179,7 @@
         topic (or (:topic entry) top "")
         items (if (seq (:items entry)) (:items entry) list)
         items (mapv node items)
-        brief {:text query
-               :topic topic
+        brief {:topic topic
                :items items}]
     (->PendingRun
      (:run_id item)

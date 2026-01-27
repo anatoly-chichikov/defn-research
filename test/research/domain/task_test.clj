@@ -41,8 +41,9 @@
                          :language language
                          :service service
                          :result (result/data value)
-                         :created time})]
-    (is (= query (task/query item))
+                         :created time})
+        expect (str "Язык ответа: " language ".\n\n" query)]
+    (is (= expect (task/query item))
         "Task query did not match provided value")))
 
 (deftest the-task-returns-provided-status
@@ -159,12 +160,12 @@
         items (:items brief)
         node (first items)]
     (is (and (contains? data :brief)
-             (contains? brief :text)
              (contains? brief :topic)
              (contains? brief :items)
              (= processor (:processor data))
              (contains? node :text)
              (contains? node :items)
+             (not (contains? brief :text))
              (not (contains? data :query))
              (not (contains? data :result)))
         (str
@@ -186,8 +187,7 @@
         service (gen/cyrillic rng 4)
         summary (gen/cyrillic rng 6)
         value (result/->ResearchReport summary [])
-        brief {:text (gen/latin rng 6)
-               :topic topic
+        brief {:topic topic
                :items [{:text first
                         :items [{:text inner
                                  :items []}]}
@@ -200,7 +200,10 @@
                          :service service
                          :result (result/data value)
                          :created time})
-        expect (str topic
+        expect (str "Язык ответа: "
+                    language
+                    ".\n\n"
+                    topic
                     "\n\nResearch:\n1. "
                     first
                     "\n    1. "
@@ -228,6 +231,7 @@
               :service service
               :result (result/data value)
               :created time}
-        item (task/task data)]
-    (is (= query (task/query item))
+        item (task/task data)
+        expect (str "Язык ответа: " language ".\n\n" query)]
+    (is (= expect (task/query item))
         "Deserialized query did not match")))

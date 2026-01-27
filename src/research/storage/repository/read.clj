@@ -30,12 +30,18 @@
                               hold (:pending data)
                               flag (or (some #(or (contains? % :query)
                                                   (contains? % :result)
-                                                  (not (contains? % :brief)))
+                                                  (not (contains? % :brief))
+                                                  (contains?
+                                                   (get % :brief {})
+                                                   :text))
                                              tasks)
                                        (and hold
                                             (or (contains? hold :query)
                                                 (contains? hold :result)
-                                                (not (contains? hold :brief)))))
+                                                (not (contains? hold :brief))
+                                                (contains?
+                                                 (get hold :brief {})
+                                                 :text))))
                               items (mapv
                                      (fn [item]
                                        (let [state (or (contains? item :brief)

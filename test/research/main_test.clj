@@ -395,9 +395,9 @@
           path (.resolve folder "session.edn")
           data (edn/read-string (slurp (.toFile path) :encoding "UTF-8"))
           brief (get-in data [:tasks 0 :brief])
-          seen (and (= query (:text brief))
-                    (contains? brief :topic)
-                    (contains? brief :items))]
+          seen (and (contains? brief :topic)
+                    (contains? brief :items)
+                    (not (contains? brief :text)))]
       (is seen "Brief was not stored in session edn"))))
 
 (deftest ^:integration the-application-generates-pdf-screenshots

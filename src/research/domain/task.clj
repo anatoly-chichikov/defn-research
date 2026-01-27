@@ -139,20 +139,24 @@
 
 (defn- render
   "Render brief into query text."
-  [brief]
-  (let [text (str (or (:text brief) ""))
+  [brief language]
+  (let [lang (str/trim (str (or language "")))
+        lead (if (str/blank? lang) "" (str "Язык ответа: " lang "."))
         topic (str (or (:topic brief) ""))
         items (or (:items brief) [])
         items (mapv node items)
         rows (lines items 0)
         tail (str/join "\n" rows)
-        note (cond
+        body (cond
                (seq rows)
                (if (str/blank? topic)
                  (str "Research:\n" tail)
                  (str topic "\n\nResearch:\n" tail))
-               (not (str/blank? text)) text
-               :else topic)]
+               :else topic)
+        note (cond
+               (and (seq lead) (seq body)) (str lead "\n\n" body)
+               (seq lead) lead
+               :else body)]
     note))
 
 (defrecord ResearchRun [id brief data result]
@@ -160,7 +164,7 @@
   (id [_] id)
   (brief [_] brief)
   (query [_]
-    (render brief))
+    (render brief (:language data)))
   (status [_] (:status data))
   (report [_] result)
   (language [_] (:language data))
@@ -173,7 +177,8 @@
      brief
      (assoc data :status "completed" :completed (Optional/of (now)))
      value))
-  (data [_] (let [base {:id id
+  (data [_] (let [brief (dissoc brief :text)
+                  base {:id id
                         :status (:status data)
                         :language (:language data)
                         :service (:service data)
@@ -225,8 +230,7 @@
         topic (or (:topic entry) top "")
         items (if (seq (:items entry)) (:items entry) list)
         items (mapv node items)
-        brief {:text query
-               :topic topic
+        brief {:topic topic
                :items items}
         data {:status (:status item)
               :language text
