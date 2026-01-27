@@ -76,18 +76,31 @@
         head (first list)
         hold (sess/pending sess)
         slot (if (and (not head) (.isPresent hold)) (.get hold) nil)
+        info (cond
+               head (task/brief head)
+               slot (pending/brief slot)
+               :else {})
+        items (or (:items info) [])
+        topic (str (or (:topic info) ""))
         text (cond
+               (seq items) ""
                head (task/query head)
                slot (pending/query slot)
                :else "")
-        text (text/listify text)
-        text (text/normalize text)
-        text (text/rule text)
-        text (cite/stars text)
-        html (md/md-to-html-string text)
-        html (cite/tables html)
-        html (cite/codeindent html)
-        html (cite/backslash html)]
+        text (if (seq items) "" (text/listify text))
+        text (if (seq items) "" (text/normalize text))
+        text (if (seq items) "" (text/rule text))
+        text (if (seq items) "" (cite/stars text))
+        html (if (seq items)
+               (str
+                (if (str/blank? topic)
+                  ""
+                  (str "<p>" (text/escape topic) "</p>"))
+                (text/outline items))
+               (md/md-to-html-string text))
+        html (if (seq items) html (cite/tables html))
+        html (if (seq items) html (cite/codeindent html))
+        html (if (seq items) html (cite/backslash html))]
     (if (str/blank? html)
       ""
       (str "<div class=\"brief\"><div class=\"container\">"

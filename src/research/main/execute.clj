@@ -83,9 +83,19 @@
                 (println "Gemini API key not set skipping image generation")
                 (do (println "Generating cover image")
                     (let [gen (image/generator)]
-                      (image/generate gen (session/topic final) cover)
-                      (println (str "Cover generated: "
-                                    (.toString cover))))))
+                      (try
+                        (image/generate gen (session/topic final) cover)
+                        (println (str "Cover generated: "
+                                      (.toString cover)))
+                        (catch Exception cause
+                          (let [data (ex-data cause)
+                                status (or (:status data) "none")
+                                model (or (:model data) "unknown")]
+                            (println
+                             (str "Cover generation failed model="
+                                  model
+                                  " status="
+                                  status))))))))
               (let [doc (document/document
                          final
                          (palette/palette)
@@ -164,9 +174,19 @@
                 (println "Gemini API key not set skipping image generation")
                 (do (println "Generating cover image")
                     (let [gen (image/generator)]
-                      (image/generate gen (session/topic final) cover)
-                      (println (str "Cover generated: "
-                                    (.toString cover))))))
+                      (try
+                        (image/generate gen (session/topic final) cover)
+                        (println (str "Cover generated: "
+                                      (.toString cover)))
+                        (catch Exception cause
+                          (let [data (ex-data cause)
+                                status (or (:status data) "none")
+                                model (or (:model data) "unknown")]
+                            (println
+                             (str "Cover generation failed model="
+                                  model
+                                  " status="
+                                  status))))))))
               (let [doc (document/document
                          final
                          (palette/palette)

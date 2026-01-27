@@ -53,6 +53,37 @@
         text (str/replace text #"\n{3,}" "\n\n")]
     text))
 
+(defn item
+  "Normalize brief item."
+  [node]
+  (let [text (str (or (:text node) node))
+        items (or (:items node) [])
+        items (mapv item items)
+        text (str/trim text)
+        items (vec (remove
+                    (fn [item]
+                      (and (str/blank? (:text item))
+                           (empty? (:items item))))
+                    items))]
+    {:text text
+     :items items}))
+
+(defn outline
+  "Render nested list html."
+  [items]
+  (let [items (mapv item (or items []))
+        rows (reduce
+              (fn [list entry]
+                (let [text (escape (str (or (:text entry) "")))
+                      nest (outline (:items entry))
+                      body (if (str/blank? nest) "" nest)
+                      part (str "<li>" text body "</li>")]
+                  (conj list part)))
+              []
+              items)
+        body (str/join "" rows)]
+    (if (str/blank? body) "" (str "<ol>" body "</ol>"))))
+
 (defn rule
   "Convert markdown separators to hr tags."
   [text]

@@ -3,7 +3,9 @@
             [clojure.java.io :as io]
             [clojure.string :as str]
             [clojure.test :refer [deftest is]]
-            [research.image.generator :as gen]))
+            [org.httpkit.client :as http]
+            [research.image.generator :as gen]
+            [research.test.ids :as seed]))
 
 (deftest the-generator-replaces-topic
   (let [rng (java.util.Random. 6093)
@@ -105,3 +107,24 @@
         target (get table pick)
         result (and (= text (first target)) (= rule (second target)))]
     (is result "Text restrictions were missing")))
+
+(deftest the-generator-rejects-missing-status
+  (let [rng (seed/ids 9031)
+        key (seed/latin rng 12)
+        topic (seed/cyrillic rng 6)
+        head (seed/greek rng 5)
+        tail (seed/armenian rng 5)
+        spec (str head " %s " tail)
+        path (java.nio.file.Files/createTempFile
+              "cover"
+              ".jpg"
+              (make-array
+               java.nio.file.attribute.FileAttribute
+               0))
+        data {:model (seed/latin rng 6)
+              :quality 0.8}
+        item (gen/->Generator key spec data)]
+    (with-redefs [http/post (fn [_ _] (delay {:status nil}))]
+      (is (thrown? clojure.lang.ExceptionInfo
+                   (gen/generate item topic path))
+          "Generator did not reject missing status"))))

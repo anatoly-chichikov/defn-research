@@ -291,6 +291,63 @@
                 (json/object-mapper {:decode-key-fn keyword}))]
       (is (= raw data) "Raw response did not match stored response"))))
 
+(deftest the-application-continues-after-cover-failure
+  (let [rng (gen/ids 25008)
+        topic (gen/cyrillic rng 6)
+        query (gen/greek rng 7)
+        processor (gen/armenian rng 5)
+        language (gen/hiragana rng 4)
+        provider (gen/cyrillic rng 5)
+        run (gen/arabic rng 8)
+        text (gen/cyrillic rng 12)
+        stamp (session/format (session/now))
+        ident (gen/uuid rng)
+        entry {:run_id run
+               :query query
+               :processor processor
+               :language language
+               :provider provider}
+        sess (session/session {:id ident
+                               :topic topic
+                               :tasks []
+                               :created stamp
+                               :pending entry})
+        root (Files/createTempDirectory "app"
+                                        (make-array FileAttribute 0))
+        out (.resolve root "output")
+        _ (Files/createDirectories out (make-array FileAttribute 0))
+        store (repo/repo out)
+        _ (repo/save store [sess])
+        reply (response/response {:id run
+                                  :status "completed"
+                                  :output text
+                                  :basis []
+                                  :raw {}})
+        fake (reify research/Researchable
+               (start [_ _ _] run)
+               (stream [_ _] true)
+               (finish [_ _] reply))
+        app (main/app root)
+        token (subs ident 0 8)
+        org (organizer/organizer out)
+        name (organizer/name
+              org
+              (session/created sess)
+              (session/topic sess)
+              (session/id sess))
+        path (organizer/report org name provider)
+        boom (ex-info "Cover generation failed model=none status=none" {})]
+    (with-redefs [parallel/parallel (fn [] fake)
+                  main/env (fn [key]
+                             (if (= key "GEMINI_API_KEY")
+                               (gen/latin rng 6)
+                               ""))
+                  image/generator (fn [] nil)
+                  image/generate (fn [_ _ _] (throw boom))]
+      (main/research app token query processor language provider))
+    (is (Files/exists path (make-array java.nio.file.LinkOption 0))
+        "Report was not generated after cover failure")))
+
 (deftest the-application-saves-brief-in-session
   (let [rng (gen/ids 25009)
         topic (gen/cyrillic rng 6)

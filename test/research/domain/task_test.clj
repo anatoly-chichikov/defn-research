@@ -137,7 +137,9 @@
         day (inc (.nextInt rng 8))
         hour (inc (.nextInt rng 8))
         time (str "2026-01-0" day "T0" hour ":00:00")
-        query (gen/hiragana rng 6)
+        query (str (gen/hiragana rng 6)
+                   "\n\nResearch:\n1. "
+                   (gen/greek rng 4))
         status (gen/cyrillic rng 6)
         processor (gen/greek rng 6)
         language (gen/cyrillic rng 5)
@@ -152,17 +154,61 @@
                          :processor processor
                          :result (result/data value)
                          :created time})
-        data (task/data item)]
+        data (task/data item)
+        brief (:brief data)
+        items (:items brief)
+        node (first items)]
     (is (and (contains? data :brief)
-             (contains? (:brief data) :text)
-             (contains? (:brief data) :topic)
-             (contains? (:brief data) :items)
+             (contains? brief :text)
+             (contains? brief :topic)
+             (contains? brief :items)
              (= processor (:processor data))
+             (contains? node :text)
+             (contains? node :items)
              (not (contains? data :query))
              (not (contains? data :result)))
         (str
          "Serialized task did not include brief or still included "
          "query or result"))))
+
+(deftest ^{:doc "Ensure task renders nested brief items."}
+  the-task-renders-nested-brief-items
+  (let [rng (gen/ids 11017)
+        day (inc (.nextInt rng 8))
+        hour (inc (.nextInt rng 8))
+        time (str "2026-01-0" day "T0" hour ":00:00")
+        topic (gen/cyrillic rng 6)
+        first (gen/greek rng 5)
+        inner (gen/armenian rng 5)
+        second (gen/hiragana rng 5)
+        status (gen/greek rng 6)
+        language (gen/cyrillic rng 5)
+        service (gen/cyrillic rng 4)
+        summary (gen/cyrillic rng 6)
+        value (result/->ResearchReport summary [])
+        brief {:text (gen/latin rng 6)
+               :topic topic
+               :items [{:text first
+                        :items [{:text inner
+                                 :items []}]}
+                       {:text second
+                        :items []}]}
+        item (task/task {:id (gen/uuid rng)
+                         :brief brief
+                         :status status
+                         :language language
+                         :service service
+                         :result (result/data value)
+                         :created time})
+        expect (str topic
+                    "\n\nResearch:\n1. "
+                    first
+                    "\n    1. "
+                    inner
+                    "\n2. "
+                    second)]
+    (is (= expect (task/query item))
+        "Nested brief was not rendered")))
 
 (deftest the-task-deserializes-correctly
   (let [rng (gen/ids 11015)

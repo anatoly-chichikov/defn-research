@@ -4,29 +4,139 @@
 (defprotocol Pendinged
   "Object with pending run details."
   (id [item] "Return run identifier.")
+  (brief [item] "Return brief details.")
   (query [item] "Return research query.")
   (processor [item] "Return processor name.")
   (language [item] "Return research language.")
   (provider [item] "Return provider name.")
   (data [item] "Return map representation."))
 
+(defn- node
+  "Normalize brief item map."
+  [item]
+  (let [text (str (or (:text item) item))
+        list (or (:items item) [])
+        list (mapv node list)
+        text (str/trim text)
+        list (vec (remove
+                   (fn [item]
+                     (and (str/blank? (:text item))
+                          (empty? (:items item))))
+                   list))]
+    {:text text
+     :items list}))
+
+(defn- point
+  "Parse list line into depth item."
+  [line]
+  (let [line (str/replace (str line) #"\t" " ")
+        trim (str/triml line)
+        pad (- (count line) (count trim))
+        num (re-find #"^(\d+(?:\.\d+)*)[.)]?\s+(.+)$" trim)
+        bul (re-find #"^[*+-]\s+(.+)$" trim)
+        text (cond
+               num (nth num 2)
+               bul (second bul)
+               :else nil)
+        rank (cond
+               num (count (str/split (nth num 1) #"\."))
+               bul (inc (quot pad 2))
+               :else nil)
+        rank (if rank (max 1 rank) nil)
+        text (str/trim (or text ""))]
+    (if (and rank (not (str/blank? text)))
+      {:depth rank
+       :text text}
+      nil)))
+
+(defn- scan
+  "Parse list lines into flat items."
+  [lines]
+  (loop [list [] tail lines]
+    (if (seq tail)
+      (let [raw (first tail)
+            item (point raw)
+            line (str/trim (str raw))
+            list (cond
+                   (str/blank? line) list
+                   item (conj list item)
+                   (seq list)
+                   (conj (vec (butlast list))
+                         (update (last list) :text str " " line))
+                   :else list)]
+        (recur list (rest tail)))
+      list)))
+
+(defn- place
+  "Insert item at depth."
+  [items depth item]
+  (let [depth (if (and (> depth 1) (empty? items)) 1 depth)]
+    (if (= depth 1)
+      (conj items item)
+      (let [last (last items)
+            head (vec (butlast items))
+            last (if last last {:text ""
+                                :items []})
+            tail (update last :items place (dec depth) item)]
+        (conj head tail)))))
+
+(defn- nest
+  "Nest flat items into tree."
+  [list]
+  (loop [items [] tail list]
+    (if (seq tail)
+      (let [item (first tail)
+            node {:text (:text item)
+                  :items []}
+            items (place items (:depth item) node)]
+        (recur items (rest tail)))
+      items)))
+
+(defn- lines
+  "Render nested items into markdown list."
+  [items depth]
+  (let [pad (apply str (repeat (* 4 depth) " "))]
+    (loop [idx 0 list []]
+      (if (< idx (count items))
+        (let [item (nth items idx)
+              text (str/trim (str (or (:text item) "")))
+              nest (or (:items item) [])
+              rows (lines nest (inc depth))
+              line (if (str/blank? text)
+                     nil
+                     (str pad (inc idx) ". " text))
+              list (cond
+                     (and (nil? line) (seq rows)) (into list rows)
+                     (nil? line) list
+                     (seq rows) (into (conj list line) rows)
+                     :else (conj list line))]
+          (recur (inc idx) list))
+        list))))
+
+(defn- render
+  "Render brief into query text."
+  [brief]
+  (let [text (str (or (:text brief) ""))
+        topic (str (or (:topic brief) ""))
+        items (or (:items brief) [])
+        items (mapv node items)
+        rows (lines items 0)
+        tail (str/join "\n" rows)
+        note (cond
+               (seq rows)
+               (if (str/blank? topic)
+                 (str "Research:\n" tail)
+                 (str topic "\n\nResearch:\n" tail))
+               (not (str/blank? text)) text
+               :else topic)]
+    note))
+
 (defrecord PendingRun [id brief data]
   Pendinged
   (id [_] id)
+  (brief [_] brief)
   (query [_]
-    (let [text (str (or (:text brief) ""))
-          topic (str (or (:topic brief) ""))
-          items (or (:items brief) [])
-          items (vec (remove str/blank? items))
-          rows (map-indexed (fn [idx item] (str (inc idx) ". " item)) items)
-          tail (str/join "\n" rows)
-          note (cond
-                 (not (str/blank? text)) text
-                 (and (not (str/blank? topic)) (seq rows))
-                 (str topic "\n\nResearch:\n" tail)
-                 (seq rows) (str "Research:\n" tail)
-                 :else topic)]
-      note))
+    (render brief))
   (processor [_] (:processor data))
   (language [_] (:language data))
   (provider [_] (:provider data))
@@ -49,49 +159,22 @@
                      rows))
         edge (first (keep-indexed
                      (fn [idx line]
-                       (let [line (str/trim line)
-                             hit (re-find
-                                  #"^(?:\d+\s*[\.)]|\d+|[*+-])\s+"
-                                  line)]
-                         (when hit idx)))
+                       (when (point line) idx))
                      rows))
         cut (if (some? spot) spot edge)
         head (vec (if (some? cut) (take cut rows) rows))
         tail (if (some? cut)
                (drop (if (some? spot) (inc spot) cut) rows)
                [])
-        list (loop [list [] chunk tail]
-               (if (seq chunk)
-                 (let [line (str/trim (first chunk))]
-                   (if (str/blank? line)
-                     (recur list (rest chunk))
-                     (let [num (re-find #"^\d+\s*[\.)]\s+(.+)$" line)
-                           raw (re-find #"^\d+\s+(.+)$" line)
-                           bul (re-find #"^[*+-]\s+(.+)$" line)
-                           part (cond
-                                  num (second num)
-                                  raw (second raw)
-                                  bul (second bul)
-                                  :else nil)
-                           part (if (and part (not (str/blank? part)))
-                                  (str/trim part)
-                                  nil)
-                           list (if part
-                                  (conj list part)
-                                  (if (seq list)
-                                    (conj (vec (butlast list))
-                                          (str (last list) " " line))
-                                    (conj list line)))]
-                       (recur list (rest chunk)))))
-                 list))
-        list (vec (remove str/blank? (map str/trim list)))
+        list (nest (scan tail))
         top (reduce
              (fn [text line]
                (if (str/blank? (str/trim line)) text (str/trim line)))
              ""
              head)
         topic (or (:topic entry) top "")
-        items (vec (or (:items entry) list []))
+        items (if (seq (:items entry)) (:items entry) list)
+        items (mapv node items)
         brief {:text query
                :topic topic
                :items items}]
