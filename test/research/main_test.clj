@@ -6,6 +6,7 @@
             [research.api.research :as research]
             [research.api.response :as response]
             [research.api.valyu :as valyu]
+            [research.domain.pending :as pending]
             [research.domain.session :as session]
             [research.image.generator :as image]
             [research.main :as main]
@@ -405,8 +406,9 @@
         lang (gen/cyrillic rng 6)
         head (gen/ascii rng 6)
         base (Paths/get "baseline-research" (make-array String 0))
-        input (slurp (.toFile (.resolve base "input-parallel.md"))
-                     :encoding "UTF-8")
+        brief (edn/read-string
+               (slurp (.toFile (.resolve base "brief-parallel.edn"))
+                      :encoding "UTF-8"))
         raw (json/read-value
              (.toFile (.resolve base "response-parallel.json"))
              (json/object-mapper {:decode-key-fn keyword}))
@@ -425,6 +427,12 @@
                                :created stamp})
         _ (repo/save repo [sess])
         run (gen/ascii rng 8)
+        query (pending/query
+               (pending/pending {:run_id run
+                                 :brief brief
+                                 :processor "pro"
+                                 :language lang
+                                 :provider "parallel"}))
         fake (reify research/Researchable
                (start [_ _ _] run)
                (stream [_ _] true)
@@ -462,7 +470,7 @@
                                     target
                                     (make-array java.nio.file.CopyOption 0)))]
       (binding [*out* (StringWriter.) *err* (StringWriter.)]
-        (main/research app (subs ident 0 8) input "pro" lang "parallel")))
+        (main/research app (subs ident 0 8) query "pro" lang "parallel")))
     (Files/createDirectories left (make-array FileAttribute 0))
     (Files/createDirectories right (make-array FileAttribute 0))
     (let [lefts (screens gold left 150)

@@ -84,9 +84,8 @@
         topic (str (or (:topic info) ""))
         text (cond
                (seq items) ""
-               head (task/query head)
-               slot (pending/query slot)
-               :else "")
+               (str/blank? topic) ""
+               :else topic)
         text (if (seq items) "" (text/listify text))
         text (if (seq items) "" (text/normalize text))
         text (if (seq items) "" (text/rule text))

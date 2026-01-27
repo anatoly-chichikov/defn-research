@@ -116,17 +116,6 @@
     (is (.isPresent (organizer/existing item ident "valyu"))
         "Existing returned empty for existing cover")))
 
-(deftest the-organizer-saves-brief-as-markdown
-  (let [rng (gen/ids 23019)
-        root (Files/createTempDirectory "org"
-                                        (make-array FileAttribute 0))
-        ident (gen/uuid rng)
-        item (organizer/organizer root)
-        content (str "# Test Brief\n\nСодержимое " (gen/uuid rng))
-        path (organizer/brief item ident "параллель" content)
-        data (slurp (.toFile path) :encoding "UTF-8")]
-    (is (= content data) "Brief content was not saved correctly")))
-
 (deftest the-organizer-name-formats-correctly
   (let [root (Files/createTempDirectory "org"
                                         (make-array FileAttribute 0))

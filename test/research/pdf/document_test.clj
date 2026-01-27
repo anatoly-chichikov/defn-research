@@ -813,12 +813,12 @@
         html (document/brief doc)]
     (is (str/includes? html mark) "Brief did not use task query")))
 
-(deftest the-document-brief-falls-back-to-query
+(deftest the-document-brief-falls-back-to-topic
   (let [rng (gen/ids 18049)
         day (inc (.nextInt rng 8))
         hour (inc (.nextInt rng 8))
         time (str "2026-01-0" day "T0" hour ":00:00")
-        mark (str "クエリ-" (gen/uuid rng))
+        mark (str "トピック-" (gen/uuid rng))
         status (gen/cyrillic rng 6)
         language (gen/cyrillic rng 6)
         service (gen/cyrillic rng 6)
@@ -835,7 +835,7 @@
         root (Paths/get "output" (make-array String 0))
         doc (document/document item (palette/palette) (Optional/empty) root)
         html (document/brief doc)]
-    (is (str/includes? html mark) "Brief did not fall back to query")))
+    (is (str/includes? html mark) "Brief did not fall back to topic")))
 
 (deftest the-document-nested-converts-single-space-indent
   (let [rng (gen/ids 18051)
