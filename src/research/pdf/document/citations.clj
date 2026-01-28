@@ -57,12 +57,19 @@
                  (when-not (some #(= link %) @hold)
                    (swap! hold conj link))
                  token))
+        rule "https?://(?:[^()\\s\\[\\]]+|\\([^\\s\\[\\]]*\\))+"
         stash (fn [items]
                 (let [num (Integer/parseInt (second items))
                       link (text/trim (nth items 2))]
                   (if (str/blank? link) (first items) (push num link))))
-        stage (str/replace text #"\[\[(\d+)\]\]\((https?://[^)\s]+)\)" stash)
-        stage (str/replace stage #"\[(\d+)\]\((https?://[^)\s]+)\)" stash)
+        stage (str/replace
+               text
+               (re-pattern (str "\\[\\[(\\d+)\\]\\]\\((" rule ")\\)"))
+               stash)
+        stage (str/replace
+               stage
+               (re-pattern (str "\\[(\\d+)\\]\\((" rule ")\\)"))
+               stash)
         render (fn [items]
                  (let [num (Integer/parseInt (second items))
                        link (get refs num "")

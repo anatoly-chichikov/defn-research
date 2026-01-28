@@ -722,6 +722,38 @@
         urls (second (document/citations text []))]
     (is (= 1 (count urls)) "Citations did not extract URL")))
 
+(deftest the-document-citations-handle-parentheses-in-links
+  (let [rng (gen/ids 18045)
+        head (gen/cyrillic rng 4)
+        host (gen/ascii rng 6)
+        left (gen/cyrillic rng 5)
+        right (gen/cyrillic rng 5)
+        tail (gen/cyrillic rng 4)
+        link (str "https://"
+                  host
+                  ".org/wiki/"
+                  head
+                  "_("
+                  left
+                  "-"
+                  right
+                  ")/"
+                  tail
+                  "_"
+                  left
+                  "_"
+                  right)
+        text (str head " [[1]](" link ")")
+        data (document/citations text [])
+        item (first data)
+        pool (nth data 2)
+        href (str "<a href=\""
+                  link
+                  "\" class=\"cite\" target=\"_blank\">[1]</a>")
+        seen (and (str/includes? item "@@CITE")
+                  (some #(str/includes? % href) (vals pool)))]
+    (is seen "Citations did not preserve parentheses link")))
+
 (deftest the-document-render-avoids-italic-leak-after-snake-case
   (let [rng (gen/ids 18042)
         head (gen/cyrillic rng 5)
