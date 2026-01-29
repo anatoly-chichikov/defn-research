@@ -1,10 +1,12 @@
 (ns research.main-test
-  (:require [clojure.test :refer [deftest is]]
+  (:require [clojure.edn :as edn]
+            [clojure.test :refer [deftest is]]
             [jsonista.core :as json]
             [research.api.parallel :as parallel]
             [research.api.research :as research]
             [research.api.response :as response]
             [research.api.valyu :as valyu]
+            [research.domain.pending :as pending]
             [research.domain.session :as session]
             [research.image.generator :as image]
             [research.main :as main]
@@ -290,7 +292,64 @@
                 (json/object-mapper {:decode-key-fn keyword}))]
       (is (= raw data) "Raw response did not match stored response"))))
 
-(deftest the-application-saves-input-markdown
+(deftest the-application-continues-after-cover-failure
+  (let [rng (gen/ids 25008)
+        topic (gen/cyrillic rng 6)
+        query (gen/greek rng 7)
+        processor (gen/armenian rng 5)
+        language (gen/hiragana rng 4)
+        provider (gen/cyrillic rng 5)
+        run (gen/arabic rng 8)
+        text (gen/cyrillic rng 12)
+        stamp (session/format (session/now))
+        ident (gen/uuid rng)
+        entry {:run_id run
+               :query query
+               :processor processor
+               :language language
+               :provider provider}
+        sess (session/session {:id ident
+                               :topic topic
+                               :tasks []
+                               :created stamp
+                               :pending entry})
+        root (Files/createTempDirectory "app"
+                                        (make-array FileAttribute 0))
+        out (.resolve root "output")
+        _ (Files/createDirectories out (make-array FileAttribute 0))
+        store (repo/repo out)
+        _ (repo/save store [sess])
+        reply (response/response {:id run
+                                  :status "completed"
+                                  :output text
+                                  :basis []
+                                  :raw {}})
+        fake (reify research/Researchable
+               (start [_ _ _] run)
+               (stream [_ _] true)
+               (finish [_ _] reply))
+        app (main/app root)
+        token (subs ident 0 8)
+        org (organizer/organizer out)
+        name (organizer/name
+              org
+              (session/created sess)
+              (session/topic sess)
+              (session/id sess))
+        path (organizer/report org name provider)
+        boom (ex-info "Cover generation failed model=none status=none" {})]
+    (with-redefs [parallel/parallel (fn [] fake)
+                  main/env (fn [key]
+                             (if (= key "GEMINI_API_KEY")
+                               (gen/latin rng 6)
+                               ""))
+                  image/generator (fn [] nil)
+                  image/generate (fn [_ _ _] (throw boom))]
+      (main/research app token query processor language provider))
+    (is (Files/exists path (make-array java.nio.file.LinkOption 0))
+        "Report was not generated after cover failure")))
+
+(deftest the-application-saves-brief-in-session
   (let [rng (gen/ids 25009)
         topic (gen/cyrillic rng 6)
         query (str (gen/cyrillic rng 5) "\n\n" (gen/greek rng 7))
@@ -333,20 +392,23 @@
                 (session/created sess)
                 (session/topic sess)
                 (session/id sess))
-          tag (organizer/slug provider)
-          tag (if (empty? tag) "provider" tag)
           folder (organizer/folder org name provider)
-          path (.resolve folder (str "input-" tag ".md"))
-          data (slurp (.toFile path) :encoding "UTF-8")]
-      (is (= query data) "Input markdown was not saved"))))
+          path (.resolve folder "session.edn")
+          data (edn/read-string (slurp (.toFile path) :encoding "UTF-8"))
+          brief (get-in data [:tasks 0 :brief])
+          seen (and (contains? brief :topic)
+                    (contains? brief :items)
+                    (not (contains? brief :text)))]
+      (is seen "Brief was not stored in session edn"))))
 
 (deftest ^:integration the-application-generates-pdf-screenshots
   (let [rng (gen/ids 25011)
         lang (gen/cyrillic rng 6)
         head (gen/ascii rng 6)
         base (Paths/get "baseline-research" (make-array String 0))
-        input (slurp (.toFile (.resolve base "input-parallel.md"))
-                     :encoding "UTF-8")
+        brief (edn/read-string
+               (slurp (.toFile (.resolve base "brief-parallel.edn"))
+                      :encoding "UTF-8"))
         raw (json/read-value
              (.toFile (.resolve base "response-parallel.json"))
              (json/object-mapper {:decode-key-fn keyword}))
@@ -365,6 +427,12 @@
                                :created stamp})
         _ (repo/save repo [sess])
         run (gen/ascii rng 8)
+        query (pending/query
+               (pending/pending {:run_id run
+                                 :brief brief
+                                 :processor "pro"
+                                 :language lang
+                                 :provider "parallel"}))
         fake (reify research/Researchable
                (start [_ _ _] run)
                (stream [_ _] true)
@@ -402,7 +470,7 @@
                                     target
                                     (make-array java.nio.file.CopyOption 0)))]
       (binding [*out* (StringWriter.) *err* (StringWriter.)]
-        (main/research app (subs ident 0 8) input "pro" lang "parallel")))
+        (main/research app (subs ident 0 8) query "pro" lang "parallel")))
     (Files/createDirectories left (make-array FileAttribute 0))
     (Files/createDirectories right (make-array FileAttribute 0))
     (let [lefts (screens gold left 150)

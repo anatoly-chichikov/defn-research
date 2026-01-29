@@ -5,6 +5,7 @@
             [research.domain.session :as session]
             [research.domain.task :as task]
             [research.pdf.document :as document]
+            [research.pdf.document.text :as text]
             [research.pdf.palette :as palette]
             [research.pdf.style :as style]
             [research.storage.organizer :as organizer]
@@ -47,6 +48,78 @@
         value (document/heading text)]
     (is (= goal value)
         "Heading did not uppercase initial letter")))
+
+(deftest the-document-presentation-decodes-percent
+  (let [rng (gen/ids 18021)
+        host (gen/ascii rng 6)
+        lead (gen/cyrillic rng 4)
+        tail (gen/greek rng 3)
+        plain (str lead "+" tail)
+        code (java.net.URLEncoder/encode plain "UTF-8")
+        url (str "https://" host ".com/" code)
+        view (text/presentation url)
+        goal (str "https://" host ".com/" plain)]
+    (is (= goal view)
+        "Decoded url was incorrect")))
+
+(deftest the-document-tablerows-removes-blank-line
+  (let [rng (gen/ids 18023)
+        alpha (gen/greek rng 4)
+        beta (gen/armenian rng 4)
+        gamma (gen/arabic rng 4)
+        delta (gen/hebrew rng 4)
+        head (str "| " alpha " | " beta " |")
+        rule "| --- | --- |"
+        row (str "| " gamma " | " delta " |")
+        tail (str "| " delta " | " gamma " |")
+        text (str head "\n" rule "\n" row "\n\n" tail)
+        goal (str head "\n" rule "\n" row "\n" tail)
+        view (text/tablerows text)]
+    (is (= goal view)
+        "Table rows were not normalized")))
+
+(deftest the-document-tablecite-moves-citations
+  (let [rng (gen/ids 18024)
+        head (gen/greek rng 4)
+        tail (gen/armenian rng 4)
+        link (str "https://example.com/" (gen/uuid rng))
+        text (str "| " head " | " tail " |\n"
+                  "|---|---|\n"
+                  "| " tail " | 21 |[[1]](" link ")")
+        goal (str "| " head " | " tail " |\n"
+                  "|---|---|\n"
+                  "| " tail " | 21 [[1]](" link ") |")
+        view (text/tablecite text)]
+    (is (= goal view)
+        "Table citations were not moved into last cell")))
+
+(deftest the-document-tablepipe-adds-trailing-pipe
+  (let [rng (gen/ids 18025)
+        head (gen/greek rng 4)
+        tail (gen/armenian rng 4)
+        text (str "| " head " | " tail " |\n"
+                  "|---|---|\n"
+                  "| " tail " | " head)
+        goal (str "| " head " | " tail " |\n"
+                  "|---|---|\n"
+                  "| " tail " | " head " |")
+        view (text/tablepipe text)]
+    (is (= goal view)
+        "Table rows were not terminated with pipe")))
+
+(deftest the-document-tablelead-strips-list-marker
+  (let [rng (gen/ids 18027)
+        head (gen/greek rng 4)
+        tail (gen/armenian rng 4)
+        text (str "- | " head " | " tail " |\n"
+                  "|---|---|\n"
+                  "| " tail " | " head " |")
+        goal (str "| " head " | " tail " |\n"
+                  "|---|---|\n"
+                  "| " tail " | " head " |")
+        view (text/tablelead text)]
+    (is (= goal view)
+        "Table lead marker was not removed")))
 
 (deftest the-document-renders-exploration-brief-title
   (let [rng (gen/ids 18005)
@@ -105,7 +178,7 @@
         name (gen/cyrillic rng 6)
         service (gen/hiragana rng 4)
         value (gen/greek rng 5)
-        result (result/->Result value [])
+        result (result/->ResearchReport value [])
         task (task/task {:query value
                          :status "completed"
                          :result (result/data result)
@@ -127,7 +200,7 @@
         name (gen/cyrillic rng 6)
         service "parallel.ai"
         value (gen/greek rng 5)
-        result (result/->Result value [])
+        result (result/->ResearchReport value [])
         task (task/task {:query value
                          :status "completed"
                          :result (result/data result)
@@ -148,7 +221,7 @@
   (let [rng (gen/ids 18013)
         name (gen/cyrillic rng 6)
         value (gen/greek rng 5)
-        result (result/->Result value [])
+        result (result/->ResearchReport value [])
         task (task/task {:query value
                          :status "completed"
                          :result (result/data result)
@@ -170,7 +243,7 @@
   (let [rng (gen/ids 18015)
         name (gen/cyrillic rng 6)
         value (gen/greek rng 5)
-        result (result/->Result value [])
+        result (result/->ResearchReport value [])
         task (task/task {:query value
                          :status "completed"
                          :result (result/data result)
@@ -191,7 +264,7 @@
   (let [rng (gen/ids 18017)
         service (gen/hiragana rng 4)
         value (gen/greek rng 5)
-        result (result/->Result value [])
+        result (result/->ResearchReport value [])
         task (task/task {:query value
                          :status "completed"
                          :result (result/data result)
@@ -220,9 +293,9 @@
         "Normalized text did not insert blank line before hyphen list")))
 
 (deftest the-document-normalize-converts-escaped-newlines
-  (let [text "Язык\\nответа"
+  (let [text "Language\\nresponse"
         result (document/normalize text)]
-    (is (= "Язык\nответа" result)
+    (is (= "Language\nresponse" result)
         "Escaped newlines were not converted")))
 
 (deftest the-document-wraps-emoji-characters
@@ -304,7 +377,7 @@
         right (gen/greek rng 4)
         path (str "C:\\" left "\\" mid "\\" right ".exe")
         text (str head " `" path "`")
-        result (result/->Result text [])
+        result (result/->ResearchReport text [])
         task (task/task {:query head
                          :status "completed"
                          :result (result/data result)
@@ -346,7 +419,7 @@
         rows (str "| " head " | " left " |\n"
                   "|---|---|\n"
                   "| " right " (" stars ") | " head " |")
-        result (result/->Result rows [])
+        result (result/->ResearchReport rows [])
         task (task/task {:query head
                          :status "completed"
                          :result (result/data result)
@@ -384,14 +457,13 @@
                                :url link
                                :excerpt excerpt
                                :confidence "Unknown"})
-        result (result/->Result head [source])
-        task (task/task {:query head
-                         :status "completed"
-                         :result (result/data result)
-                         :language head
-                         :service "valyu.ai"
-                         :created time})
-        entry (task/data task)
+        result (result/->ResearchReport head [source])
+        entry {:query head
+               :status "completed"
+               :result (result/data result)
+               :language head
+               :service "valyu.ai"
+               :created time}
         item (session/session {:topic head
                                :tasks [entry]
                                :created time})
@@ -432,12 +504,11 @@
 (deftest the-document-render-contains-synthesis
   (let [rng (gen/ids 18023)
         summary (gen/hiragana rng 6)
-        result (result/->Result summary [])
-        task (task/task {:query "q"
-                         :status "completed"
-                         :result (result/data result)
-                         :created (task/format (task/now))})
-        entry (task/data task)
+        result (result/->ResearchReport summary [])
+        entry {:query "q"
+               :status "completed"
+               :result (result/data result)
+               :created (task/format (task/now))}
         item (session/session {:topic "T"
                                :tasks [entry]
                                :created (session/format (session/now))})
@@ -500,9 +571,9 @@
         url (str "https://example.com/"
                  (.nextInt rng 1000)
                  "?utm_source=valyu.ai&utm_medium=referral")
-        source (result/->Source text url text "High")
+        source (result/->CitationSource text url text "High")
         summary (str text "\n\n## References\n1. " url)
-        result (result/->Result summary [source])
+        result (result/->ResearchReport summary [source])
         task (task/task {:query text
                          :status "completed"
                          :result (result/data result)
@@ -522,14 +593,13 @@
         head (gen/cyrillic rng 6)
         note (gen/cyrillic rng 6)
         link (str "https://example.com/" (.nextInt rng 1000))
-        source (result/->Source head link note "High")
-        value (result/->Result head [source])
-        task (task/task {:query head
-                         :status "completed"
-                         :result (result/data value)
-                         :service "valyu.ai"
-                         :created (task/format (task/now))})
-        entry (task/data task)
+        source (result/->CitationSource head link note "High")
+        value (result/->ResearchReport head [source])
+        entry {:query head
+               :status "completed"
+               :result (result/data value)
+               :service "valyu.ai"
+               :created (task/format (task/now))}
         item (session/session {:topic head
                                :tasks [entry]
                                :created (session/format (session/now))})
@@ -546,14 +616,13 @@
         link (str "https://" host "/" (gen/ascii rng 5))
         head (gen/cyrillic rng 6)
         mark (gen/cyrillic rng 6)
-        source (result/->Source "Fetched web page" link "" "High")
-        value (result/->Result head [source])
-        task (task/task {:query mark
-                         :status "completed"
-                         :result (result/data value)
-                         :service "parallel.ai"
-                         :created (task/format (task/now))})
-        entry (task/data task)
+        source (result/->CitationSource "Fetched web page" link "" "High")
+        value (result/->ResearchReport head [source])
+        entry {:query mark
+               :status "completed"
+               :result (result/data value)
+               :service "parallel.ai"
+               :created (task/format (task/now))}
         item (session/session {:topic mark
                                :tasks [entry]
                                :created (session/format (session/now))})
@@ -588,7 +657,7 @@
                   "?utm_source=valyu.ai&utm_medium=referral&x="
                   (.nextInt rng 9))
         summary (str "Sources\n1. " link "\n2. " slug)
-        result (result/->Result summary [])
+        result (result/->ResearchReport summary [])
         task (task/task {:query slug
                          :status "completed"
                          :result (result/data result)
@@ -726,6 +795,38 @@
         urls (second (document/citations text []))]
     (is (= 1 (count urls)) "Citations did not extract URL")))
 
+(deftest the-document-citations-handle-parentheses-in-links
+  (let [rng (gen/ids 18045)
+        head (gen/cyrillic rng 4)
+        host (gen/ascii rng 6)
+        left (gen/cyrillic rng 5)
+        right (gen/cyrillic rng 5)
+        tail (gen/cyrillic rng 4)
+        link (str "https://"
+                  host
+                  ".org/wiki/"
+                  head
+                  "_("
+                  left
+                  "-"
+                  right
+                  ")/"
+                  tail
+                  "_"
+                  left
+                  "_"
+                  right)
+        text (str head " [[1]](" link ")")
+        data (document/citations text [])
+        item (first data)
+        pool (nth data 2)
+        href (str "<a href=\""
+                  link
+                  "\" class=\"cite\" target=\"_blank\">[1]</a>")
+        seen (and (str/includes? item "@@CITE")
+                  (some #(str/includes? % href) (vals pool)))]
+    (is seen "Citations did not preserve parentheses link")))
+
 (deftest the-document-render-avoids-italic-leak-after-snake-case
   (let [rng (gen/ids 18042)
         head (gen/cyrillic rng 5)
@@ -739,12 +840,11 @@
                   left
                   " "
                   link)
-        value (result/->Result text [])
-        task (task/task {:query head
-                         :status "completed"
-                         :result (result/data value)
-                         :created (task/format (task/now))})
-        entry (task/data task)
+        value (result/->ResearchReport text [])
+        entry {:query head
+               :status "completed"
+               :result (result/data value)
+               :created (task/format (task/now))}
         item (session/session {:topic head
                                :tasks [entry]
                                :created (session/format (session/now))})
@@ -765,33 +865,19 @@
         refs (document/references text)]
     (is (= 2 (count refs)) "References did not extract all entries")))
 
-(deftest the-document-path-returns-session-based-path
+(deftest the-document-brief-uses-pending-when-no-tasks
   (let [rng (gen/ids 18045)
-        ident (gen/uuid rng)
-        short (first (str/split ident #"-"))
-        item (session/session {:id ident
-                               :topic "T"
-                               :tasks []
-                               :created (session/format (session/now))})
-        root (Paths/get "output" (make-array String 0))
-        doc (document/document item (palette/palette) (Optional/empty) root)
-        path (document/briefpath doc)
-        text (str path)
-        seen (and (str/includes? text short)
-                  (str/includes? text "output")
-                  (or (str/includes? text "input-")
-                      (str/includes? text "brief-")))]
-    (is seen "Path did not target output brief or input file")))
-
-(deftest ^{:doc "Uses pending provider for brief path"}
-  the-document-briefpath-uses-pending-provider
-  (let [rng (gen/ids 18046)
         mark (gen/cyrillic rng 6)
-        entry {:run_id (gen/uuid rng)
-               :query mark
-               :processor "pro"
-               :language mark
-               :provider "valyu"}
+        run (gen/uuid rng)
+        processor (gen/greek rng 6)
+        language (gen/cyrillic rng 6)
+        provider (gen/cyrillic rng 6)
+        query (str "調査-" mark "\n1. " (gen/greek rng 4))
+        entry {:run_id run
+               :query query
+               :processor processor
+               :language language
+               :provider provider}
         item (session/session {:id (gen/uuid rng)
                                :topic mark
                                :tasks []
@@ -799,40 +885,45 @@
                                :pending entry})
         root (Paths/get "output" (make-array String 0))
         doc (document/document item (palette/palette) (Optional/empty) root)
-        path (document/briefpath doc)
-        seen (str/includes? (str path) "input-valyu.md")]
-    (is seen "Brief path did not use pending provider")))
+        html (document/brief doc)]
+    (is (str/includes? html mark) "Brief did not use pending query")))
 
-(deftest the-document-brief-reads-from-file
-  (let [rng (gen/ids 18047)
-        ident (gen/uuid rng)
-        mark (str "マーカー-" (gen/uuid rng))
-        path (.resolve (Files/createTempDirectory
-                        "brief"
-                        (make-array FileAttribute 0))
-                       (str ident ".md"))
-        _ (spit (.toFile path) mark :encoding "UTF-8")
-        task (task/task {:query "fallback"
-                         :status "completed"
-                         :result nil
-                         :created (task/format (task/now))})
+(deftest the-document-brief-uses-task-when-present
+  (let [rng (gen/ids 18046)
+        day (inc (.nextInt rng 8))
+        hour (inc (.nextInt rng 8))
+        time (str "2026-01-0" day "T0" hour ":00:00")
+        mark (gen/uuid rng)
+        query (str "調査-" mark "\n1. " (gen/greek rng 4))
+        status (gen/cyrillic rng 6)
+        language (gen/cyrillic rng 6)
+        service (gen/cyrillic rng 6)
+        task (task/task {:query query
+                         :status status
+                         :language language
+                         :service service
+                         :created time})
         entry (task/data task)
-        item (session/session {:id ident
-                               :topic "T"
+        hold {:run_id (gen/uuid rng)
+              :query (gen/hiragana rng 6)
+              :processor (gen/greek rng 6)
+              :language (gen/cyrillic rng 6)
+              :provider (gen/cyrillic rng 6)}
+        item (session/session {:topic (gen/cyrillic rng 5)
                                :tasks [entry]
-                               :created (session/format (session/now))})
+                               :created time
+                               :pending hold})
         root (Paths/get "output" (make-array String 0))
         doc (document/document item (palette/palette) (Optional/empty) root)
-        html (with-redefs [document/briefpath (fn [_] (.toFile path))]
-               (document/brief doc))]
-    (is (str/includes? html mark) "Brief did not read from file")))
+        html (document/brief doc)]
+    (is (str/includes? html mark) "Brief did not use task query")))
 
-(deftest the-document-brief-falls-back-to-query
+(deftest the-document-brief-falls-back-to-topic
   (let [rng (gen/ids 18049)
         day (inc (.nextInt rng 8))
         hour (inc (.nextInt rng 8))
         time (str "2026-01-0" day "T0" hour ":00:00")
-        mark (str "クエリ-" (gen/uuid rng))
+        mark (str "トピック-" (gen/uuid rng))
         status (gen/cyrillic rng 6)
         language (gen/cyrillic rng 6)
         service (gen/cyrillic rng 6)
@@ -849,7 +940,7 @@
         root (Paths/get "output" (make-array String 0))
         doc (document/document item (palette/palette) (Optional/empty) root)
         html (document/brief doc)]
-    (is (str/includes? html mark) "Brief did not fall back to query")))
+    (is (str/includes? html mark) "Brief did not fall back to topic")))
 
 (deftest the-document-nested-converts-single-space-indent
   (let [rng (gen/ids 18051)
@@ -880,12 +971,12 @@
         text (str "- *"
                   mark
                   " **to be fed*** — "
-                  "Ребёнка нужно покормить")
+                  "Το παιδί χρειάζεται φαγητό")
         item (document/underscorify text)
         goal (str "- _"
                   mark
                   " **to be fed**_ — "
-                  "Ребёнка нужно покормить")]
+                  "Το παιδί χρειάζεται φαγητό")]
     (is (= goal item)
         "underscorify failed to rewrite nested bold in bullet")))
 (deftest ^{:doc (str "underscorify rewrites nested bold at end of italic "
@@ -906,11 +997,11 @@
   the-document-underscorify-does-not-touch-bold-heading
   (let [rng (gen/ids 18065)
         mark (gen/uuid rng)
-        text (str "**Заголовок-"
+        text (str "**Título-"
                   mark
                   "** — *The report **has been being written***")
         item (document/underscorify text)
-        goal (str "**Заголовок-"
+        goal (str "**Título-"
                   mark
                   "** — _The report **has been being written**_")]
     (is (= goal item)
@@ -1012,7 +1103,7 @@
         head (gen/cyrillic rng 6)
         note (gen/greek rng 5)
         url (str "https://example.com/" (.nextInt rng 1000))
-        text (str head "\n\n## Sources\n1. " url "\n\n## Далее\n" note)
+        text (str head "\n\n## Sources\n1. " url "\n\n## Next\n" note)
         item (document/strip text)]
     (is (str/includes? item "Sources")
         "Sources section was removed before end")))

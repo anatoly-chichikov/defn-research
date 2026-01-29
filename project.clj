@@ -9,7 +9,8 @@
                  [com.twelvemonkeys.imageio/imageio-jpeg "3.12.0"]
                  [com.google.genai/google-genai "1.32.0"]
                  [org.clojure/tools.cli "1.2.245"]
-                 [org.slf4j/slf4j-nop "2.0.16"]]
+                 [org.slf4j/slf4j-nop "2.0.16"]
+                 [clj-python/libpython-clj "2.026"]]
   :main research.main
   :resource-paths ["resources"]
   :profiles {:dev {:dependencies [[clj-kondo/clj-kondo "2025.10.23"]

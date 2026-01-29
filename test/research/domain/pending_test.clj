@@ -1,12 +1,15 @@
 (ns research.domain.pending-test
-  (:require [clojure.test :refer [deftest is]]
+  (:require [clojure.string :as str]
+            [clojure.test :refer [deftest is]]
             [research.domain.pending :as pending]
             [research.test.ids :as gen]))
 
 (deftest the-pending-returns-identifier
   (let [rng (gen/ids 13001)
         run (gen/cyrillic rng 6)
-        query (gen/hiragana rng 6)
+        query (str (gen/hiragana rng 6)
+                   "\n\nResearch:\n1. "
+                   (gen/greek rng 4))
         processor (gen/greek rng 6)
         language (gen/cyrillic rng 6)
         provider (gen/cyrillic rng 6)
@@ -21,7 +24,9 @@
 (deftest the-pending-returns-query
   (let [rng (gen/ids 13003)
         run (gen/cyrillic rng 6)
-        query (gen/hiragana rng 6)
+        query (str (gen/hiragana rng 6)
+                   "\n\nResearch:\n1. "
+                   (gen/greek rng 4))
         processor (gen/greek rng 6)
         language (gen/cyrillic rng 6)
         provider (gen/cyrillic rng 6)
@@ -29,14 +34,18 @@
                                :query query
                                :processor processor
                                :language language
-                               :provider provider})]
-    (is (= query (pending/query item))
-        "Pending query did not match provided value")))
+                               :provider provider})
+        text (pending/query item)
+        ok (and (str/includes? text language)
+                (str/ends-with? text query))]
+    (is ok "Pending query did not include language and query")))
 
 (deftest the-pending-returns-processor
   (let [rng (gen/ids 13005)
         run (gen/cyrillic rng 6)
-        query (gen/hiragana rng 6)
+        query (str (gen/hiragana rng 6)
+                   "\n\nResearch:\n1. "
+                   (gen/greek rng 4))
         processor (gen/greek rng 6)
         language (gen/cyrillic rng 6)
         provider (gen/cyrillic rng 6)
@@ -51,7 +60,9 @@
 (deftest the-pending-returns-language
   (let [rng (gen/ids 13007)
         run (gen/cyrillic rng 6)
-        query (gen/hiragana rng 6)
+        query (str (gen/hiragana rng 6)
+                   "\n\nResearch:\n1. "
+                   (gen/greek rng 4))
         processor (gen/greek rng 6)
         language (gen/cyrillic rng 6)
         provider (gen/cyrillic rng 6)
@@ -66,7 +77,9 @@
 (deftest the-pending-serializes-correctly
   (let [rng (gen/ids 13009)
         run (gen/cyrillic rng 6)
-        query (gen/hiragana rng 6)
+        query (str (gen/hiragana rng 6)
+                   "\n\nResearch:\n1. "
+                   (gen/greek rng 4))
         processor (gen/greek rng 6)
         language (gen/cyrillic rng 6)
         provider (gen/cyrillic rng 6)
@@ -75,12 +88,21 @@
                                :processor processor
                                :language language
                                :provider provider})
-        data (pending/data item)]
+        data (pending/data item)
+        brief (:brief data)
+        items (:items brief)
+        node (first items)]
     (is (and (contains? data :run_id)
              (contains? data :processor)
              (contains? data :language)
+             (contains? data :brief)
+             (contains? brief :topic)
+             (contains? brief :items)
+             (contains? node :text)
+             (contains? node :items)
+             (not (contains? brief :text))
              (not (contains? data :query)))
-        "Pending serialize included query")))
+        "Pending serialize did not include brief or still included query")))
 
 (deftest the-pending-deserializes-correctly
   (let [rng (gen/ids 13011)

@@ -37,6 +37,7 @@ After language selected — switch all follow-up questions to that language.
 ask provider Which data provider?
   - parallel (cheaper and faster)
   - valyu (more thorough, premium result)
+  - xai (social sources)
   - all (run parallel then valyu)
 
 ask processor What compute level? (
@@ -44,10 +45,12 @@ ask processor What compute level? (
     - pro
     - ultra
     - ultra8x
-  - valyu: 
+  - valyu:
     - fast
     - standard
     - heavy
+
+For xai, there are no extra parameters. Use a fixed 365-day window and do not ask for a processor. Set processor to `year` in the run command.
 
 ask topic — minimum 3 questions, up to 5 (in selected language):
   - Scope: narrow vs broad? specific case or general overview?
@@ -62,7 +65,7 @@ do Surface blind spots and non-obvious angles through questions
 
 If user asks for two runs at once:
 - ask the same questions twice, explicitly for run A then run B (no multi-select)
-- collect params for run A and run B (topic, language, provider, processor)
+- collect params for run A and run B (topic, language, provider, processor when applicable)
 - start two docker containers (different names) and report both
 
 brief format:
@@ -204,6 +207,7 @@ Tip: add `-fast` for speed (pro-fast, ultra-fast)
 ```bash
 export PARALLEL_API_KEY="..."
 export VALYU_API_KEY="..."
+export XAI_API_KEY="..."
 export GEMINI_API_KEY="..."
 export REPORT_FOR="..."
 ```

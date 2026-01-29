@@ -69,11 +69,17 @@
                                     :timeout 60000
                                     :as :text})
           status (:status response)
-          raw (if (< status 300)
+          raw (if (and status (< status 300))
                 (json/read-value
                  (:body response)
                  (json/object-mapper {:decode-key-fn keyword}))
-                (throw (ex-info "Gemini image failed" {:status status})))
+                (throw (ex-info
+                        (str "Gemini image failed model="
+                             model
+                             " status="
+                             (or status "none"))
+                        {:status status
+                         :model model})))
           value (image raw)]
       (if (zero? (alength value))
         (throw (ex-info "Gemini image missing" {}))

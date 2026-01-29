@@ -109,7 +109,7 @@
           language (gen/cyrillic rng 5)
           service (gen/cyrillic rng 4)
           summary (gen/cyrillic rng 6)
-          value (result/->Result summary [])
+          value (result/->ResearchReport summary [])
           task (task/task {:id (gen/uuid rng)
                            :query query
                            :status status
@@ -135,10 +135,7 @@
         path (.resolve root name)
         _ (Files/createDirectories path (make-array FileAttribute 0))
         tag (gen/ascii rng 4)
-        text (str "данные-" (gen/uuid rng))
-        input (.resolve path (str "input-" tag ".md"))
         response (.resolve path (str "response-" tag ".json"))
-        _ (spit (.toFile input) text :encoding "UTF-8")
         _ (spit (.toFile response) "{}" :encoding "UTF-8")
         repo (repo/repo root)
         _ (repo/load repo)
@@ -159,13 +156,8 @@
         _ (Files/createDirectories path (make-array FileAttribute 0))
         alpha (gen/ascii rng 4)
         beta (gen/ascii rng 4)
-        text (str "데이터-" (gen/uuid rng))
-        input (.resolve path (str "input-" alpha ".md"))
-        note (.resolve path (str "input-" beta ".md"))
         left (.resolve path (str "response-" alpha ".json"))
         right (.resolve path (str "response-" beta ".json"))
-        _ (spit (.toFile input) text :encoding "UTF-8")
-        _ (spit (.toFile note) text :encoding "UTF-8")
         _ (spit (.toFile left) "{}" :encoding "UTF-8")
         _ (spit (.toFile right) "{}" :encoding "UTF-8")
         repo (repo/repo root)
@@ -187,15 +179,15 @@
         _ (Files/createDirectories path (make-array FileAttribute 0))
         tag (gen/ascii rng 4)
         note (gen/cyrillic rng 6)
-        input (.resolve path (str "input-" tag ".md"))
-        _ (spit (.toFile input) note :encoding "UTF-8")
         time (str date "T00:00:00")
         task {:id (gen/uuid rng)
               :query (gen/cyrillic rng 6)
               :status (gen/greek rng 6)
               :language (gen/cyrillic rng 5)
               :service tag
-              :created time}
+              :created time
+              :result {:summary note
+                       :sources []}}
         hold {:run_id (gen/uuid rng)
               :query (gen/cyrillic rng 6)
               :processor (gen/greek rng 6)
@@ -211,5 +203,7 @@
         repo (repo/repo root)
         _ (repo/load repo)
         body (slurp (.toFile file) :encoding "UTF-8")
-        flag (not (re-find #":query" body))]
-    (is flag "Session edn still included query")))
+        flag (and (not (re-find #":query" body))
+                  (not (re-find #":result" body))
+                  (re-find #":brief" body))]
+    (is flag "Session edn still included query or result or missed brief")))

@@ -1,5 +1,6 @@
 (ns research.domain.task-test
-  (:require [clojure.test :refer [deftest is]]
+  (:require [clojure.string :as str]
+            [clojure.test :refer [deftest is]]
             [research.domain.result :as result]
             [research.domain.task :as task]
             [research.test.ids :as gen]))
@@ -14,7 +15,7 @@
         language (gen/cyrillic rng 5)
         service (gen/cyrillic rng 4)
         summary (gen/cyrillic rng 6)
-        value (result/->Result summary [])
+        value (result/->ResearchReport summary [])
         item (task/task {:query query
                          :status status
                          :language language
@@ -34,16 +35,18 @@
         language (gen/cyrillic rng 5)
         service (gen/cyrillic rng 4)
         summary (gen/cyrillic rng 6)
-        value (result/->Result summary [])
+        value (result/->ResearchReport summary [])
         item (task/task {:id (gen/uuid rng)
                          :query query
                          :status status
                          :language language
                          :service service
                          :result (result/data value)
-                         :created time})]
-    (is (= query (task/query item))
-        "Task query did not match provided value")))
+                         :created time})
+        text (task/query item)
+        ok (and (str/includes? text language)
+                (str/ends-with? text query))]
+    (is ok "Task query did not include language and query")))
 
 (deftest the-task-returns-provided-status
   (let [rng (gen/ids 11005)
@@ -55,7 +58,7 @@
         language (gen/cyrillic rng 5)
         service (gen/cyrillic rng 4)
         summary (gen/cyrillic rng 6)
-        value (result/->Result summary [])
+        value (result/->ResearchReport summary [])
         item (task/task {:id (gen/uuid rng)
                          :query query
                          :status status
@@ -76,7 +79,7 @@
         language (gen/cyrillic rng 5)
         service (gen/cyrillic rng 4)
         summary (gen/cyrillic rng 5)
-        value (result/->Result summary [])
+        value (result/->ResearchReport summary [])
         item (task/task {:id (gen/uuid rng)
                          :query query
                          :status status
@@ -98,7 +101,7 @@
         language (gen/cyrillic rng 5)
         service (gen/cyrillic rng 4)
         summary (gen/cyrillic rng 6)
-        value (result/->Result summary [])
+        value (result/->ResearchReport summary [])
         item (task/task {:id (gen/uuid rng)
                          :query query
                          :status status
@@ -120,7 +123,7 @@
         language (gen/cyrillic rng 5)
         service (gen/cyrillic rng 4)
         summary (gen/cyrillic rng 6)
-        value (result/->Result summary [])
+        value (result/->ResearchReport summary [])
         item (task/task {:id (gen/uuid rng)
                          :query query
                          :status status
@@ -137,22 +140,75 @@
         day (inc (.nextInt rng 8))
         hour (inc (.nextInt rng 8))
         time (str "2026-01-0" day "T0" hour ":00:00")
-        query (gen/hiragana rng 6)
+        query (str (gen/hiragana rng 6)
+                   "\n\nResearch:\n1. "
+                   (gen/greek rng 4))
         status (gen/cyrillic rng 6)
+        processor (gen/greek rng 6)
         language (gen/cyrillic rng 5)
         service (gen/cyrillic rng 4)
         summary (gen/cyrillic rng 6)
-        value (result/->Result summary [])
+        value (result/->ResearchReport summary [])
         item (task/task {:id (gen/uuid rng)
                          :query query
                          :status status
                          :language language
                          :service service
+                         :processor processor
                          :result (result/data value)
                          :created time})
-        data (task/data item)]
-    (is (not (contains? data :query))
-        "Serialized task still included query")))
+        data (task/data item)
+        brief (:brief data)
+        items (:items brief)
+        node (first items)]
+    (is (and (contains? data :brief)
+             (contains? brief :topic)
+             (contains? brief :items)
+             (= processor (:processor data))
+             (contains? node :text)
+             (contains? node :items)
+             (not (contains? brief :text))
+             (not (contains? data :query))
+             (not (contains? data :result)))
+        (str
+         "Serialized task did not include brief or still included "
+         "query or result"))))
+
+(deftest ^{:doc "Ensure task renders nested brief items."}
+  the-task-renders-nested-brief-items
+  (let [rng (gen/ids 11017)
+        day (inc (.nextInt rng 8))
+        hour (inc (.nextInt rng 8))
+        time (str "2026-01-0" day "T0" hour ":00:00")
+        topic (gen/cyrillic rng 6)
+        first (gen/greek rng 5)
+        inner (gen/armenian rng 5)
+        second (gen/hiragana rng 5)
+        status (gen/greek rng 6)
+        language (gen/cyrillic rng 5)
+        service (gen/cyrillic rng 4)
+        summary (gen/cyrillic rng 6)
+        value (result/->ResearchReport summary [])
+        brief {:topic topic
+               :items [{:text first
+                        :items [{:text inner
+                                 :items []}]}
+                       {:text second
+                        :items []}]}
+        item (task/task {:id (gen/uuid rng)
+                         :brief brief
+                         :status status
+                         :language language
+                         :service service
+                         :result (result/data value)
+                         :created time})
+        text (task/query item)
+        ok (and (str/includes? text language)
+                (str/includes? text topic)
+                (str/includes? text first)
+                (str/includes? text inner)
+                (str/includes? text second))]
+    (is ok "Nested brief was not rendered")))
 
 (deftest the-task-deserializes-correctly
   (let [rng (gen/ids 11015)
@@ -164,7 +220,7 @@
         language (gen/cyrillic rng 5)
         service (gen/cyrillic rng 4)
         summary (gen/cyrillic rng 6)
-        value (result/->Result summary [])
+        value (result/->ResearchReport summary [])
         data {:id (gen/uuid rng)
               :query query
               :status status
@@ -172,6 +228,8 @@
               :service service
               :result (result/data value)
               :created time}
-        item (task/task data)]
-    (is (= query (task/query item))
-        "Deserialized query did not match")))
+        item (task/task data)
+        text (task/query item)
+        ok (and (str/includes? text language)
+                (str/ends-with? text query))]
+    (is ok "Deserialized query did not include language and query")))
