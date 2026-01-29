@@ -139,7 +139,7 @@ Three deep research engines are available:
 | **Sources** | Open internet | Open internet + Academic & proprietary sources | Web + X tools |
 | **Strength** | Strategic synthesis, executive summaries | Data-rich analysis, better citations | Social-heavy coverage |
 | **Best for** | Business decisions, implementation planning | Academic research, evidence gathering | Social signals and discourse |
-| **Processors** | pro, ultra, ultra2x, ultra4x, ultra8x | fast, standard, heavy | 30, 90, 365 |
+| **Processors** | pro, ultra, ultra2x, ultra4x, ultra8x | fast, standard, heavy | not available |
 | **Speed** | 10-40 min | 30-90 min | 5-20 min |
 | **Price** | Affordable | Higher (~3-4x) | Varies |
 
