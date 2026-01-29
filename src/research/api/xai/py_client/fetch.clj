@@ -1,6 +1,5 @@
-(ns research.api.xai.bridge.fetch
+(ns research.api.xai.py-client.fetch
   (:require [clojure.string :as str]
-            [jsonista.core :as json]
             [libpython-clj2.python :as py]
             [research.api.xai.citations :as cite]))
 
@@ -19,18 +18,15 @@
      :size size
      :lines lines}))
 
+(defn- line
+  "Return log line for prompt."
+  [text]
+  (str "xai prompt " text))
+
 (defn fetch
   "Fetch response for prompt."
   [chat part core kit model turns tokens tags tools text]
-  (let [_ (println
-           (json/write-value-as-string
-            (note
-             model
-             turns
-             tokens
-             tags
-             tools
-             text)))
+  (let [_ (println (line text))
         message (py/call-attr chat "user" text)
         request (py/call-attr-kw
                  part

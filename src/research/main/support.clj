@@ -1,5 +1,6 @@
 (ns research.main.support
-  (:require [clojure.string :as str]
+  (:require [clojure.edn :as edn]
+            [clojure.string :as str]
             [org.httpkit.client :as http]
             [research.storage.organizer :as organizer])
   (:import (java.nio.file Files LinkOption)
@@ -11,9 +12,10 @@
   (System/getenv key))
 
 (defn store
-  "Store Valyu images for output folder."
+  "Store Valyu images or XAI prompts for output folder."
   [name provider data root]
-  (let [items (or (:images data) [])]
+  (let [items (or (:images data) [])
+        prompts (or (:prompts data) [])]
     (when (= provider "valyu")
       (let [org (organizer/organizer root)
             tag (organizer/slug provider)
@@ -46,4 +48,14 @@
                     (Files/write
                      file
                      (:body response)
-                     (make-array java.nio.file.OpenOption 0))))))))))))
+                     (make-array java.nio.file.OpenOption 0))))))))))
+    (when (and (= provider "xai") (seq prompts))
+      (let [org (organizer/organizer root)
+            tag (organizer/slug provider)
+            tag (if (str/blank? tag) "provider" tag)
+            folder (organizer/folder org name provider)
+            file (.resolve folder (str "prompts-" tag ".edn"))
+            list (mapv edn/read-string prompts)
+            text (pr-str list)
+            bytes (.getBytes text)]
+        (Files/write file bytes (make-array java.nio.file.OpenOption 0))))))

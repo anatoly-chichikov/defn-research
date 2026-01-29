@@ -3,10 +3,10 @@
             [clojure.string :as str]
             [research.api.research :as research]
             [research.api.response :as response]
-            [research.api.xai.bridge :as bridge]
             [research.api.xai.brief :as brief]
             [research.api.xai.cache :as cache]
-            [research.api.xai.citations :as cite])
+            [research.api.xai.citations :as cite]
+            [research.api.xai.py-client :as py-client])
   (:import (java.util UUID)))
 
 (defn window
@@ -38,7 +38,7 @@
           data (cache/load store id)
           text (:query data)
           pack (:config data)
-          raw (bridge/run unit text pack)
+          raw (py-client/run unit text pack)
           out (or (:output raw) {})
           body (or (:content out) "")
           basis (or (:basis out) [])
@@ -76,12 +76,13 @@
               :section section
               :domains domains}
         exec (or (:exec item) (System/getenv "XAI_PYTHON") "")
-        path (bridge/binary root exec)
-        _ (when-not (:unit item) (bridge/boot path))
+        path (py-client/binary root exec)
+        _ (when-not (:unit item) (py-client/boot path))
         brief (or (:brief item) (brief/make))
         kit (or (:cites item) (cite/make))
         store (or (:store item) (cache/make root))
-        unit (or (:unit item) (bridge/->Bridge root {:brief brief
-                                                     :cites kit}))
+        unit (or (:unit item)
+                 (py-client/->Client root {:brief brief
+                                           :cites kit}))
         data (assoc data :store store)]
     (->Xai root data unit)))

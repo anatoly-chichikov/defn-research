@@ -4,7 +4,7 @@
             [research.api.research :as research]
             [research.api.response :as response]
             [research.api.xai :as xai]
-            [research.api.xai.bridge :as bridge]
+            [research.api.xai.py-client :as py-client]
             [research.test.ids :as gen])
   (:import (java.nio.file Files)
            (java.nio.file.attribute FileAttribute)))
@@ -17,7 +17,7 @@
         query (gen/cyrillic rng 6)
         model (gen/latin rng 6)
         mode (gen/greek rng 5)
-        unit (reify bridge/Bound
+        unit (reify py-client/Bound
                (run [_ _ _] {}))
         item (xai/xai {:root root
                        :model model
@@ -45,7 +45,7 @@
         root (Files/createTempDirectory (gen/ascii rng 8)
                                         (make-array FileAttribute 0))
         query (gen/cyrillic rng 5)
-        unit (reify bridge/Bound
+        unit (reify py-client/Bound
                (run [_ _ _] {}))
         item (xai/xai {:root root
                        :model (gen/latin rng 6)
@@ -76,7 +76,7 @@
                                         (make-array FileAttribute 0))
         query (gen/cyrillic rng 5)
         bad (gen/hiragana rng 4)
-        unit (reify bridge/Bound
+        unit (reify py-client/Bound
                (run [_ _ _] {}))
         item (xai/xai {:root root
                        :model (gen/latin rng 6)
@@ -103,7 +103,7 @@
         model (gen/latin rng 7)
         text (gen/hebrew rng 8)
         code (gen/ascii rng 10)
-        unit (reify bridge/Bound
+        unit (reify py-client/Bound
                (run [_ _ _]
                  {:run {:run_id code
                         :status "completed"}

@@ -36,6 +36,82 @@
   (let [text (str/replace text #"\\n" "\n")]
     (str/replace text #"([^\n])\n((?:[*+-] |\d+\. ))" "$1\n\n$2")))
 
+(defn tablerows
+  "Remove blank lines between markdown table rows."
+  [text]
+  (let [rows (str/split (str text) #"\n" -1)
+        size (count rows)]
+    (loop [idx 0 out [] past ""]
+      (if (< idx size)
+        (let [row (nth rows idx)
+              tail (if (< (inc idx) size) (nth rows (inc idx)) "")
+              blank (str/blank? row)
+              pipe (re-find #"^\s*[|]" tail)
+              lead (re-find #"^\s*[|]" past)
+              dash (re-find #"^\s*[|]?[\s:-]*-[-|\s:]*$" past)
+              skip (and blank pipe (or lead dash))
+              out (if skip out (conj out row))
+              past (if skip past row)]
+          (recur (inc idx) out past))
+        (str/join "\n" out)))))
+
+(defn tablecite
+  "Move trailing citations into the last table cell."
+  [text]
+  (let [rows (str/split (str text) #"\n" -1)
+        rule (re-pattern "^(\\s*[|].*)[|]\\s*(\\[\\[\\d+\\]\\].*)$")]
+    (loop [idx 0 out []]
+      (if (< idx (count rows))
+        (let [row (nth rows idx)
+              hit (re-matches rule row)
+              head (if hit (str/trimr (nth hit 1)) "")
+              tail (if hit (nth hit 2) "")
+              line (if hit (str head " " tail " |") row)]
+          (recur (inc idx) (conj out line)))
+        (str/join "\n" out)))))
+
+(defn tablepipe
+  "Ensure table rows end with pipe."
+  [text]
+  (let [rows (str/split (str text) #"\n" -1)]
+    (loop [idx 0 out []]
+      (if (< idx (count rows))
+        (let [row (nth rows idx)
+              head (re-find #"^\s*[|]" row)
+              dash (re-matches #"^\s*[|]?[\s:-]*-[-|\s:]*$" row)
+              line (if head
+                     (if dash
+                       (let [base (str/trimr row)]
+                         (if (str/ends-with? base "|")
+                           base
+                           (str base "|")))
+                       (if-let [hit (re-matches #"(.*?)[|]\s*$" row)]
+                         (let [base (nth hit 1)
+                               base (if (str/ends-with? base " ")
+                                      base
+                                      (str base " "))]
+                           (str base "|"))
+                         (let [base (if (str/ends-with? row " ")
+                                      row
+                                      (str row " "))]
+                           (str base "|"))))
+                     row)]
+          (recur (inc idx) (conj out line)))
+        (str/join "\n" out)))))
+
+(defn tablelead
+  "Remove list markers before table rows."
+  [text]
+  (let [rows (str/split (str text) #"\n" -1)
+        rule #"^\s*[*+-]\s+(\\|.*)$"]
+    (loop [idx 0 out []]
+      (if (< idx (count rows))
+        (let [row (nth rows idx)
+              hit (re-matches rule row)
+              line (if hit (nth hit 1) row)]
+          (recur (inc idx) (conj out line)))
+        (str/join "\n" out)))))
+
 (defn listify
   "Convert inline prompts into markdown lists."
   [text]
@@ -138,6 +214,15 @@
                   text)]
       value)
     (catch Exception _ text)))
+
+(defn presentation
+  "Return decoded URL for display."
+  [text]
+  (let [text (str text)
+        text (str/replace text "+" "%2B")]
+    (try
+      (java.net.URLDecoder/decode text "UTF-8")
+      (catch Exception _ text))))
 
 (defn prune
   "Remove utm fragments from text."

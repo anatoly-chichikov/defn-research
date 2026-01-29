@@ -46,7 +46,7 @@
   (let [rng (gen/ids 14011)
         slug (gen/cyrillic rng 6)
         link (str "https://example.com/" (.nextInt rng 1000))
-        summary (str "Введение " slug "\n\n## Sources\n1. " link)
+        summary (str "Introduction " slug "\n\n## Sources\n1. " link)
         item (result/->ResearchReport summary [])]
     (is (not (str/includes? (result/summary item) "## Sources"))
         "Sources section was not stripped")))

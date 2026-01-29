@@ -1,11 +1,10 @@
-(ns research.api.xai.bridge
+(ns research.api.xai.py-client
   (:require [clojure.string :as str]
             [libpython-clj2.python :as py]
-            [research.api.link :as link]
-            [research.api.xai.bridge.collect :as collect]
-            [research.api.xai.bridge.fetch :as fetch]
             [research.api.xai.brief :as brief]
-            [research.api.xai.citations :as cite])
+            [research.api.xai.citations :as cite]
+            [research.api.xai.py-client.collect :as collect]
+            [research.api.xai.py-client.fetch :as fetch])
   (:import (java.nio.file Files LinkOption)
            (java.util UUID)))
 
@@ -17,6 +16,51 @@
   "Return log record for XAI request."
   [model turns tokens include tools text]
   (fetch/note model turns tokens include tools text))
+
+(defn- order
+  "Return renumbered citations and ordered URLs."
+  [text marks]
+  (let [rule (re-pattern "\\[\\[(\\d+)\\]\\]\\((https?://[^)]+)\\)")
+        hits (or (re-seq rule (str text)) [])
+        data (reduce
+              (fn [data item]
+                (let [url (nth item 2)
+                      seen (:seen data)
+                      list (:list data)
+                      map (:map data)]
+                  (if (contains? seen url)
+                    data
+                    {:seen (conj seen url)
+                     :list (conj list url)
+                     :map (assoc map url (inc (count list)))})))
+              {:seen #{}
+               :list []
+               :map {}}
+              hits)
+        map (:map data)
+        text (if (seq map)
+               (str/replace
+                (str text)
+                rule
+                (fn [items]
+                  (let [url (nth items 2)
+                        num (get map url (second items))]
+                    (str "[[" num "]](" url ")"))))
+               (str text))
+        name (reduce
+              (fn [map item]
+                (let [url (:url item)
+                      text (str (or (:title item) ""))]
+                  (if (or (str/blank? url)
+                          (contains? map url)
+                          (str/blank? text))
+                    map
+                    (assoc map url text))))
+              {}
+              marks)]
+    {:text text
+     :list (:list data)
+     :name name}))
 
 (defn binary
   "Return python executable path."
@@ -41,7 +85,7 @@
     (py/with-gil-stack-rc-context (py/import-module "xai_sdk"))
     :ok))
 
-(defrecord Bridge [root data]
+(defrecord Client [root data]
   Bound
   (run [_ text pack]
     (let [model (or (:model pack) "grok-4-1-fast")
@@ -125,21 +169,31 @@
                                links (:links data)]
                            {:parts [body]
                             :marks cells
-                            :links links}))
+                            :links links
+                            :prompts [text]}))
                   parts (:parts data)
                   marks (:marks data)
                   links (:links data)
-                  policy (or (:link (:data kit)) (link/make))
+                  prompts (:prompts data)
+                  body (str/join "\n\n" parts)
+                  info (order body marks)
+                  body (:text info)
+                  urls (:list info)
+                  name (:name info)
+                  label (fn [url text]
+                          (let [text (str (or text ""))]
+                            (if (str/blank? text) url text)))
                   base (reduce
                         (fn [data item]
                           (let [url (:url item)
                                 seen (:seen data)
                                 list (:list data)
-                                name (or (:title item)
-                                         (link/domain policy url))]
+                                text (label url (:title item))]
                             (if (and (seq url) (not (contains? seen url)))
                               {:seen (conj seen url)
-                               :list (conj list {:title name
+                               :list (conj list {:title (if (str/blank? text)
+                                                          url
+                                                          text)
                                                  :url url
                                                  :excerpts []
                                                  :confidence ""})}
@@ -147,9 +201,17 @@
                         {:seen #{}
                          :list []}
                         marks)
-                  list (:list base)
-                  urls (cite/links kit links)
-                  body (str/join "\n\n" parts)
+                  list (if (seq urls)
+                         (mapv
+                          (fn [url]
+                            (let [text (label url (get name url))]
+                              {:title text
+                               :url url
+                               :excerpts []
+                               :confidence ""}))
+                          urls)
+                         (:list base))
+                  urls (if (seq urls) urls (cite/links kit links))
                   out {:content body
                        :basis [{:field "content"
                                 :citations list
@@ -160,6 +222,7 @@
                        :processor "xai"
                        :created_at (.toString (java.time.Instant/now))}]
               {:run run
-               :output out})
+               :output out
+               :prompts prompts})
             (finally
               (py/call-attr client "close"))))))))

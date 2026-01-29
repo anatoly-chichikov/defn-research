@@ -11,5 +11,6 @@
         text (str head "\n\nResearch:\n1. " left "\n2. " right)
         item (brief/make)
         info (brief/parts item text)
-        items (:items info)]
-    (is (= [left right] items) "brief did not parse items")))
+        items (:items info)
+        expect [(str "1. " left) (str "2. " right)]]
+    (is (= expect items) "brief did not parse items")))

@@ -148,7 +148,7 @@
                   (.nextInt rng 1000)
                   "?utm_source=valyu.ai&utm_medium=referral&x="
                   (.nextInt rng 9))
-        output (str "Источники " slug "\n1. " link)
+        output (str "Sources " slug "\n1. " link)
         item (response/response {:id (gen/uuid rng)
                                  :status "completed"
                                  :output output

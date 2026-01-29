@@ -35,13 +35,20 @@
           page (if view (or (py/as-jvm (py/get-attr site "url")) "") "")
           link (if (seq page) nil (py/get-attr data "x_citation"))
           node (if link (py/as-jvm link) nil)
+          cite (if view site link)
+          name (if cite
+                 (try
+                   (or (py/as-jvm (py/get-attr cite "title")) "")
+                   (catch Exception _ ""))
+                 "")
           post (if node (or (py/as-jvm (py/get-attr link "url")) "") "")
           url (if (seq page) page post)
           end (or (py/as-jvm (py/get-attr data "end_index")) 0)
           id (or (py/as-jvm (py/get-attr data "id")) "")]
       {:end end
        :id id
-       :url url}))
+       :url url
+       :title name}))
   (links [_ items]
     (let [policy (:link data)
           init {:seen #{}

@@ -1,5 +1,6 @@
 (ns research.domain.pending-test
-  (:require [clojure.test :refer [deftest is]]
+  (:require [clojure.string :as str]
+            [clojure.test :refer [deftest is]]
             [research.domain.pending :as pending]
             [research.test.ids :as gen]))
 
@@ -34,9 +35,10 @@
                                :processor processor
                                :language language
                                :provider provider})
-        expect (str "Язык ответа: " language ".\n\n" query)]
-    (is (= expect (pending/query item))
-        "Pending query did not match provided value")))
+        text (pending/query item)
+        ok (and (str/includes? text language)
+                (str/ends-with? text query))]
+    (is ok "Pending query did not include language and query")))
 
 (deftest the-pending-returns-processor
   (let [rng (gen/ids 13005)

@@ -38,15 +38,25 @@
                         note (if (= name "valyu")
                                (text/excerpt (result/excerpt source))
                                "")
+                        view (text/presentation link)
+                        head (if (= title link) view title)
                         link (text/escape link)
-                        title (text/escape title)
+                        view (text/escape view)
+                        head (text/escape head)
                         note (text/escape note)
+                        site (if (or (str/blank? view)
+                                     (= view head))
+                               ""
+                               (str "<div class=\"source-url\">"
+                                    view
+                                    "</div>"))
                         row (str "<li class=\"ref-item\">"
                                  "<a class=\"ref-link\" href=\""
                                  link
                                  "\" target=\"_blank\">"
-                                 title
+                                 head
                                  "</a>"
+                                 site
                                  (if (str/blank? note)
                                    ""
                                    (str "<div class=\"source-excerpt\">"

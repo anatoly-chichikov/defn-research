@@ -5,6 +5,7 @@
             [research.domain.session :as session]
             [research.domain.task :as task]
             [research.pdf.document :as document]
+            [research.pdf.document.text :as text]
             [research.pdf.palette :as palette]
             [research.pdf.style :as style]
             [research.storage.organizer :as organizer]
@@ -47,6 +48,78 @@
         value (document/heading text)]
     (is (= goal value)
         "Heading did not uppercase initial letter")))
+
+(deftest the-document-presentation-decodes-percent
+  (let [rng (gen/ids 18021)
+        host (gen/ascii rng 6)
+        lead (gen/cyrillic rng 4)
+        tail (gen/greek rng 3)
+        plain (str lead "+" tail)
+        code (java.net.URLEncoder/encode plain "UTF-8")
+        url (str "https://" host ".com/" code)
+        view (text/presentation url)
+        goal (str "https://" host ".com/" plain)]
+    (is (= goal view)
+        "Decoded url was incorrect")))
+
+(deftest the-document-tablerows-removes-blank-line
+  (let [rng (gen/ids 18023)
+        alpha (gen/greek rng 4)
+        beta (gen/armenian rng 4)
+        gamma (gen/arabic rng 4)
+        delta (gen/hebrew rng 4)
+        head (str "| " alpha " | " beta " |")
+        rule "| --- | --- |"
+        row (str "| " gamma " | " delta " |")
+        tail (str "| " delta " | " gamma " |")
+        text (str head "\n" rule "\n" row "\n\n" tail)
+        goal (str head "\n" rule "\n" row "\n" tail)
+        view (text/tablerows text)]
+    (is (= goal view)
+        "Table rows were not normalized")))
+
+(deftest the-document-tablecite-moves-citations
+  (let [rng (gen/ids 18024)
+        head (gen/greek rng 4)
+        tail (gen/armenian rng 4)
+        link (str "https://example.com/" (gen/uuid rng))
+        text (str "| " head " | " tail " |\n"
+                  "|---|---|\n"
+                  "| " tail " | 21 |[[1]](" link ")")
+        goal (str "| " head " | " tail " |\n"
+                  "|---|---|\n"
+                  "| " tail " | 21 [[1]](" link ") |")
+        view (text/tablecite text)]
+    (is (= goal view)
+        "Table citations were not moved into last cell")))
+
+(deftest the-document-tablepipe-adds-trailing-pipe
+  (let [rng (gen/ids 18025)
+        head (gen/greek rng 4)
+        tail (gen/armenian rng 4)
+        text (str "| " head " | " tail " |\n"
+                  "|---|---|\n"
+                  "| " tail " | " head)
+        goal (str "| " head " | " tail " |\n"
+                  "|---|---|\n"
+                  "| " tail " | " head " |")
+        view (text/tablepipe text)]
+    (is (= goal view)
+        "Table rows were not terminated with pipe")))
+
+(deftest the-document-tablelead-strips-list-marker
+  (let [rng (gen/ids 18027)
+        head (gen/greek rng 4)
+        tail (gen/armenian rng 4)
+        text (str "- | " head " | " tail " |\n"
+                  "|---|---|\n"
+                  "| " tail " | " head " |")
+        goal (str "| " head " | " tail " |\n"
+                  "|---|---|\n"
+                  "| " tail " | " head " |")
+        view (text/tablelead text)]
+    (is (= goal view)
+        "Table lead marker was not removed")))
 
 (deftest the-document-renders-exploration-brief-title
   (let [rng (gen/ids 18005)
@@ -220,9 +293,9 @@
         "Normalized text did not insert blank line before hyphen list")))
 
 (deftest the-document-normalize-converts-escaped-newlines
-  (let [text "Язык\\nответа"
+  (let [text "Language\\nresponse"
         result (document/normalize text)]
-    (is (= "Язык\nответа" result)
+    (is (= "Language\nresponse" result)
         "Escaped newlines were not converted")))
 
 (deftest the-document-wraps-emoji-characters
@@ -898,12 +971,12 @@
         text (str "- *"
                   mark
                   " **to be fed*** — "
-                  "Ребёнка нужно покормить")
+                  "Το παιδί χρειάζεται φαγητό")
         item (document/underscorify text)
         goal (str "- _"
                   mark
                   " **to be fed**_ — "
-                  "Ребёнка нужно покормить")]
+                  "Το παιδί χρειάζεται φαγητό")]
     (is (= goal item)
         "underscorify failed to rewrite nested bold in bullet")))
 (deftest ^{:doc (str "underscorify rewrites nested bold at end of italic "
@@ -924,11 +997,11 @@
   the-document-underscorify-does-not-touch-bold-heading
   (let [rng (gen/ids 18065)
         mark (gen/uuid rng)
-        text (str "**Заголовок-"
+        text (str "**Título-"
                   mark
                   "** — *The report **has been being written***")
         item (document/underscorify text)
-        goal (str "**Заголовок-"
+        goal (str "**Título-"
                   mark
                   "** — _The report **has been being written**_")]
     (is (= goal item)
@@ -1030,7 +1103,7 @@
         head (gen/cyrillic rng 6)
         note (gen/greek rng 5)
         url (str "https://example.com/" (.nextInt rng 1000))
-        text (str head "\n\n## Sources\n1. " url "\n\n## Далее\n" note)
+        text (str head "\n\n## Sources\n1. " url "\n\n## Next\n" note)
         item (document/strip text)]
     (is (str/includes? item "Sources")
         "Sources section was removed before end")))

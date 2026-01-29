@@ -22,15 +22,7 @@
                         (recur list (rest chunk))
                         (let [lead (first line)
                               mark (and lead (Character/isDigit ^char lead))
-                              part (cond
-                                     (and mark (str/includes? line "."))
-                                     (str/trim
-                                      (second (str/split line #"\." 2)))
-                                     (and mark (str/includes? line ")"))
-                                     (str/trim
-                                      (second (str/split line #"\)" 2)))
-                                     mark line
-                                     :else nil)
+                              part (when mark line)
                               list (if part
                                      (conj list part)
                                      (if (seq list)
