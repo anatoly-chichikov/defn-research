@@ -1,6 +1,5 @@
 (ns research.api.xai
   (:require [clojure.java.io :as io]
-            [clojure.string :as str]
             [research.api.research :as research]
             [research.api.response :as response]
             [research.api.xai.brief :as brief]
@@ -10,24 +9,16 @@
   (:import (java.util UUID)))
 
 (defn window
-  "Return window days for processor."
-  [data processor]
-  (let [text (str/trim (or processor ""))]
-    (cond
-      (str/blank? text) (:window data)
-      (= text "30") 30
-      (= text "90") 90
-      (= text "365") 365
-      :else (throw (ex-info
-                    "Xai processor must be 30 90 or 365"
-                    {:processor processor})))))
+  "Return fixed window days."
+  [_]
+  365)
 
 (defrecord Xai [root data unit]
   research/Researchable
-  (start [_ query processor]
+  (start [_ query _]
     (let [code (str (UUID/randomUUID))
           store (:store data)
-          days (window data processor)
+          days (window data)
           pack (assoc data :window days)
           _ (cache/save store code {:query query
                                     :config pack})]
@@ -57,7 +48,7 @@
         mode (or (:mode item) "social_multi")
         model (or (:model item) "grok-4-1-fast")
         turns (or (:turns item) 2)
-        window (or (:window item) 365)
+        window 365
         tokens (or (:tokens item) 3500)
         flag (if (contains? item :follow) (:follow item) true)
         section (if (contains? item :section) (:section item) false)

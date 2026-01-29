@@ -5,7 +5,8 @@
 (defn launch
   "Create session and run research."
   [root data out topic query processor language provider env]
-  (let [id (seed/seed data topic)
+  (let [processor (if (= provider "xai") "year" processor)
+        id (seed/seed data topic)
         mode (cond
                (= processor "lite")
                (throw (ex-info

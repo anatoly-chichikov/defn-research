@@ -39,7 +39,7 @@
                 (json/object-mapper {:decode-key-fn keyword}))]
       (is (= query (:query data)) "Query was not stored"))))
 
-(deftest ^{:doc "Xai start uses processor for window."}
+(deftest ^{:doc "Xai start uses fixed window."}
   the-xai-start-uses-window
   (let [rng (gen/ids 17002)
         root (Files/createTempDirectory (gen/ascii rng 8)
@@ -67,10 +67,10 @@
                 (json/object-mapper {:decode-key-fn keyword}))
           pack (:config data)
           days (:window pack)]
-      (is (= 90 days) "Window did not match processor"))))
+      (is (= 365 days) "Window did not use fixed year"))))
 
-(deftest ^{:doc "Xai start rejects invalid window."}
-  the-xai-start-rejects-window
+(deftest ^{:doc "Xai start ignores processor."}
+  the-xai-start-ignores-processor
   (let [rng (gen/ids 17004)
         root (Files/createTempDirectory (gen/ascii rng 8)
                                         (make-array FileAttribute 0))
@@ -92,7 +92,7 @@
     (try
       (research/start item query bad)
       (catch Exception _ (reset! raised true)))
-    (is @raised "Invalid window did not raise")))
+    (is (false? @raised) "Invalid processor was not ignored")))
 
 (deftest ^{:doc "Xai finish returns markdown output."}
   the-xai-finish-returns-markdown

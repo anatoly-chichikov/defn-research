@@ -34,6 +34,7 @@
                 processor (pending/processor pend)
                 language (pending/language pend)
                 provider (pending/provider pend)
+                processor (if (= provider "xai") "year" processor)
                 exec (cond
                        (= provider "valyu")
                        (valyu/valyu {:key (env "VALYU_API_KEY")})
@@ -117,6 +118,7 @@
                      (ex-info
                       "Processor must be fast standard or heavy for valyu"
                       {})))
+                processor (if (= provider "xai") "year" processor)
                 exec (cond
                        (= provider "valyu")
                        (valyu/valyu {:key (env "VALYU_API_KEY")})
