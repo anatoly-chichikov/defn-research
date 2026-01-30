@@ -29,6 +29,12 @@
   @bottom-center {
     content: element(page-footer);
   }
+  @bottom-right {
+    content: counter(page);
+    font-family: var(--font-serif);
+    font-size: 9pt;
+    color: #666;
+  }
 }
 
 @page intro {
@@ -36,6 +42,12 @@
   background: var(--bg);
   @bottom-center {
     content: none;
+  }
+  @bottom-right {
+    content: counter(page);
+    font-family: var(--font-serif);
+    font-size: 9pt;
+    color: #666;
   }
 }
 
@@ -175,15 +187,20 @@ h2 {
 }
 
 h2::before {
-  content: "";
+  content: none;
+}
+
+.toc-back {
   position: absolute;
   left: -1.4rem;
   top: 0;
   bottom: 0;
   width: 4px;
+  display: block;
   background: linear-gradient(to bottom, var(--accent) 0%,
  var(--accent) 82%, transparent 100%);
   border-radius: 0 0 4px 0;
+  text-decoration: none;
 }
 
 h3 {
@@ -237,6 +254,7 @@ p {
   color: var(--text);
   word-break: break-all;
   margin-bottom: 0.5rem;
+  display: none;
 }
 
 .source-url a {
@@ -530,6 +548,145 @@ pre {
   @bottom-center {
     content: none;
   }
+  @bottom-right {
+    content: counter(page);
+    font-family: var(--font-serif);
+    font-size: 9pt;
+    color: #666;
+  }
+}
+
+@page toc {
+  @bottom-center {
+    content: element(page-footer);
+  }
+  @bottom-right {
+    content: none;
+  }
+}
+
+.toc {
+  page: toc;
+  page-break-after: always;
+  break-after: always;
+}
+
+.toc .container {
+  padding-top: 2rem;
+}
+
+.toc h1 {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--heading);
+  margin-bottom: 1.5rem;
+  border-bottom: none;
+}
+
+.toc-list {
+  list-style-type: none;
+  padding-left: 0;
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.2;
+}
+
+.toc-item {
+  margin-bottom: 0.2rem;
+}
+
+.toc .ref-link {
+  display: block;
+  max-height: none;
+  overflow: visible;
+}
+
+.toc .ref-link.toc-row {
+  display: table;
+  width: 100%;
+  border-spacing: 0;
+}
+
+.toc-text {
+  display: table-cell;
+  padding-right: 0.6rem;
+  vertical-align: baseline;
+}
+
+.toc-page {
+  display: table-cell;
+  width: 2.2rem;
+  text-align: right;
+  color: #666;
+  font-weight: 400;
+  vertical-align: baseline;
+}
+
+.toc-page::before {
+  content: target-counter(attr(data-target), page);
+}
+
+.toc-sublist {
+  color: var(--text);
+  font-size: 0.72rem;
+  line-height: 1.15;
+  opacity: 0.7;
+  margin-top: 0.05rem;
+  margin-bottom: 0.15rem;
+  padding-left: 1.6rem;
+  list-style: none;
+}
+
+.toc-subitem {
+  margin: 0;
+  display: table;
+  width: 100%;
+  border-spacing: 0;
+}
+
+.toc-subtext {
+  display: table-cell;
+  padding-right: 0.4rem;
+  vertical-align: baseline;
+}
+
+.toc-subtext::before {
+  content: "•";
+  color: var(--text);
+  margin-right: 0.35rem;
+}
+
+.toc-subpage {
+  display: table-cell;
+  width: 2.2rem;
+  text-align: right;
+  color: #666;
+  font-weight: 400;
+  vertical-align: baseline;
+}
+
+.toc-subpage::before {
+  content: target-counter(attr(data-target), page);
+}
+
+.toc-level-2 {
+  margin-left: 1rem;
+}
+
+.toc-level-3 {
+  margin-left: 2rem;
+}
+
+.toc-level-4 {
+  margin-left: 3rem;
+}
+
+.toc-level-5 {
+  margin-left: 4rem;
+}
+
+.toc-level-6 {
+  margin-left: 5rem;
 }
 
 .brief {
@@ -601,6 +758,8 @@ a.cite {
   margin-top: 2rem;
   padding-top: 0;
   border-top: none;
+  page-break-before: always;
+  break-before: page;
 }
 
 .references h2 {
@@ -617,6 +776,15 @@ a.cite {
   margin: 0;
   font-size: 0.8rem;
   line-height: 1.35;
+}
+
+.references .ref-list {
+  padding-top: 0.45rem;
+}
+
+.toc .ref-list {
+  list-style-type: none;
+  padding-left: 0;
 }
 
 .ref-item {

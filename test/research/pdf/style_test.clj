@@ -64,16 +64,17 @@
         css (style/css (style/style (pal value)))
         snippet (str/join
                  "\n"
-                 ["h2::before {"
-                  "  content: \"\";"
+                 [".toc-back {"
                   "  position: absolute;"
                   "  left: -1.4rem;"
                   "  top: 0;"
                   "  bottom: 0;"
                   "  width: 4px;"
+                  "  display: block;"
                   "  background: linear-gradient(to bottom, var(--accent) 0%,"
                   " var(--accent) 82%, transparent 100%);"
                   "  border-radius: 0 0 4px 0;"
+                  "  text-decoration: none;"
                   "}"])]
     (is (str/includes? css snippet) "Heading accent bar was missing")))
 

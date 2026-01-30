@@ -30,6 +30,130 @@
         head (str/upper-case head)]
     (str head tail)))
 
+(defn slug
+  "Return anchor slug."
+  [text]
+  (let [text (decode (str text))
+        text (str/trim text)
+        text (str/lower-case text)
+        text (str/replace text #"[\s\p{Punct}]+" "-")
+        text (str/replace text #"^-+|-+$" "")
+        text (if (str/blank? text) "section" text)]
+    text))
+
+(defn anchor
+  "Return unique anchor id."
+  [_ seen]
+  (let [idx (inc (get seen :idx 0))
+        id (str "section-" idx)
+        seen (assoc seen :idx idx)]
+    [id seen]))
+
+(defn anchors
+  "Add anchor ids to headings and return html with toc items."
+  [html]
+  (let [doc (Jsoup/parseBodyFragment (str html))
+        list (.select doc "h1, h2, h3, h4, h5, h6")
+        data (reduce
+              (fn [data node]
+                (let [text (.text node)
+                      [id seen] (anchor text (:seen data))
+                      tag (.tagName node)
+                      level (Integer/parseInt (subs tag 1))
+                      back (str "<a class=\"toc-back\" href=\"#toc\" "
+                                "aria-label=\"Back to contents\"></a>")]
+                  (.attr node "id" id)
+                  (when (= tag "h2")
+                    (.prepend node back))
+                  {:items (conj (:items data)
+                                {:text text
+                                 :id id
+                                 :level level})
+                   :seen seen}))
+              {:items []
+               :seen {}}
+              list)]
+    {:html (.html (.body doc))
+     :items (:items data)}))
+
+(defn toc
+  "Render table of contents html."
+  [items]
+  (let [items (vec (or items []))
+        top (filter (fn [item] (not= "Exploration Brief" (:text item))) items)
+        base (if (seq top)
+               (apply min (map :level top))
+               (if (seq items) (apply min (map :level items)) 1))
+        levels (set (map :level top))
+        linklevels (cond
+                     (contains? levels 1) #{1 2}
+                     (contains? levels 2) #{2}
+                     :else #{base})
+        groups (loop [tail items head nil list []]
+                 (if (seq tail)
+                   (let [item (first tail)
+                         level (:level item)
+                         head? (= "Exploration Brief" (:text item))
+                         root (or head? (contains? linklevels level))]
+                     (if root
+                       (recur (rest tail)
+                              {:item item
+                               :subs []}
+                              (if head (conj list head) list))
+                       (recur (rest tail)
+                              (if head (update head :subs conj item) head)
+                              list)))
+                   (if head (conj list head) list)))
+        rows (reduce
+              (fn [text entry]
+                (let [item (:item entry)
+                      subs (:subs entry)
+                      name (escape (str (:text item)))
+                      id (escape (str (:id item)))
+                      link (str "<a class=\"ref-link toc-row\" href=\"#"
+                                id
+                                "\">"
+                                "<span class=\"toc-text\">"
+                                name
+                                "</span>"
+                                "<span class=\"toc-page\" data-target=\"#"
+                                id
+                                "\"></span></a>")
+                      subrows (reduce
+                               (fn [text item]
+                                 (let [name (escape (str (:text item)))
+                                       id (escape (str (:id item)))
+                                       row (str "<li class=\"toc-subitem\">"
+                                                "<span class=\"toc-subtext\">"
+                                                name
+                                                "</span>"
+                                                "<span class=\"toc-subpage\" "
+                                                "data-target=\"#"
+                                                id
+                                                "\"></span></li>")]
+                                   (str text row)))
+                               ""
+                               subs)
+                      desc (if (str/blank? subrows)
+                             ""
+                             (str "<ul class=\"toc-sublist\">"
+                                  subrows
+                                  "</ul>"))
+                      row (str "<li class=\"ref-item toc-item\">"
+                               link
+                               desc
+                               "</li>")]
+                  (str text row)))
+              ""
+              groups)]
+    (if (str/blank? rows)
+      ""
+      (str "<div class=\"toc\" id=\"toc\"><div class=\"container\">"
+           "<h1>Table of Contents</h1>"
+           "<ul class=\"ref-list toc-list\">"
+           rows
+           "</ul></div></div>"))))
+
 (defn normalize
   "Add blank lines before list markers."
   [text]
