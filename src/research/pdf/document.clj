@@ -44,7 +44,19 @@
           note (html sign)
           css (style/css (style/style palette))
           form java.time.format.DateTimeFormatter/ISO_LOCAL_DATE
-          stamp (.format (sess/created session) form)]
+          stamp (.format (sess/created session) form)
+          brief (brief item)
+          body (str brief
+                    "<div class=\"container content\">"
+                    "<div class=\"tasks\">"
+                    content
+                    "</div>"
+                    "</div><div class=\"container\">"
+                    extra
+                    "</div>")
+          data (doctext/anchors body)
+          toc (doctext/toc (:items data))
+          body (:html data)]
       (str "<!DOCTYPE html><html lang=\"en\"><head>"
            "<meta charset=\"UTF-8\" />"
            "<title>"
@@ -64,14 +76,9 @@
            "</p><p class=\"date\">"
            stamp
            "</p></div></div></div>"
-           (brief item)
-           "<div class=\"container content\">"
-           "<div class=\"tasks\">"
-           content
-           "</div>"
-           "</div><div class=\"container\">"
-           extra
-           "</div></body></html>")))
+           toc
+           body
+           "</body></html>")))
   Exported
   (save [item path]
     (let [html (render item)]

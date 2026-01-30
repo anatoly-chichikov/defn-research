@@ -141,9 +141,153 @@
                                :created time})
         root (Paths/get "output" (make-array String 0))
         doc (document/document item (palette/palette) (Optional/empty) root)
-        html (document/render doc)]
-    (is (str/includes? html "<h1>Exploration Brief</h1>")
+        html (document/render doc)
+        hit (re-find #"<h1[^>]*>Exploration Brief</h1>" html)]
+    (is (some? hit)
         "Exploration Brief title was missing")))
+
+(deftest the-document-includes-the-exploration-brief-in-the-table-of-contents
+  (let [rng (gen/ids 18006)
+        topic (gen/cyrillic rng 6)
+        summary (gen/hiragana rng 6)
+        brief {:topic topic
+               :items []}
+        result (result/->ResearchReport summary [])
+        task (task/task {:query topic
+                         :status "completed"
+                         :brief brief
+                         :result (result/data result)
+                         :language summary
+                         :service "parallel.ai"
+                         :created (task/format (task/now))})
+        entry (task/data task)
+        item (session/session {:topic topic
+                               :tasks [entry]
+                               :created (session/format (session/now))})
+        root (Paths/get "output" (make-array String 0))
+        doc (document/document item (palette/palette) (Optional/empty) root)
+        html (document/render doc)
+        tree (Jsoup/parseBodyFragment html)
+        list (seq (.select tree ".toc a.ref-link"))
+        hit (some (fn [node] (= "Exploration Brief" (.text node))) list)]
+    (is hit "Table of contents did not include Exploration Brief")))
+
+(deftest the-document-links-the-table-of-contents-to-headings
+  (let [rng (gen/ids 18007)
+        head (gen/greek rng 6)
+        text (str "## " head)
+        result (result/->ResearchReport text [])
+        entry {:query head
+               :status "completed"
+               :result (result/data result)
+               :language head
+               :service "parallel.ai"
+               :created (task/format (task/now))}
+        item (session/session {:topic head
+                               :tasks [entry]
+                               :created (session/format (session/now))})
+        root (Paths/get "output" (make-array String 0))
+        doc (document/document item (palette/palette) (Optional/empty) root)
+        html (document/render doc)
+        tree (Jsoup/parseBodyFragment html)
+        item (.selectFirst
+              tree
+              (str ".synthesis h1, .synthesis h2, .synthesis h3, "
+                   ".synthesis h4, .synthesis h5, .synthesis h6"))
+        id (if item (.attr item "id") "")
+        link (if (str/blank? id)
+               nil
+               (.selectFirst tree (str ".toc a.ref-link[href=\"#"
+                                       id
+                                       "\"]")))
+        mark (and item (not (str/blank? id)) link)]
+    (is mark "Table of contents link did not resolve to heading")))
+
+(deftest ^{:doc "Ensures toc links h1 and h2 headings."}
+  the-document-renders-h1-and-h2-links-in-the-table-of-contents
+  (let [rng (gen/ids 18016)
+        head (gen/greek rng 6)
+        left (gen/cyrillic rng 6)
+        tail (gen/hiragana rng 6)
+        text (str "# " head "\n\n## " left "\n\n### " tail)
+        result (result/->ResearchReport text [])
+        entry {:query head
+               :status "completed"
+               :result (result/data result)
+               :language tail
+               :service "valyu.ai"
+               :created (task/format (task/now))}
+        item (session/session {:topic head
+                               :tasks [entry]
+                               :created (session/format (session/now))})
+        root (Paths/get "output" (make-array String 0))
+        doc (document/document item (palette/palette) (Optional/empty) root)
+        html (document/render doc)
+        tree (Jsoup/parseBodyFragment html)
+        links (seq (.select tree ".toc a.ref-link"))
+        h1 (some (fn [leaf] (= head (.text leaf))) links)
+        h2 (some (fn [leaf] (= left (.text leaf))) links)
+        h3 (some (fn [leaf] (= tail (.text leaf))) links)
+        mark (and h1 h2 (not h3))]
+    (is mark "Table of contents did not link h1 and h2 headings")))
+
+(deftest ^{:doc "Ensures h2 headings include toc backlinks."}
+  the-document-renders-toc-backlink-on-h2
+  (let [rng (gen/ids 18033)
+        head (gen/greek rng 6)
+        text (str "## " head)
+        result (result/->ResearchReport text [])
+        entry {:query head
+               :status "completed"
+               :result (result/data result)
+               :language head
+               :service "parallel.ai"
+               :created (task/format (task/now))}
+        item (session/session {:topic head
+                               :tasks [entry]
+                               :created (session/format (session/now))})
+        root (Paths/get "output" (make-array String 0))
+        doc (document/document item (palette/palette) (Optional/empty) root)
+        html (document/render doc)
+        tree (Jsoup/parseBodyFragment html)
+        node (.selectFirst tree ".synthesis h2 .toc-back")
+        link (if node (.attr node "href") "")
+        spot (.selectFirst tree "#toc")
+        mark (and node spot (= link "#toc"))]
+    (is mark "Heading did not include toc backlink")))
+
+(deftest ^{:doc "Ensures toc renders subsection items without links"}
+  the-document-renders-toc-subsections-as-list-items
+  (let [rng (gen/ids 18072)
+        head (gen/greek rng 6)
+        tail (gen/cyrillic rng 6)
+        text (str "## " head "\n\n### " tail)
+        result (result/->ResearchReport text [])
+        entry {:query head
+               :status "completed"
+               :result (result/data result)
+               :language tail
+               :service "xai.ai"
+               :created (task/format (task/now))}
+        item (session/session {:topic head
+                               :tasks [entry]
+                               :created (session/format (session/now))})
+        root (Paths/get "output" (make-array String 0))
+        doc (document/document item (palette/palette) (Optional/empty) root)
+        html (document/render doc)
+        tree (Jsoup/parseBodyFragment html)
+        textnode (.selectFirst tree ".toc-subtext")
+        page (.selectFirst tree ".toc-subpage")
+        note (if textnode (.text textnode) "")
+        target (if page (.attr page "data-target") "")
+        id (if (str/starts-with? target "#") (subs target 1) "")
+        anchor (if (str/blank? id)
+                 nil
+                 (.selectFirst tree (str "[id=\"" id "\"]")))
+        links (seq (.select tree ".toc a.ref-link"))
+        link (some (fn [leaf] (= tail (.text leaf))) links)
+        mark (and (str/includes? note tail) anchor (not link))]
+    (is mark "Table of contents did not render subsection list items")))
 
 (deftest the-document-includes-palette-colors
   (let [rng (gen/ids 18007)
@@ -172,6 +316,63 @@
         css (str (style/css (style/style (palette/palette))) mark)]
     (is (str/includes? css "1,600;1,700")
         "Style did not include italic bold weights")))
+
+(deftest ^{:doc "Ensures source urls are hidden in references."}
+  the-document-style-hides-source-urls
+  (let [rng (gen/ids 18074)
+        mark (gen/greek rng 6)
+        css (str (style/css (style/style (palette/palette))) mark)
+        hit (and (str/includes? css ".source-url")
+                 (str/includes? css "display: none"))]
+    (is hit "Source urls were not hidden")))
+
+(deftest ^{:doc "Ensures page numbers use footer styling."}
+  the-document-style-renders-page-numbers-on-every-page
+  (let [rng (gen/ids 18010)
+        mark (gen/greek rng 6)
+        css (str (style/css (style/style (palette/palette))) mark)
+        hit (and (str/includes? css "@bottom-right")
+                 (str/includes? css "counter(page)")
+                 (str/includes? css "font-size: 9pt")
+                 (str/includes? css "color: #666"))]
+    (is hit "Style did not include page number styling")))
+
+(deftest ^{:doc "Ensures toc page does not show footer page numbers."}
+  the-document-style-hides-page-numbers-on-toc-page
+  (let [rng (gen/ids 18012)
+        mark (gen/cyrillic rng 6)
+        css (str (style/css (style/style (palette/palette))) mark)
+        hit (and (str/includes? css "@page toc")
+                 (str/includes? css "@bottom-right")
+                 (str/includes? css "content: none;"))]
+    (is hit "Style did not disable page numbers on toc page")))
+
+(deftest ^{:doc "Ensures toc uses target counters for page numbers."}
+  the-document-style-renders-toc-target-counters
+  (let [rng (gen/ids 18014)
+        mark (gen/greek rng 6)
+        css (str (style/css (style/style (palette/palette))) mark)
+        hit (str/includes? css "target-counter(attr(data-target), page)")]
+    (is hit "Style did not include toc target counters")))
+
+(deftest ^{:doc "Ensures references list has spacing from heading."}
+  the-document-style-adds-references-list-spacing
+  (let [rng (gen/ids 18028)
+        mark (gen/cyrillic rng 6)
+        css (str (style/css (style/style (palette/palette))) mark)
+        hit (and (str/includes? css ".references .ref-list")
+                 (str/includes? css "padding-top: 0.45rem"))]
+    (is hit "Style did not add references list spacing")))
+
+(deftest ^{:doc "Ensures references start on a new page."}
+  the-document-style-starts-references-on-new-page
+  (let [rng (gen/ids 18031)
+        mark (gen/greek rng 6)
+        css (str (style/css (style/style (palette/palette))) mark)
+        hit (and (str/includes? css ".references")
+                 (str/includes? css "page-break-before: always")
+                 (str/includes? css "break-before: page"))]
+    (is hit "Style did not force references onto a new page")))
 
 (deftest the-document-renders-author-name
   (let [rng (gen/ids 18009)
@@ -605,8 +806,9 @@
                                :created (session/format (session/now))})
         root (Paths/get "output" (make-array String 0))
         doc (document/document item (palette/palette) (Optional/empty) root)
-        html (document/render doc)]
-    (is (str/includes? html "<h2>Sources</h2>")
+        html (document/render doc)
+        hit (re-find #"(?s)<h2[^>]*>.*Sources</h2>" html)]
+    (is (some? hit)
         "Sources section was missing")))
 
 (deftest the-document-uses-domain-for-placeholder-title

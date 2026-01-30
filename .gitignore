@@ -36,6 +36,7 @@ target/
 # Project data (excluded from git, kept locally)
 data/
 output/
+tmp/
 
 # Claude local config
 .claude/settings.local.json
