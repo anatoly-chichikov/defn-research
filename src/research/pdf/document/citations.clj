@@ -1,16 +1,6 @@
 (ns research.pdf.document.citations
   (:require [clojure.string :as str]
-            [research.domain.result :as result]
             [research.pdf.document.text :as text]))
-
-(defn badge
-  "Render confidence badge."
-  [text]
-  (if (str/blank? text)
-    ""
-    (str "<span class=\"confidence-badge confidence-"
-         (str/lower-case text)
-         "\"></span>")))
 
 (defn references
   "Extract reference URLs from text."
@@ -28,32 +18,26 @@
      lines)))
 
 (defn citations
-  "Convert [N] to links with confidence badges."
-  [text sources]
+  "Convert [N] to links."
+  [text _]
   (let [refs (references text)
-        map (reduce
-             (fn [map item]
-               (assoc map (text/trim (result/url item))
-                      (result/confidence item)))
-             {}
-             sources)
         hold (atom [])
         mark (atom {})
         note (atom 0)
         push (fn [num link]
-               (let [token (str "@@CITE" @note "@@")
-                     badge (badge (get map link ""))]
+               (let [token (str "@@CITE" @note "@@")]
                  (swap! note inc)
                  (swap! mark
                         assoc
                         token
-                        (str "<a href=\""
+                        (str "<sup class=\"cite\">"
+                             "<a href=\""
                              link
                              "\" class=\"cite\" "
                              "target=\"_blank\">["
                              num
                              "]</a>"
-                             badge))
+                             "</sup>"))
                  (when-not (some #(= link %) @hold)
                    (swap! hold conj link))
                  token))

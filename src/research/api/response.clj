@@ -40,8 +40,7 @@
                      policy (or (:link data) (link/make))]
                  (reduce
                   (fn [list field]
-                    (let [items (get field :citations [])
-                          level (or (get field :confidence "") "")]
+                    (let [items (get field :citations [])]
                       (reduce
                        (fn [list cite]
                          (let [url (or (:url cite) "")
@@ -58,8 +57,7 @@
                                    item (result/->CitationSource
                                          head
                                          url
-                                         note
-                                         level)]
+                                         note)]
                                (swap! seen conj url)
                                (conj list item))
                              list)))

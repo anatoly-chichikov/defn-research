@@ -656,8 +656,7 @@
                      "']})")
         source (result/source {:title title
                                :url link
-                               :excerpt excerpt
-                               :confidence "Unknown"})
+                               :excerpt excerpt})
         result (result/->ResearchReport head [source])
         entry {:query head
                :status "completed"
@@ -766,13 +765,13 @@
         seen (and (str/includes? html first) (str/includes? html second))]
     (is seen "Rendered document did not include provider outputs")))
 
-(deftest the-document-renders-confidence-badge
+(deftest the-document-omits-confidence-badge
   (let [rng (gen/ids 18025)
         text (gen/cyrillic rng 5)
         url (str "https://example.com/"
                  (.nextInt rng 1000)
                  "?utm_source=valyu.ai&utm_medium=referral")
-        source (result/->CitationSource text url text "High")
+        source (result/->CitationSource text url text)
         summary (str text "\n\n## References\n1. " url)
         result (result/->ResearchReport summary [source])
         task (task/task {:query text
@@ -786,15 +785,15 @@
         root (Paths/get "output" (make-array String 0))
         doc (document/document item (palette/palette) (Optional/empty) root)
         html (document/render doc)]
-    (is (str/includes? html "confidence-high")
-        "Confidence badge was missing")))
+    (is (not (str/includes? html "confidence-"))
+        "Confidence badge was present")))
 
 (deftest the-document-renders-sources-section
   (let [rng (gen/ids 18028)
         head (gen/cyrillic rng 6)
         note (gen/cyrillic rng 6)
         link (str "https://example.com/" (.nextInt rng 1000))
-        source (result/->CitationSource head link note "High")
+        source (result/->CitationSource head link note)
         value (result/->ResearchReport head [source])
         entry {:query head
                :status "completed"
@@ -818,7 +817,7 @@
         link (str "https://" host "/" (gen/ascii rng 5))
         head (gen/cyrillic rng 6)
         mark (gen/cyrillic rng 6)
-        source (result/->CitationSource "Fetched web page" link "" "High")
+        source (result/->CitationSource "Fetched web page" link "")
         value (result/->ResearchReport head [source])
         entry {:query mark
                :status "completed"

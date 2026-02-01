@@ -5,8 +5,7 @@
   "Object with URL source."
   (title [item] "Return source title.")
   (url [item] "Return source URL.")
-  (excerpt [item] "Return relevant excerpt.")
-  (confidence [item] "Return confidence level when available."))
+  (excerpt [item] "Return relevant excerpt."))
 
 (defprotocol Summarized
   "Object with text summary."
@@ -24,21 +23,15 @@
   "Object with presence signal."
   (presence [item] "Return true when value is present."))
 
-(defrecord CitationSource [title url excerpt confidence]
+(defrecord CitationSource [title url excerpt]
   Sourced
   (title [_] title)
   (url [_] url)
   (excerpt [_] excerpt)
-  (confidence [_] confidence)
   Serialized
-  (data [_] (if (clojure.string/blank? confidence)
-              {:title title
-               :url url
-               :excerpt excerpt}
-              {:title title
-               :url url
-               :excerpt excerpt
-               :confidence confidence})))
+  (data [_] {:title title
+             :url url
+             :excerpt excerpt}))
 
 (defn source
   "Create source from map."
@@ -46,8 +39,7 @@
   (->CitationSource
    (:title item)
    (:url item)
-   (:excerpt item)
-   (or (:confidence item) "")))
+   (:excerpt item)))
 
 (defn purge
   "Remove sources section from summary text."
