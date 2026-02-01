@@ -1044,7 +1044,6 @@
         expect (document/trim link)]
     (is (str/includes? item expect)
         "Markdown link url was truncated")))
-
 (deftest the-document-escapes-html
   (let [topic "<script>alert('xss')</script>"
         item (session/session {:topic topic

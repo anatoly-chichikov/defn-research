@@ -90,4 +90,5 @@
                            (:processor opts)
                            (:language opts)
                            (:provider opts))
-      (println "Unknown command"))))
+      (println "Unknown command"))
+    (shutdown-agents)))
