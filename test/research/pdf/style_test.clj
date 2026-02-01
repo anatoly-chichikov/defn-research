@@ -58,6 +58,22 @@
                   "  border-bottom: 1px solid var(--border);"])]
     (is (not (str/includes? css snippet)) "H2 underline was present")))
 
+(deftest ^{:doc "Ensures h4 uses link color."}
+  the-style-h4-uses-link-tone
+  (let [rng (gen/ids 20006)
+        value (gen/cyrillic rng 6)
+        css (style/css (style/style (pal value)))
+        snippet (str/join
+                 "\n"
+                 ["h4 {"
+                  "  font-size: 1rem;"
+                  "  font-weight: 400;"
+                  "  color: var(--link);"
+                  "  line-height: 1.3;"
+                  "  margin: 1.2em 0 0.25em;"
+                  "}"])]
+    (is (str/includes? css snippet) "H4 color did not match link tone")))
+
 (deftest the-style-h2-draws-accent-bar
   (let [rng (gen/ids 20007)
         value (gen/cyrillic rng 6)
@@ -126,6 +142,36 @@
         css (style/css (style/style (pal value)))]
     (is (str/includes? css ".emoji")
         "Emoji class was missing from stylesheet")))
+
+(deftest ^{:doc "Ensures subtitle links match text color."}
+  the-style-uses-text-tone-for-subtitle-links
+  (let [rng (gen/ids 20025)
+        value (gen/cyrillic rng 6)
+        css (style/css (style/style (pal value)))
+        rule (str/join "\n" [".subtitle a {" "  color: inherit;"
+                             "  text-decoration: none;"])]
+    (is (str/includes? css rule) "Subtitle link style was not applied")))
+
+(deftest ^{:doc "Ensures footer links match text color."}
+  the-style-uses-text-tone-for-footer-links
+  (let [rng (gen/ids 20027)
+        value (gen/cyrillic rng 6)
+        css (style/css (style/style (pal value)))
+        rule (str/join "\n" [".page-footer a {" "  color: inherit;"
+                             "  text-decoration: none;"])]
+    (is (str/includes? css rule) "Footer link style was not applied")))
+
+(deftest ^{:doc "Ensures signature mark uses text font."}
+  the-style-uses-text-font-for-signature-mark
+  (let [rng (gen/ids 20029)
+        value (gen/cyrillic rng 6)
+        css (style/css (style/style (pal value)))
+        rule (str/join
+              "\n"
+              [".signature-mark {"
+               "  font-family: inherit;"
+               "}"])]
+    (is (str/includes? css rule) "Signature mark font was not inherited")))
 
 (deftest ^{:doc "Ensure citation links are raised."}
   the-style-raises-citations

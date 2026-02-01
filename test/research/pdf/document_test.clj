@@ -418,6 +418,154 @@
             html (document/render doc)]
         (is (str/includes? html service) "Service name was missing")))))
 
+(deftest the-document-renders-signature-links-for-author
+  (let [rng (gen/ids 18032)
+        name (gen/cyrillic rng 6)
+        host (gen/ascii rng 6)
+        service (str host ".ai")
+        value (gen/greek rng 5)
+        data {:bg (gen/latin rng 6)
+              :text (gen/latin rng 6)
+              :heading (gen/latin rng 6)
+              :link (gen/latin rng 6)
+              :muted (gen/latin rng 6)
+              :quote (gen/latin rng 6)
+              :accent (gen/latin rng 6)
+              :codebg (gen/latin rng 6)
+              :codeinline (gen/latin rng 6)
+              :border (gen/latin rng 6)}
+        palette (palette/->Palette data)
+        result (result/->ResearchReport value [])
+        task (task/task {:query value
+                         :status "completed"
+                         :result (result/data result)
+                         :language value
+                         :service service
+                         :created (task/format (task/now))})
+        entry (task/data task)
+        item (session/session {:topic value
+                               :tasks [entry]
+                               :created (session/format (session/now))})
+        root (Files/createTempDirectory (gen/ascii rng 6)
+                                        (make-array FileAttribute 0))
+        cover (Optional/empty)]
+    (with-redefs [document/env (fn [_] name)]
+      (let [doc (document/document item palette cover root)
+            html (document/render doc)
+            tree (Jsoup/parseBodyFragment html)
+            list (vec (.select tree ".subtitle a"))
+            size (count list)
+            one (if (pos? size) (nth list 0) nil)
+            two (if (> size 1) (nth list 1) nil)
+            text1 (if one (.text one) "")
+            text2 (if two (.text two) "")
+            link1 (if one (.attr one "href") "")
+            link2 (if two (.attr two "href") "")
+            site (str "https://" service)
+            repo "https://github.com/anatoly-chichikov/defn-research"
+            hit (and (= 2 size)
+                     (= repo link1)
+                     (= site link2)
+                     (= "defn research" text1)
+                     (= service text2))]
+        (is hit "Signature links were not rendered")))))
+
+(deftest the-document-renders-signature-links-without-author
+  (let [rng (gen/ids 18033)
+        host (gen/ascii rng 6)
+        service (str host ".ai")
+        value (gen/greek rng 5)
+        data {:bg (gen/latin rng 6)
+              :text (gen/latin rng 6)
+              :heading (gen/latin rng 6)
+              :link (gen/latin rng 6)
+              :muted (gen/latin rng 6)
+              :quote (gen/latin rng 6)
+              :accent (gen/latin rng 6)
+              :codebg (gen/latin rng 6)
+              :codeinline (gen/latin rng 6)
+              :border (gen/latin rng 6)}
+        palette (palette/->Palette data)
+        result (result/->ResearchReport value [])
+        task (task/task {:query value
+                         :status "completed"
+                         :result (result/data result)
+                         :language value
+                         :service service
+                         :created (task/format (task/now))})
+        entry (task/data task)
+        item (session/session {:topic value
+                               :tasks [entry]
+                               :created (session/format (session/now))})
+        root (Files/createTempDirectory (gen/ascii rng 6)
+                                        (make-array FileAttribute 0))
+        cover (Optional/empty)]
+    (with-redefs [document/env (fn [_] "")]
+      (let [doc (document/document item palette cover root)
+            html (document/render doc)
+            tree (Jsoup/parseBodyFragment html)
+            list (vec (.select tree ".subtitle a"))
+            size (count list)
+            one (if (pos? size) (nth list 0) nil)
+            two (if (> size 1) (nth list 1) nil)
+            text1 (if one (.text one) "")
+            text2 (if two (.text two) "")
+            link1 (if one (.attr one "href") "")
+            link2 (if two (.attr two "href") "")
+            site (str "https://" service)
+            repo "https://github.com/anatoly-chichikov/defn-research"
+            missing (empty? (.select tree ".subtitle .author"))
+            hit (and missing
+                     (= 2 size)
+                     (= repo link1)
+                     (= site link2)
+                     (= "defn research" text1)
+                     (= service text2))]
+        (is hit "Signature links were not rendered")))))
+
+(deftest the-document-renders-signature-bracket-spacing
+  (let [rng (gen/ids 18034)
+        name (gen/cyrillic rng 6)
+        host (gen/ascii rng 6)
+        service (str host ".ai")
+        value (gen/greek rng 5)
+        data {:bg (gen/latin rng 6)
+              :text (gen/latin rng 6)
+              :heading (gen/latin rng 6)
+              :link (gen/latin rng 6)
+              :muted (gen/latin rng 6)
+              :quote (gen/latin rng 6)
+              :accent (gen/latin rng 6)
+              :codebg (gen/latin rng 6)
+              :codeinline (gen/latin rng 6)
+              :border (gen/latin rng 6)}
+        palette (palette/->Palette data)
+        result (result/->ResearchReport value [])
+        task (task/task {:query value
+                         :status "completed"
+                         :result (result/data result)
+                         :language value
+                         :service service
+                         :created (task/format (task/now))})
+        entry (task/data task)
+        item (session/session {:topic value
+                               :tasks [entry]
+                               :created (session/format (session/now))})
+        root (Files/createTempDirectory (gen/ascii rng 6)
+                                        (make-array FileAttribute 0))
+        cover (Optional/empty)]
+    (with-redefs [document/env (fn [_] name)]
+      (let [doc (document/document item palette cover root)
+            html (document/render doc)
+            node (.selectFirst (Jsoup/parseBodyFragment html)
+                               ".subtitle .signature-mark")
+            view (if node (.outerHtml node) "")
+            hair (str "]" (char 8202) ")")
+            hit (or (str/includes? view "]&hairsp;)")
+                    (str/includes? view "]&#8202;)")
+                    (str/includes? view hair))]
+        (is hit "Signature bracket spacing was incorrect")))))
+
 (deftest the-document-renders-parallel-domain
   (let [rng (gen/ids 18013)
         name (gen/cyrillic rng 6)

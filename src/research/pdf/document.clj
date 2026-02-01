@@ -26,14 +26,22 @@
 (defrecord Signature [name service]
   Signed
   (html [_]
-    (str
-     (if (str/blank? name)
-       (str "AI generated report with " service)
-       (str "AI generated report for <span class=\"author\">"
-            name
-            "</span> with "
-            service))
-     "<br>May contain inaccuracies, please verify")))
+    (let [repo "https://github.com/anatoly-chichikov/defn-research"
+          site (str "https://" service)
+          link (str "<a href=\"" repo "\">defn research</a>")
+          host (str "<a href=\"" site "\">" service "</a>")
+          mark (str "<span class=\"signature-mark\">("
+                    link
+                    " ["
+                    host
+                    "]&hairsp;)</span>")
+          text (if (str/blank? name)
+                 (str "AI generated report with " mark)
+                 (str "AI generated report for <span class=\"author\">"
+                      name
+                      "</span> with "
+                      mark))]
+      (str text "<br>May contain inaccuracies, please verify"))))
 (defrecord Document [session palette cover root]
   Rendered
   (render [item]
