@@ -271,31 +271,6 @@ p {
   opacity: 0.7;
 }
 
-.confidence-badge {
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  margin-left: 1px;
-  vertical-align: super;
-}
-
-.confidence-high {
-  background: #7BA23F;  /* Moegi 萌黄 — spring shoots */
-}
-
-.confidence-medium {
-  background: #C4A35A;  /* Kitsune-iro 狐色 — fox ochre */
-}
-
-.confidence-low {
-  background: #D94537;  /* Shu-iro 朱色 — vermillion */
-}
-
-.confidence-unknown {
-  background: #8A8F98;
-}
-
 .divider {
   height: 2px;
   background: linear-gradient(90deg, transparent 0%, var(--accent) 50%, transparent 100%);
@@ -747,11 +722,20 @@ pre {
   font-weight: 600;
 }
 
+sup.cite {
+  font-size: 0.7em;
+  line-height: 1;
+  vertical-align: super;
+  display: inline-block;
+  position: relative;
+  top: 0em;
+}
+
 a.cite {
   color: var(--accent-ink);
   text-decoration: none;
   font-weight: 600;
-  font-size: 0.85em;
+  font-size: inherit;
 }
 
 .references {

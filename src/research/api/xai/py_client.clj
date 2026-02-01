@@ -195,8 +195,7 @@
                                                           url
                                                           text)
                                                  :url url
-                                                 :excerpts []
-                                                 :confidence ""})}
+                                                 :excerpts []})}
                               data)))
                         {:seen #{}
                          :list []}
@@ -207,8 +206,7 @@
                             (let [text (label url (get name url))]
                               {:title text
                                :url url
-                               :excerpts []
-                               :confidence ""}))
+                               :excerpts []}))
                           urls)
                          (:list base))
                   urls (if (seq urls) urls (cite/links kit links))

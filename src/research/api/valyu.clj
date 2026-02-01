@@ -6,7 +6,6 @@
             [research.api.progress :as progress]
             [research.api.research :as research]
             [research.api.response :as response]
-            [research.api.valyu.sources :as sources]
             [research.api.valyu.status :as status]
             [research.config :as config]))
 
@@ -88,22 +87,19 @@
                           :basis base
                           :raw data})))
   research/Grounded
-  (basis [item sources]
+  (basis [_ sources]
     (let [policy (link/make)]
       (reduce
        (fn [list data]
          (let [url (or (:url data) "")
                text (or (:content data) (:snippet data) (:description data) "")
-               source (:source (:data item))
                title (or (:title data)
-                         (if (str/blank? url) "" (link/domain policy url)))
-               level (sources/level source data)]
+                         (if (str/blank? url) "" (link/domain policy url)))]
            (if (str/blank? url)
              list
              (conj list {:citations [{:title title
                                       :url url
-                                      :excerpts [text]}]
-                         :confidence level}))))
+                                      :excerpts [text]}]}))))
        []
        sources))))
 
@@ -137,57 +133,13 @@
                (str (str/replace base #"/+$" "") "/v1")
                base)
         mode (or (:mode item) "")
-        data {:science #{"valyu/valyu-arxiv"
-                         "valyu/valyu-pubmed"
-                         "valyu/valyu-clinical-trials"}
-              :finance #{"valyu/valyu-stocks" "valyu/sec-filings" "valyu/sec"}
-              :trust #{"acm.org"
-                       "apnews.com"
-                       "arxiv.org"
-                       "bbc.co.uk"
-                       "bloomberg.com"
-                       "britannica.com"
-                       "cell.com"
-                       "doi.org"
-                       "economist.com"
-                       "elsevier.com"
-                       "europa.eu"
-                       "ft.com"
-                       "ieee.org"
-                       "ietf.org"
-                       "imf.org"
-                       "jstor.org"
-                       "nature.com"
-                       "nytimes.com"
-                       "oecd.org"
-                       "openalex.org"
-                       "ourworldindata.org"
-                       "reuters.com"
-                       "science.org"
-                       "sciencedirect.com"
-                       "springer.com"
-                       "tandfonline.com"
-                       "theguardian.com"
-                       "un.org"
-                       "worldbank.org"
-                       "who.int"
-                       "wikipedia.org"
-                       "wiley.com"
-                       "w3.org"
-                       "wsj.com"}
-              :log (progress/make)
+        data {:log (progress/make)
               :net (request/make)}
-        source (sources/make {:science (:science data)
-                              :finance (:finance data)
-                              :trust (:trust data)
-                              :link (link/make)})
         unit (status/make base key {:log (:log data)
                                     :net (:net data)})
-        source (or (:source item) source)
         unit (or (:state item) unit)]
     (if (and (str/blank? key) (not= mode "basis"))
       (throw (ex-info "VALYU_API_KEY is required" {}))
       (->Valyu key base {:log (:log data)
                          :net (:net data)
-                         :source source
                          :state unit}))))

@@ -7,20 +7,20 @@
 (deftest the-source-returns-provided-title
   (let [rng (gen/ids 14001)
         title (gen/cyrillic rng 6)
-        item (result/->CitationSource title "https://example.com" "text" "")]
+        item (result/->CitationSource title "https://example.com" "text")]
     (is (= title (result/title item))
         "Source title did not match provided value")))
 
 (deftest the-source-returns-provided-url
   (let [rng (gen/ids 14003)
         url (str "https://example.com/" (gen/uuid rng))
-        item (result/->CitationSource "Title" url "text" "")]
+        item (result/->CitationSource "Title" url "text")]
     (is (= url (result/url item)) "Source URL did not match provided value")))
 
 (deftest the-source-serializes-all-fields
   (let [rng (gen/ids 14005)
         excerpt (gen/cyrillic rng 6)
-        item (result/->CitationSource "T" "https://x.com" excerpt "")
+        item (result/->CitationSource "T" "https://x.com" excerpt)
         data (result/data item)]
     (is (= excerpt (:excerpt data))
         "Serialized excerpt did not match original")))
@@ -59,8 +59,7 @@
               [(result/->CitationSource
                 "T"
                 "https://x.com"
-                text
-                "")])]
+                text)])]
     (is (= 1 (count (result/sources item)))
         "Result sources count was not one")))
 
@@ -80,49 +79,22 @@
     (is (= summary (result/summary item))
         "Deserialized summary did not match")))
 
-(deftest the-source-returns-provided-confidence
+(deftest the-source-omits-confidence-on-serialization
   (let [rng (gen/ids 14019)
-        confidence (gen/cyrillic rng 5)
-        item (result/->CitationSource "T" "https://example.com" "e" confidence)]
-    (is (= confidence (result/confidence item))
-        "Source confidence did not match provided value")))
-
-(deftest the-source-returns-empty-when-confidence-missing
-  (let [rng (gen/ids 14021)
-        text (gen/cyrillic rng 6)
-        item (result/->CitationSource "T" "https://example.com" text "")]
-    (is (= "" (result/confidence item))
-        "Source confidence was not empty when not provided")))
-
-(deftest the-source-serializes-confidence-when-provided
-  (let [rng (gen/ids 14023)
-        confidence (gen/cyrillic rng 5)
-        item (result/->CitationSource "T" "https://x.com" "e" confidence)
-        data (result/data item)]
-    (is (= confidence (:confidence data))
-        "Serialized confidence did not match provided value")))
-
-(deftest the-source-omits-confidence-when-missing
-  (let [item (result/->CitationSource "T" "https://x.com" "e" "")
+        excerpt (gen/cyrillic rng 5)
+        item (result/->CitationSource "T" "https://example.com" excerpt)
         data (result/data item)]
     (is (not (contains? data :confidence))
-        "Serialized source contained confidence when not provided")))
+        "Serialized source contained confidence")))
 
-(deftest the-source-deserializes-confidence
-  (let [rng (gen/ids 14027)
+(deftest the-source-ignores-confidence-from-map
+  (let [rng (gen/ids 14021)
         confidence (gen/cyrillic rng 5)
         data {:title "T"
               :url "https://x.com"
               :excerpt "e"
               :confidence confidence}
-        item (result/source data)]
-    (is (= confidence (result/confidence item))
-        "Deserialized confidence did not match")))
-
-(deftest the-source-deserializes-without-confidence
-  (let [data {:title "T"
-              :url "https://x.com"
-              :excerpt "e"}
-        item (result/source data)]
-    (is (= "" (result/confidence item))
-        "Deserialized confidence was not empty when absent")))
+        item (result/source data)
+        data (result/data item)]
+    (is (not (contains? data :confidence))
+        "Deserialized source contained confidence")))

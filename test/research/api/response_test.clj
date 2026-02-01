@@ -97,9 +97,9 @@
     (is (= 0 (count (response/sources item)))
         "Response sources was not empty for empty basis")))
 
-(deftest the-response-extracts-confidence
+(deftest the-response-omits-confidence-from-basis
   (let [rng (gen/ids 15017)
-        confidence "High"
+        confidence (gen/cyrillic rng 5)
         url (str "https://example.com/" (gen/uuid rng))
         text (gen/cyrillic rng 6)
         basis [{:citations [{:url url
@@ -110,11 +110,12 @@
                                  :status "completed"
                                  :output ""
                                  :basis basis})
-        source (first (response/sources item))]
-    (is (= confidence (result/confidence source))
-        "Source confidence did not match basis")))
+        source (first (response/sources item))
+        data (result/data source)]
+    (is (not (contains? data :confidence))
+        "Response sources contained confidence")))
 
-(deftest the-response-handles-missing-confidence
+(deftest the-response-omits-confidence-when-missing
   (let [rng (gen/ids 15019)
         url (str "https://example.com/" (gen/uuid rng))
         text (gen/cyrillic rng 6)
@@ -125,9 +126,10 @@
                                  :status "completed"
                                  :output ""
                                  :basis basis})
-        source (first (response/sources item))]
-    (is (= "" (result/confidence source))
-        "Source confidence was not empty when missing")))
+        source (first (response/sources item))
+        data (result/data source)]
+    (is (not (contains? data :confidence))
+        "Response sources contained confidence")))
 
 (deftest the-response-returns-cost
   (let [rng (gen/ids 15021)

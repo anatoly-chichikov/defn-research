@@ -126,3 +126,11 @@
         css (style/css (style/style (pal value)))]
     (is (str/includes? css ".emoji")
         "Emoji class was missing from stylesheet")))
+
+(deftest ^{:doc "Ensure citation links are raised."}
+  the-style-raises-citations
+  (let [rng (gen/ids 20023)
+        value (gen/cyrillic rng 6)
+        css (style/css (style/style (pal value)))]
+    (is (str/includes? css "vertical-align: super;")
+        "Citation links were not raised")))
