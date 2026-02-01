@@ -357,12 +357,7 @@
   "Remove tracking parameters from text URLs."
   [text]
   (let [pattern #"https?://[^\s\)\]]+"
-        items (or (re-seq pattern text) [])
-        value (reduce
-               (fn [note link]
-                 (str/replace note link (trim link)))
-               text
-               items)
+        value (str/replace text pattern (fn [link] (trim link)))
         value (prune value)
         mask (re-pattern
               (str "(?<!\\])[ \t]*\\("
