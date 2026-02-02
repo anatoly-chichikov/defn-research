@@ -66,7 +66,7 @@
           head {"Content-Type" "application/json"}
           response @(http/post url {:headers head
                                     :body (json/write-value-as-string body)
-                                    :timeout 60000
+                                    :timeout 600000
                                     :as :text})
           status (:status response)
           raw (if (and status (< status 300))
