@@ -710,12 +710,14 @@ pre {
 .brief .query {
   background: var(--quote-bg);
   border-left: 3px solid var(--link);
-  padding: 1.5rem;
+  padding: 1.5rem 0;
   border-radius: 0 6px 6px 0;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
 }
 
 .brief .query p {
-  margin-bottom: 0.75rem;
+  margin: 0 1.5rem 0.75rem 1.5rem;
   text-align: left;
 }
 
@@ -724,7 +726,14 @@ pre {
 }
 
 .brief .query ol, .brief .query ul {
-  margin: 0.75rem 0 0.75rem 1.5rem;
+  margin: 0.75rem 1.5rem 0.75rem 3rem;
+}
+
+.brief .query ol ol,
+.brief .query ol ul,
+.brief .query ul ol,
+.brief .query ul ul {
+  margin: 0.75rem 1.5rem 0.75rem 1.5rem;
 }
 
 .brief .query li {
