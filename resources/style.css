@@ -348,10 +348,18 @@ section:last-child .divider {
   margin: 2.2em 0 0.6em;
 }
 
+.synthesis > h2:first-child {
+  margin-top: 0;
+}
+
 .synthesis h3 {
   font-size: 1.18rem;
   line-height: 1.25;
   margin: 1.6em 0 0.4em;
+}
+
+.synthesis > h3:first-child {
+  margin-top: 0;
 }
 
 .synthesis ul, .synthesis ol {
