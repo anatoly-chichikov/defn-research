@@ -401,6 +401,73 @@
                     (not (contains? brief :text)))]
       (is seen "Brief was not stored in session edn"))))
 
+(deftest ^{:doc "Ensure pending brief structure is preserved after run."}
+  the-application-preserves-brief-structure
+  (let [rng (gen/ids 25012)
+        topic (gen/cyrillic rng 6)
+        text (gen/greek rng 6)
+        leaf (gen/hiragana rng 6)
+        node (gen/armenian rng 6)
+        processor "pro"
+        language (gen/cyrillic rng 4)
+        provider "parallel"
+        run (gen/arabic rng 8)
+        stamp (session/format (session/now))
+        ident (gen/uuid rng)
+        brief {:topic topic
+               :items [{:text text
+                        :items [{:text leaf
+                                 :items []}
+                                {:text node
+                                 :items []}]}]}
+        entry {:run_id run
+               :brief brief
+               :processor processor
+               :language language
+               :provider provider}
+        pend (pending/pending entry)
+        query (pending/query pend)
+        sess (session/session {:id ident
+                               :topic topic
+                               :tasks []
+                               :created stamp
+                               :pending entry})
+        root (Files/createTempDirectory "app"
+                                        (make-array FileAttribute 0))
+        out (.resolve root "output")
+        _ (Files/createDirectories out (make-array FileAttribute 0))
+        store (repo/repo out)
+        _ (repo/save store [sess])
+        reply (response/response {:id run
+                                  :status "completed"
+                                  :output (gen/cyrillic rng 6)
+                                  :basis []
+                                  :raw {}})
+        fake (reify research/Researchable
+               (start [_ _ _] run)
+               (stream [_ _] true)
+               (finish [_ _] reply))
+        app (main/app root)
+        token (subs ident 0 8)]
+    (with-redefs [parallel/parallel (fn [] fake)
+                  main/env (fn [_] "")
+                  document/emit (fn [_ _] nil)
+                  image/generate (fn [_ _ _] nil)]
+      (main/research app token query processor language provider))
+    (let [org (organizer/organizer out)
+          name (organizer/name
+                org
+                (session/created sess)
+                (session/topic sess)
+                (session/id sess))
+          folder (organizer/folder org name provider)
+          path (.resolve folder "session.edn")
+          data (edn/read-string (slurp (.toFile path) :encoding "UTF-8"))
+          item (get-in data [:tasks 0 :brief])
+          node (first (:items item))
+          seen (seq (or (:items node) []))]
+      (is seen "Nested brief items were not preserved"))))
+
 (deftest ^:integration the-application-generates-pdf-screenshots
   (let [rng (gen/ids 25011)
         lang (gen/cyrillic rng 6)
