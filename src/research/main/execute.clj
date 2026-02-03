@@ -68,7 +68,9 @@
                                    :query query
                                    :status "completed"
                                    :language language
-                                   :service (str provider ".ai")
+                                   :service (if (= provider "xai")
+                                              "x.ai"
+                                              (str provider ".ai"))
                                    :processor processor
                                    :brief brief
                                    :created (task/format (task/now))
@@ -162,7 +164,9 @@
                                    :query query
                                    :status "completed"
                                    :language language
-                                   :service (str provider ".ai")
+                                   :service (if (= provider "xai")
+                                              "x.ai"
+                                              (str provider ".ai"))
                                    :processor processor
                                    :brief brief
                                    :created (task/format (task/now))

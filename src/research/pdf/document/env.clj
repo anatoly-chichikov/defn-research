@@ -112,4 +112,7 @@
   "Return provider slug from task service."
   [item]
   (let [name (task/provider item)]
-    (if (str/ends-with? name ".ai") (first (str/split name #"\.")) name)))
+    (cond
+      (= name "x.ai") "xai"
+      (str/ends-with? name ".ai") (first (str/split name #"\."))
+      :else name)))

@@ -62,9 +62,11 @@
       (let [provider (if (seq (session/tasks pick))
                        (let [last (last (session/tasks pick))
                              name (task/provider last)]
-                         (if (str/ends-with? name ".ai")
+                         (cond
+                           (= name "x.ai") "xai"
+                           (str/ends-with? name ".ai")
                            (first (str/split name #"\."))
-                           name))
+                           :else name))
                        "parallel")
             org (organizer/organizer out)
             name (organizer/name

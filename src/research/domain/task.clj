@@ -204,6 +204,12 @@
   [item]
   (let [text (or (:language item) "русский")
         name (or (:service item) "parallel.ai")
+        parts (str/split name #"\.")
+        name (if (and (str/ends-with? name ".ai")
+                      (= (first parts) "xai")
+                      (not= name "x.ai"))
+               "x.ai"
+               name)
         time (parse (:created item))
         done (if (:completed item)
                (Optional/of (parse (:completed item)))

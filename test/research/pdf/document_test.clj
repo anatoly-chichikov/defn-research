@@ -296,7 +296,7 @@
                :status "completed"
                :result (result/data result)
                :language tail
-               :service "xai.ai"
+               :service "x.ai"
                :created (task/format (task/now))}
         item (session/session {:topic head
                                :tasks [entry]

@@ -91,7 +91,9 @@
                                              item (str item index)]
                                          {:id item
                                           :status "completed"
-                                          :service (str tag ".ai")
+                                          :service (if (= tag "xai")
+                                                     "x.ai"
+                                                     (str tag ".ai"))
                                           :created time}))
                                      names)
                               data {:id id
