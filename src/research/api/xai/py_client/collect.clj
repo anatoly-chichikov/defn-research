@@ -34,8 +34,12 @@
         line (some (fn [item]
                      (let [text (str/trim (str item))
                            lower (str/lower-case text)]
-                       (when (or (str/starts-with? lower "язык ответа:")
-                                 (str/starts-with? lower "response language:"))
+                       (when (or (str/starts-with?
+                                  lower
+                                  "язык ответа:")
+                                 (str/starts-with?
+                                  lower
+                                  "response language:"))
                          text)))
                    head)
         text (str/trim (str (or line "")))
@@ -51,12 +55,54 @@
                (subs text 0 (dec (count text)))
                text)
         language (if (str/blank? text) "unspecified" text)
-        temp (template)]
+        temp (template)
+        raw items
+        list (loop [list [] items raw]
+               (if (seq items)
+                 (let [item (first items)
+                       text (str/trim (str (or (:text item) "")))
+                       depth (or (:depth item) 1)
+                       depth (max 1 (min depth 3))
+                       list (if (str/blank? text)
+                              list
+                              (conj list {:depth depth
+                                          :text text}))]
+                   (recur list (rest items)))
+                 list))
+        size (count list)
+        items (loop [idx 0 path [] items []]
+                (if (< idx size)
+                  (let [item (nth list idx)
+                        depth (:depth item)
+                        depth (if (> depth (inc (count path)))
+                                (inc (count path))
+                                depth)
+                        base (subvec (vec path) 0 (dec depth))
+                        path (conj base (:text item))
+                        next (if (< (inc idx) size) (nth list (inc idx)) nil)
+                        step (if next (:depth next) 0)
+                        leaf (not (> step depth))
+                        name (last path)
+                        head (vec (butlast path))
+                        text (if leaf
+                               (if (seq head)
+                                 (str "Context: "
+                                      (str/join " / " head)
+                                      "\nFocus: "
+                                      name)
+                                 name)
+                               "")
+                        items (if leaf
+                                (conj items {:name name
+                                             :text text})
+                                items)]
+                    (recur (inc idx) path items))
+                  items))]
     (loop [parts [] marks [] links [] prompts [] items items]
       (if (seq items)
         (let [item (first items)
-              text (str/trim (str item))
-              name text
+              name (str/trim (str (or (:name item) "")))
+              text (str/trim (str (or (:text item) name)))
               slots {"<<response_language>>" language
                      "<<topic>>" topic
                      "<<section_title>>" name

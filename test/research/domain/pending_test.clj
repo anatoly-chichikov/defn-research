@@ -104,6 +104,37 @@
              (not (contains? data :query)))
         "Pending serialize did not include brief or still included query")))
 
+(deftest ^{:doc "Ensure pending nested query items are parsed."}
+  the-pending-parses-nested-query-items
+  (let [rng (gen/ids 13010)
+        run (gen/cyrillic rng 6)
+        head (gen/greek rng 5)
+        inner (gen/armenian rng 5)
+        tail (gen/hiragana rng 5)
+        pad (apply str (repeat 4 " "))
+        query (str (gen/cyrillic rng 6)
+                   "\n\nResearch:\n1. "
+                   head
+                   "\n"
+                   pad
+                   "1. "
+                   inner
+                   "\n2. "
+                   tail)
+        item (pending/pending {:run_id run
+                               :query query
+                               :processor (gen/greek rng 6)
+                               :language (gen/cyrillic rng 6)
+                               :provider (gen/cyrillic rng 6)})
+        brief (pending/brief item)
+        items (:items brief)
+        node (first items)
+        peer (second items)
+        ok (and (= head (:text node))
+                (= inner (:text (first (:items node))))
+                (= tail (:text peer)))]
+    (is ok "Pending nested query items were not parsed")))
+
 (deftest the-pending-deserializes-correctly
   (let [rng (gen/ids 13011)
         run (gen/cyrillic rng 6)

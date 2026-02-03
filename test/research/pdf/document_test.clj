@@ -121,6 +121,35 @@
     (is (= goal view)
         "Table lead marker was not removed")))
 
+(deftest the-document-tablelead-strips-numbered-marker
+  (let [rng (gen/ids 18029)
+        head (gen/greek rng 4)
+        tail (gen/armenian rng 4)
+        text (str "1. | " head " | " tail " |\n"
+                  "2. |---|---|\n"
+                  "3. | " tail " | " head " |")
+        goal (str "| " head " | " tail " |\n"
+                  "|---|---|\n"
+                  "| " tail " | " head " |")
+        view (text/tablelead text)]
+    (is (= goal view)
+        "Table numbered marker was not removed")))
+
+(deftest the-document-tablelead-strips-indentation
+  (let [rng (gen/ids 18030)
+        head (gen/greek rng 4)
+        tail (gen/armenian rng 4)
+        pad (apply str (repeat 2 " "))
+        text (str pad "| " head " | " tail " |\n"
+                  pad "|---|---|\n"
+                  pad "| " tail " | " head " |")
+        goal (str "| " head " | " tail " |\n"
+                  "|---|---|\n"
+                  "| " tail " | " head " |")
+        view (text/tablelead text)]
+    (is (= goal view)
+        "Table indentation was not removed")))
+
 (deftest the-document-renders-exploration-brief-title
   (let [rng (gen/ids 18005)
         day (inc (.nextInt rng 8))
@@ -267,7 +296,7 @@
                :status "completed"
                :result (result/data result)
                :language tail
-               :service "xai.ai"
+               :service "x.ai"
                :created (task/format (task/now))}
         item (session/session {:topic head
                                :tasks [entry]

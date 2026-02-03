@@ -63,12 +63,16 @@
                   sources (response/sources resp)
                   pack {:summary summary
                         :sources (mapv result/data sources)}
+                  brief (pending/brief pend)
                   task (task/task {:id (str (UUID/randomUUID))
                                    :query query
                                    :status "completed"
                                    :language language
-                                   :service (str provider ".ai")
+                                   :service (if (= provider "xai")
+                                              "x.ai"
+                                              (str provider ".ai"))
                                    :processor processor
+                                   :brief brief
                                    :created (task/format (task/now))
                                    :result pack})
                   final (session/extend updated task)
@@ -155,12 +159,16 @@
                   sources (response/sources resp)
                   pack {:summary summary
                         :sources (mapv result/data sources)}
+                  brief (pending/brief pend)
                   task (task/task {:id (str (UUID/randomUUID))
                                    :query query
                                    :status "completed"
                                    :language language
-                                   :service (str provider ".ai")
+                                   :service (if (= provider "xai")
+                                              "x.ai"
+                                              (str provider ".ai"))
                                    :processor processor
+                                   :brief brief
                                    :created (task/format (task/now))
                                    :result pack})
                   final (session/extend updated task)
