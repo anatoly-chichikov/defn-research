@@ -233,3 +233,35 @@
         ok (and (str/includes? text language)
                 (str/ends-with? text query))]
     (is ok "Deserialized query did not include language and query")))
+
+(deftest ^{:doc "Ensure nested query items are parsed into brief items."}
+  the-task-parses-nested-query-items
+  (let [rng (gen/ids 11019)
+        topic (gen/cyrillic rng 6)
+        head (gen/greek rng 5)
+        inner (gen/armenian rng 5)
+        tail (gen/hiragana rng 5)
+        pad (apply str (repeat 4 " "))
+        query (str topic
+                   "\n\nResearch:\n1. "
+                   head
+                   "\n"
+                   pad
+                   "1. "
+                   inner
+                   "\n2. "
+                   tail)
+        item (task/task {:id (gen/uuid rng)
+                         :query query
+                         :status (gen/greek rng 6)
+                         :language (gen/cyrillic rng 5)
+                         :service (gen/cyrillic rng 4)
+                         :created "2026-01-01T00:00:00"})
+        brief (task/brief item)
+        items (:items brief)
+        node (first items)
+        peer (second items)
+        ok (and (= head (:text node))
+                (= inner (:text (first (:items node))))
+                (= tail (:text peer)))]
+    (is ok "Nested query items were not parsed")))

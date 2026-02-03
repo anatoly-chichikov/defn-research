@@ -62,14 +62,18 @@
                num (nth num 2)
                bul (second bul)
                :else nil)
-        rank (cond
+        base (cond
                num (count (str/split (nth num 1) #"\."))
                bul (inc (quot pad 2))
                :else nil)
-        rank (if rank (max 1 rank) nil)
+        depth (cond
+                num (if (pos? pad) (inc (quot pad 4)) base)
+                bul base
+                :else nil)
+        depth (if depth (max 1 (min depth 3)) nil)
         text (str/trim (or text ""))]
-    (if (and rank (not (str/blank? text)))
-      {:depth rank
+    (if (and depth (not (str/blank? text)))
+      {:depth depth
        :text text}
       nil)))
 
