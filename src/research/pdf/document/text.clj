@@ -227,12 +227,19 @@
   "Remove list markers before table rows."
   [text]
   (let [rows (str/split (str text) #"\n" -1)
-        rule #"^\s*[*+-]\s+(\\|.*)$"]
+        rule #"^\s*[*+-]\s+(\\|.*)$"
+        mark #"^\s*\d+[.)]\s+(\|.*)$"]
     (loop [idx 0 out []]
       (if (< idx (count rows))
         (let [row (nth rows idx)
               hit (re-matches rule row)
-              line (if hit (nth hit 1) row)]
+              alt (re-matches mark row)
+              trim (str/triml row)
+              line (cond
+                     hit (nth hit 1)
+                     alt (nth alt 1)
+                     (and (not= row trim) (str/starts-with? trim "|")) trim
+                     :else row)]
           (recur (inc idx) (conj out line)))
         (str/join "\n" out)))))
 

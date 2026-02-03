@@ -17,19 +17,41 @@
           tail (if (some? spot) (drop (inc spot) lines) [])
           items (loop [list [] chunk tail]
                   (if (seq chunk)
-                    (let [line (str/trim (first chunk))]
-                      (if (str/blank? line)
-                        (recur list (rest chunk))
-                        (let [lead (first line)
-                              mark (and lead (Character/isDigit ^char lead))
-                              part (when mark line)
-                              list (if part
-                                     (conj list part)
-                                     (if (seq list)
-                                       (conj (vec (butlast list))
-                                             (str (last list) " " line))
-                                       (conj list line)))]
-                          (recur list (rest chunk)))))
+                    (let [row (str/replace (str (first chunk)) #"\t" " ")
+                          trim (str/triml row)
+                          pad (- (count row) (count trim))
+                          num (re-find #"^(\d+(?:\.\d+)*)[.)]?\s+(.+)$" trim)
+                          bul (re-find #"^[*+-]\s+(.+)$" trim)
+                          text (cond
+                                 num (nth num 2)
+                                 bul (second bul)
+                                 :else nil)
+                          base (cond
+                                 num (count (str/split (nth num 1) #"\."))
+                                 bul (inc (quot pad 2))
+                                 :else nil)
+                          depth (cond
+                                  num (if (pos? pad) (inc (quot pad 4)) base)
+                                  bul base
+                                  :else nil)
+                          depth (if depth (max 1 depth) nil)
+                          depth (if depth (min depth 3) nil)
+                          text (str/trim (str (or text "")))
+                          item (when (and depth (not (str/blank? text)))
+                                 {:depth depth
+                                  :text text})
+                          line (str/trim row)
+                          list (cond
+                                 (str/blank? line) list
+                                 item (conj list item)
+                                 (seq list) (conj (vec (butlast list))
+                                                  (update (last list)
+                                                          :text
+                                                          str
+                                                          " "
+                                                          line))
+                                 :else list)]
+                      (recur list (rest chunk)))
                     list))
           top (reduce
                (fn [text line]
