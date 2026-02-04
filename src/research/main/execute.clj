@@ -9,6 +9,7 @@
             [research.domain.result :as result]
             [research.domain.session :as session]
             [research.domain.task :as task]
+            [research.image.frame :as frame]
             [research.image.generator :as image]
             [research.main.support :as support]
             [research.pdf.document :as document]
@@ -87,9 +88,10 @@
               (if (str/blank? key)
                 (println "Gemini API key not set skipping image generation")
                 (do (println "Generating cover image")
-                    (let [gen (image/generator)]
+                    (let [gen (image/generator)
+                          detector (frame/detector)]
                       (try
-                        (image/generate gen (session/topic final) cover)
+                        (frame/retry gen detector (session/topic final) cover 4)
                         (println (str "Cover generated: "
                                       (.toString cover)))
                         (catch Exception cause
@@ -183,9 +185,10 @@
               (if (str/blank? key)
                 (println "Gemini API key not set skipping image generation")
                 (do (println "Generating cover image")
-                    (let [gen (image/generator)]
+                    (let [gen (image/generator)
+                          detector (frame/detector)]
                       (try
-                        (image/generate gen (session/topic final) cover)
+                        (frame/retry gen detector (session/topic final) cover 4)
                         (println (str "Cover generated: "
                                       (.toString cover)))
                         (catch Exception cause
