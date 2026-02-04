@@ -10,6 +10,7 @@
                  [com.google.genai/google-genai "1.32.0"]
                  [org.clojure/tools.cli "1.2.245"]
                  [org.slf4j/slf4j-nop "2.0.16"]
+                 [org.openpnp/opencv "4.9.0-0"]
                  [clj-python/libpython-clj "2.026"]]
   :main research.main
   :resource-paths ["resources"]
