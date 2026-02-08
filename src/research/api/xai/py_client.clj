@@ -94,12 +94,7 @@
           window (int (or (:window pack) 365))
           tokens (int (or (:tokens pack) 3500))
           flag (if (contains? pack :follow) (:follow pack) true)
-          domains (or (:domains pack)
-                      ["reddit.com"
-                       "youtube.com"
-                       "tiktok.com"
-                       "instagram.com"
-                       "t.me"])
+          domains (:domains pack)
           tags ["inline_citations"
                 "web_search_call_output"
                 "x_search_call_output"]
@@ -121,20 +116,14 @@
               origin (py/call-attr now "__sub__" span)
               x (py/call-attr-kw tool "x_search" [] {:from_date origin})
               web (cond
-                    (= mode "social_multi")
-                    (py/call-attr-kw
-                     tool
-                     "web_search"
-                     []
-                     {:allowed_domains domains})
-                    (= mode "social")
+                    (or (= mode "social_multi") (= mode "social"))
                     (py/call-attr-kw
                      tool
                      "web_search"
                      []
                      {:allowed_domains domains})
                     :else (py/call-attr tool "web_search"))
-              tools (if (= mode "social_multi") [x web] [web])
+              tools (if (= mode "social") [web] [x web])
               client (py/call-attr sdk "Client")
               part (py/get-attr client "chat")]
           (try

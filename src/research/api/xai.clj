@@ -57,7 +57,7 @@
                      "youtube.com"
                      "tiktok.com"
                      "instagram.com"
-                     "t.me"])
+                     "linkedin.com"])
         data {:model model
               :mode mode
               :turns turns

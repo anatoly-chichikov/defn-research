@@ -35,12 +35,14 @@
                 processor (pending/processor pend)
                 language (pending/language pend)
                 provider (pending/provider pend)
-                processor (if (= provider "xai") "year" processor)
                 exec (cond
                        (= provider "valyu")
                        (valyu/valyu {:key (env "VALYU_API_KEY")})
                        (= provider "xai")
-                       (xai/xai {:root root})
+                       (xai/xai {:root root
+                                 :mode (if (= processor "full")
+                                         "full"
+                                         "social_multi")})
                        :else (parallel/parallel))]
             (println (str "Resuming run: "
                           (subs run 0 (min 16 (count run)))))
@@ -124,12 +126,14 @@
                      (ex-info
                       "Processor must be fast standard or heavy for valyu"
                       {})))
-                processor (if (= provider "xai") "year" processor)
                 exec (cond
                        (= provider "valyu")
                        (valyu/valyu {:key (env "VALYU_API_KEY")})
                        (= provider "xai")
-                       (xai/xai {:root root})
+                       (xai/xai {:root root
+                                 :mode (if (= processor "full")
+                                         "full"
+                                         "social_multi")})
                        :else (parallel/parallel))
                 run (research/start exec query processor)
                 pend (pending/pending {:run_id run

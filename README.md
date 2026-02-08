@@ -139,7 +139,7 @@ Three deep research engines are available:
 | **Sources** | Open internet | Open internet + Academic & proprietary sources | Web + X tools |
 | **Strength** | Strategic synthesis, executive summaries | Data-rich analysis, better citations | Social-heavy coverage |
 | **Best for** | Business decisions, implementation planning | Academic research, evidence gathering | Social signals and discourse |
-| **Processors** | pro, ultra, ultra2x, ultra4x, ultra8x | fast, standard, heavy | not available |
+| **Processors** | pro, ultra, ultra2x, ultra4x, ultra8x | fast, standard, heavy | social, full |
 | **Speed** | 10-40 min | 30-90 min | 5-20 min |
 | **Price** | Affordable | Higher (~3-4x) | Varies |
 
@@ -150,7 +150,7 @@ the same session folder.
 
 - **Parallel**: You need actionable recommendations, broad internet coverage, or faster turnaround
 - **Valyu**: You need academic sources, proper citations, or comprehensive data analysis
-- **XAI**: You need social coverage and X search with a time window (use `--processor` as days: 30, 90, 365)
+- **XAI**: You need social coverage and X search — use `social` for social-only web or `full` for unrestricted web search
 
 ## License
 

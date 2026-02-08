@@ -5,12 +5,21 @@
 (defn launch
   "Create session and run research."
   [root data out topic query processor language provider env]
-  (let [processor (if (= provider "xai") "year" processor)
+  (let [processor (if (and (= provider "xai") (= processor "year"))
+                    "social"
+                    processor)
         id (seed/seed data topic)
         mode (cond
                (= processor "lite")
                (throw (ex-info
                        "Run failed because processor lite is not supported"
+                       {:processor processor}))
+               (and (= provider "xai")
+                    (not (or (= processor "social")
+                             (= processor "full"))))
+               (throw (ex-info
+                       (str "Run failed because processor"
+                            " must be social or full for xai")
                        {:processor processor}))
                (and (= provider "valyu")
                     (not (or (= processor "fast")
