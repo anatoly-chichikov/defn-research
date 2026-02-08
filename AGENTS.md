@@ -49,8 +49,9 @@ ask processor What compute level? (
     - fast
     - standard
     - heavy
-
-For xai, there are no extra parameters. Use a fixed 365-day window and do not ask for a processor. Set processor to `year` in the run command.
+  - xai:
+    - social (X search + social web only)
+    - full (X search + unrestricted web)
 
 ask topic — minimum 3 questions, up to 5 (in selected language):
   - Scope: narrow vs broad? specific case or general overview?
@@ -78,11 +79,11 @@ brief format:
 - language = result language
 
 run docker build -t research .
-query="Язык ответа: {language}.\n\n{brief}"
+rule The query argument MUST contain real newlines, not literal \n escapes — use $'...' (ANSI-C quoting) for the query argument so that \n is interpreted as actual newline characters by bash
 run docker run -d --name "research-{timestamp}-{slug}" \
     -v "$(pwd)/output:/app/output" \
-    -e PARALLEL_API_KEY -e VALYU_API_KEY -e GEMINI_API_KEY -e REPORT_FOR \
-    research run "{topic}" "{query}" --processor "{processor}" --language "{language}" --provider "{provider}"
+    -e PARALLEL_API_KEY -e VALYU_API_KEY -e GEMINI_API_KEY -e REPORT_FOR -e XAI_API_KEY \
+    research run "{topic}" $'Язык ответа: {language}.\n\n{brief}' --processor "{processor}" --language "{language}" --provider "{provider}"
 
 If two runs requested, run the command twice with different {timestamp}-{slug} values.
 
