@@ -10,7 +10,6 @@
             [research.domain.session :as session]
             [research.image.generator :as image]
             [research.main :as main]
-            [research.main.support :as support]
             [research.pdf.document :as document]
             [research.storage.organizer :as organizer]
             [research.storage.repository :as repo]
@@ -153,7 +152,7 @@
                                      :raw {}})))]
     (with-redefs [parallel/parallel (fn [] alpha)
                   valyu/valyu (fn [_] beta)
-                  support/env (fn [_] "")
+                  main/env (fn [_] "")
                   document/emit (fn [_ _] nil)
                   image/generate (fn [_ _ _] nil)]
       (main/run app topic query processor language "all"))
@@ -215,7 +214,7 @@
         app (main/app root)
         token (subs ident 0 8)]
     (with-redefs [parallel/parallel (fn [] fake)
-                  support/env (fn [_] "")
+                  main/env (fn [_] "")
                   document/emit (fn [_ _] nil)
                   image/generate (fn [_ _ _] nil)]
       (main/research app token query processor language provider))
@@ -274,7 +273,7 @@
         app (main/app root)
         token (subs ident 0 8)]
     (with-redefs [parallel/parallel (fn [] fake)
-                  support/env (fn [_] "")
+                  main/env (fn [_] "")
                   document/emit (fn [_ _] nil)
                   image/generate (fn [_ _ _] nil)]
       (main/research app token query processor language provider))
@@ -340,10 +339,10 @@
         path (organizer/report org name provider)
         boom (ex-info "Cover generation failed model=none status=none" {})]
     (with-redefs [parallel/parallel (fn [] fake)
-                  support/env (fn [key]
-                                (if (= key "GEMINI_API_KEY")
-                                  (gen/latin rng 6)
-                                  ""))
+                  main/env (fn [key]
+                             (if (= key "GEMINI_API_KEY")
+                               (gen/latin rng 6)
+                               ""))
                   image/generator (fn [] nil)
                   image/generate (fn [_ _ _] (throw boom))]
       (main/research app token query processor language provider))
@@ -383,7 +382,7 @@
         app (main/app root)
         token (subs ident 0 8)]
     (with-redefs [parallel/parallel (fn [] fake)
-                  support/env (fn [_] "")
+                  main/env (fn [_] "")
                   document/emit (fn [_ _] nil)
                   image/generate (fn [_ _ _] nil)]
       (main/research app token query processor language provider))
@@ -451,7 +450,7 @@
         app (main/app root)
         token (subs ident 0 8)]
     (with-redefs [parallel/parallel (fn [] fake)
-                  support/env (fn [_] "")
+                  main/env (fn [_] "")
                   document/emit (fn [_ _] nil)
                   image/generate (fn [_ _ _] nil)]
       (main/research app token query processor language provider))
@@ -529,7 +528,7 @@
                (session/id sess))
         path (organizer/report org label "parallel")]
     (with-redefs [parallel/parallel (fn [] fake)
-                  support/env (fn [key] (if (= key "GEMINI_API_KEY") "key" ""))
+                  main/env (fn [key] (if (= key "GEMINI_API_KEY") "key" ""))
                   document/env (fn [_] author)
                   image/generator (fn [] nil)
                   image/generate (fn [_ _ target]

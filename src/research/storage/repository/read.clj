@@ -3,8 +3,7 @@
             [clojure.pprint :as pprint]
             [clojure.string :as str]
             [research.domain.session :as session])
-  (:import (java.nio.file Files LinkOption StandardCopyOption)
-           (java.nio.file.attribute FileAttribute)))
+  (:import (java.nio.file Files LinkOption)))
 
 (defn items
   "Return sessions from output folder."
@@ -50,21 +49,9 @@
                                        (pprint/pprint (session/data item)))
                                      "")
                               _ (when flag
-                                  (let [dir (.getParent file)
-                                        tmp (Files/createTempFile
-                                             dir "session" ".tmp"
-                                             (make-array FileAttribute 0))]
-                                    (try
-                                      (spit (.toFile tmp) note
-                                            :encoding "UTF-8")
-                                      (Files/move
-                                       tmp file
-                                       (into-array
-                                        java.nio.file.CopyOption
-                                        [StandardCopyOption/ATOMIC_MOVE]))
-                                      (catch Exception exc
-                                        (Files/deleteIfExists tmp)
-                                        (throw exc)))))]
+                                  (spit (.toFile file)
+                                        note
+                                        :encoding "UTF-8"))]
                           (conj list item))
                         mark
                         (let [date (nth mark 1)
@@ -116,20 +103,7 @@
                               item (session/session data)
                               text (with-out-str
                                      (pprint/pprint (session/data item)))]
-                          (let [dir (.getParent file)
-                                tmp (Files/createTempFile
-                                     dir "session" ".tmp"
-                                     (make-array FileAttribute 0))]
-                            (try
-                              (spit (.toFile tmp) text :encoding "UTF-8")
-                              (Files/move
-                               tmp file
-                               (into-array
-                                java.nio.file.CopyOption
-                                [StandardCopyOption/ATOMIC_MOVE]))
-                              (catch Exception exc
-                                (Files/deleteIfExists tmp)
-                                (throw exc))))
+                          (spit (.toFile file) text :encoding "UTF-8")
                           (conj list item))
                         :else list)))
                   []

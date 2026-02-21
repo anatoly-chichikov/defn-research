@@ -3,11 +3,7 @@
   (:require [research.domain.session :as session]
             [research.storage.repository.read :as read]
             [research.storage.repository.write :as write])
-  (:import (java.io RandomAccessFile)
-           (java.nio.file Files)
-           (java.nio.file.attribute FileAttribute)
-           (java.util Optional)
-           (java.util.concurrent.locks ReentrantLock)))
+  (:import (java.util Optional)))
 
 (defprotocol Loadable
   "Object that can load sessions."
@@ -23,27 +19,7 @@
   (find [item value] "Find session by id.")
   (update [item value] "Update session by id."))
 
-(defn- locked
-  "Execute function under file lock."
-  [guard root func]
-  (.lock guard)
-  (try
-    (let [_ (Files/createDirectories root (make-array FileAttribute 0))
-          path (.resolve root ".repo.lock")
-          file (RandomAccessFile. (.toFile path) "rw")
-          channel (.getChannel file)]
-      (try
-        (let [fl (.lock channel)]
-          (try
-            (func)
-            (finally
-              (.release fl))))
-        (finally
-          (.close file))))
-    (finally
-      (.unlock guard))))
-
-(defrecord Repository [root guard]
+(defrecord Repository [root]
   Loadable
   (load [_]
     (read/items root))
@@ -51,29 +27,24 @@
   (save [_ items]
     (write/store root items))
   Mutable
-  (append [_ value]
-    (locked guard root
-            (fn []
-              (let [items (read/items root)
-                    store (conj items value)]
-                (write/store root store)))))
+  (append [item value]
+    (let [items (load item)
+          store (conj items value)]
+      (save item store)))
   (find [item value]
     (let [items (load item)
           pick (first (filter #(= (session/id %) value) items))]
       (if pick (Optional/of pick) (Optional/empty))))
-  (update [_ value]
-    (locked guard root
-            (fn []
-              (let [items (read/items root)
-                    store (mapv (fn [node]
-                                  (if (= (session/id node)
-                                         (session/id value))
-                                    value
-                                    node))
-                                items)]
-                (write/store root store))))))
+  (update [item value]
+    (let [items (load item)
+          store (mapv (fn [item]
+                        (if (= (session/id item) (session/id value))
+                          value
+                          item))
+                      items)]
+      (save item store))))
 
 (defn repo
   "Create repository from output path."
   [item]
-  (->Repository item (ReentrantLock.)))
+  (->Repository item))
