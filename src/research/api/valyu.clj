@@ -43,12 +43,12 @@
                                            :timeout 60000
                                            :as :text})
           status (:status response)
-          info (if (< status 300)
+          data (if (< status 300)
                  (json/read-value
                   (:body response)
                   (json/object-mapper {:decode-key-fn keyword}))
                  (throw (ex-info "Valyu create failed" {:status status})))
-          run (or (:deepresearch_id info) (:id info) "")]
+          run (or (:deepresearch_id data) (:id data) "")]
       run))
   (stream [item id]
     (let [timeout-ms (* config/task-timeout-hours 3600000)

@@ -41,19 +41,15 @@
                  (.next writers)
                  (throw (ex-info "JPEG writer missing" {})))
         param (.getDefaultWriteParam writer)]
-    (try
-      (with-open [input (ByteArrayInputStream. data)
-                  output (javax.imageio.ImageIO/createImageOutputStream file)]
-        (let [image (javax.imageio.ImageIO/read input)]
-          (.setCompressionMode
-           param
-           javax.imageio.ImageWriteParam/MODE_EXPLICIT)
-          (.setCompressionQuality param (float quality))
-          (.setOutput writer output)
-          (.write writer nil (javax.imageio.IIOImage. image nil nil) param)
-          path))
-      (finally
-        (.dispose writer)))))
+    (with-open [input (ByteArrayInputStream. data)
+                output (javax.imageio.ImageIO/createImageOutputStream file)]
+      (let [image (javax.imageio.ImageIO/read input)]
+        (.setCompressionMode param javax.imageio.ImageWriteParam/MODE_EXPLICIT)
+        (.setCompressionQuality param (float quality))
+        (.setOutput writer output)
+        (.write writer nil (javax.imageio.IIOImage. image nil nil) param)
+        (.dispose writer)
+        path))))
 
 (defrecord Generator [key spec data]
   Generated
