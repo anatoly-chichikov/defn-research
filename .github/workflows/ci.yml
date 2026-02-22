@@ -2,9 +2,23 @@ name: CI
 
 on:
   push:
+    branches: [main]
   pull_request:
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    container: clojure:temurin-21-lein
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install dependencies
+        run: lein with-profile +dev deps
+      - name: Lint
+        run: lein lint
+      - name: Format check
+        run: lein fmt:check
+
   tests:
     runs-on: ubuntu-latest
     steps:
